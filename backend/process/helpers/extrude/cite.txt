@@ -1,0 +1,7 @@
+variable_section_sweep() is a heavily modified version of:
+Extrude a ribbon/tube and fly through it!
+(c) 2016 Teja Muppirala
+User Teja Muppirala
+v3.1
+Uploaded: 25 Dec 2009
+https://www.mathworks.com/matlabcentral/fileexchange/25086-extrude-a-ribbon-tube-and-fly-through-it-

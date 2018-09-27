@@ -1,0 +1,2 @@
+function visible
+generate_resources

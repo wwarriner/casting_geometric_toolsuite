@@ -1,0 +1,1 @@
+Only process implementation class files, i.e. subclasses of the abstract class "Process" may go in this folder. Also allowed are this readme.txt, and process_implementation_path.m. Any other files will cause the build proces to fail!

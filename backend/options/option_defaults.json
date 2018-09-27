@@ -1,0 +1,9 @@
+{
+"input_stl_path":"",
+"output_path":"",
+"element_count":1e6,
+"component_count":1,
+"thin_wall_cavity_threshold":1.0,
+"thin_wall_mold_threshold":6.35,
+"sweep_coefficient":1.0
+}
