@@ -1,14 +1,15 @@
 # Casting Geometric Toolsuite
-A suite of tools for geometric analysis of metal castings.
-Based on the work of William Warriner (paper references tbd).
+A suite of tools for geometric analysis of metal castings, based on the work of William Warriner (paper references tbd). The code is licensed under the MIT license, with the exception of some of the external libraries, which have their own licenses. Please see below.
 
 # Usage
-For now, examine the examples/demo code. To install, ensure all of the subfolders are on the MATLAB path (you can use the `extend_search_path.m` script for this). You will also need various libraries available on the MATLAB File Exchange, all of which must be on the MATLAB path. These include:
-- [3D Euclidean Distance Transform for Variable Data Aspect Ratio](https://www.mathworks.com/matlabcentral/fileexchange/15455-3d-euclidean-distance-transform-for-variable-data-aspect-ratio)
-- [Mesh voxelization](https://www.mathworks.com/matlabcentral/fileexchange/27390-mesh-voxelisation)
-- [A suite of minimal bounding objects](https://www.mathworks.com/matlabcentral/fileexchange/34767-a-suite-of-minimal-bounding-objects)
-- [stlwrite - write ASCII or Binary STL files](https://www.mathworks.com/matlabcentral/fileexchange/20922-stlwrite-write-ascii-or-binary-stl-files)
-- [vtkwrite : Exports various 2D/3D data to ParaView in VTK file format](https://www.mathworks.com/matlabcentral/fileexchange/47814-vtkwrite-exports-various-2d-3d-data-to-paraview-in-vtk-file-format)
+For now, examine the examples/demo code. To install, ensure all of the subfolders are on the MATLAB path (you can use the `extend_search_path.m` script for this). You will also need various libraries available on the MATLAB File Exchange, all of which must be on the MATLAB path. The libraries are included with the source and do not need to be downloaded. The library licenses are all BSD, with the exception of vtkwrite, which is MIT.
+
+#### External Libraries
+- [3D Euclidean Distance Transform for Variable Data Aspect Ratio](https://www.mathworks.com/matlabcentral/fileexchange/15455-3d-euclidean-distance-transform-for-variable-data-aspect-ratio) (bwdistsc, BSD)
+- [Mesh voxelization](https://www.mathworks.com/matlabcentral/fileexchange/27390-mesh-voxelisation) (Mesh_voxelization, BSD)
+- [A suite of minimal bounding objects](https://www.mathworks.com/matlabcentral/fileexchange/34767-a-suite-of-minimal-bounding-objects) (MinBoundSuite, BSD)
+- [stlwrite - write ASCII or Binary STL files](https://www.mathworks.com/matlabcentral/fileexchange/20922-stlwrite-write-ascii-or-binary-stl-files) (stlwrite, BSD)
+- [vtkwrite : Exports various 2D/3D data to ParaView in VTK file format](https://www.mathworks.com/matlabcentral/fileexchange/47814-vtkwrite-exports-various-2d-3d-data-to-paraview-in-vtk-file-format) (vtkwrite, MIT)
 
 # Analyses Available
 - Feeders (geometry-based)
