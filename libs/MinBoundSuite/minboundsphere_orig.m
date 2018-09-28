@@ -1,7 +1,4 @@
-% modified by William Warriner 2018
-%  allow optional convhull input to save time
-
-function [center,radius] = minboundsphere(xyz, convhull_tri)
+function [center,radius] = minboundsphere(xyz)
 % minboundsphere: Compute the minimum radius enclosing sphere of a set of (x,y,z) triplets
 % usage: [center,radius] = minboundsphere(xyz)
 %
@@ -72,11 +69,7 @@ n = sxyz(1);
 % points in the interior of the convex hull are
 % never needed.
 if n>4
-    if nargin < 2
-        tri = convhulln(xyz);
-    else
-        tri = convhull_tri;
-    end
+  tri = convhulln(xyz);
 
   % list of the unique points on the convex hull itself
   hlist = unique(tri(:));
@@ -334,9 +327,7 @@ end
 % equations.
 A = 2*(xyz(2:4,:)-repmat(xyz(1,:),3,1));
 rhs = sum(xyz(2:4,:).^2 - repmat(xyz(1,:).^2,3,1),2);
-warning( 'off', 'MATLAB:singularMatrix' );
 center = (A\rhs)';
-warning( 'on', 'MATLAB:singularMatrix' );
 radius = norm(center - xyz(1,:));
 
 
