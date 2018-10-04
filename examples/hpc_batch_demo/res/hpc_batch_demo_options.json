@@ -1,0 +1,11 @@
+{
+"input_stl_path":"",
+"output_path":"",
+"element_count":1e6,
+"component_count":1,
+"thin_wall_cavity_threshold":1.0,
+"thin_wall_mold_threshold":2.35,
+"user_needs":["cavity_thin_wall", "mold_thin_wall", "waterfall", "feeders", "undercuts", "bottle_cores"],
+"parting_dimensions":[1,2,3],
+"gravity_directions":["up","down"]
+}
