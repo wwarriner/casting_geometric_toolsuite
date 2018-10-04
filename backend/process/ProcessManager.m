@@ -1,5 +1,12 @@
 classdef (Sealed) ProcessManager < Cancelable & Notifier & handle
     
+    % TODO: figure out a way to "unwind" the dependencies to conserve memory
+    % That is, when a process object is complete, perform all necessary outputs
+    % with it, and if it has no more dependencies, then clear it from memory
+    % EASY MODE: only clear sinks in the dependency digraph
+    % HARD MODE: at the end of each loop, check all process objects to see if
+    % they are a sink, may require storing a live digraph of visited nodes
+    
     properties ( GetAccess = public, SetAccess = private )
         %% inputs
         user_needs
