@@ -40,7 +40,9 @@ classdef Waterfall < Process
             
             assert( ~isempty( obj.mesh ) );
             
-            obj.parting_perimeter = obj.results.get( [ PartingPerimeter.NAME '_' num2str( obj.parting_dimension ) ] );
+            if isempty( obj.parting_perimeter )
+                obj.parting_perimeter = obj.results.get( [ PartingPerimeter.NAME '_' num2str( obj.parting_dimension ) ] );
+            end
             
             assert( ~isempty( obj.parting_perimeter ) );
             assert( ~isempty( obj.parting_dimension ) );
@@ -107,14 +109,6 @@ classdef Waterfall < Process
             perim = bwperim( obj.mesh.interior ) & obj.parting_perimeter.perimeter;
             values = obj.worst_drop( perim );
             obj.gating_opportunity = obj.mesh.to_stl_units( sum( 1 ./ values ) );
-            
-        end
-        
-        
-        function name = get_storage_name( obj )
-            
-            parting_dimension_str = num2str( int64( obj.parting_dimension ), '%d' );
-            name = strjoin( { obj.NAME, parting_dimension_str, obj.gravity_direction }, '_' ); 
             
         end
         

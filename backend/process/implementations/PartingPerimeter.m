@@ -127,14 +127,6 @@ classdef (Sealed) PartingPerimeter < Process
         end
         
         
-        function name = get_storage_name( obj )
-            
-            parting_dimension_str = num2str( int64( obj.parting_dimension ), '%d' );
-            name = strjoin( { obj.NAME, parting_dimension_str }, '_' );
-            
-        end
-        
-        
         function legacy_run( obj, mesh, parting_dimension )
             
             obj.mesh = mesh;
