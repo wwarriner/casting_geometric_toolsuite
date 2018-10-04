@@ -1,1 +1,3 @@
 process_dependency_graph.mat
+examples/legacy_demo/legacy_demo.asv
+*.asv
