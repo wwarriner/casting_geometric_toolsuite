@@ -8,7 +8,7 @@ options = Options( '', option_path, stl_path, output_path );
 
 %% ANALYSIS
 try
-	tbl = legacy_run( options );
+	tbl = hpc_batch_run( options );
 	tbl.Properties.RowNames = { name };
 catch e
 	fprintf( 1, '%s\n', getReport( e ) );
