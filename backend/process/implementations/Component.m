@@ -54,6 +54,7 @@ classdef (Sealed) Component < Process & matlab.mixin.Copyable
             
             obj.printf( 'Preparing component...\n' );
             obj.read_from_path( obj.stl_path );
+            obj.printf( '\b %s\n', obj.name );
             [ obj.convex_hull_fv, obj.convex_hull_volume ] = ...
                 Component.determine_convex_hull( obj.fv.vertices );
             obj.update();
