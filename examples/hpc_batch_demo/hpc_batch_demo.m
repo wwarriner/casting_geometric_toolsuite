@@ -2,7 +2,7 @@ function hpc_batch_demo( stl_path, output_path )
 %% RESOURCES
 this_path = fileparts( mfilename( 'fullpath' ) );
 res_path = fullfile( this_path, 'res' );
-option_path = fullfile( res_path, 'legacy_demo_options.json' );
+option_path = fullfile( res_path, 'hpc_batch_demo_options.json' );
 options = Options( '', option_path, stl_path, output_path );
 [ ~, name, ~ ] = fileparts( stl_path );
 
