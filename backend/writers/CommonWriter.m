@@ -18,14 +18,20 @@ classdef (Sealed) CommonWriter < handle
     
     methods ( Access = public )
         
-        function obj = CommonWriter( output_path, name, Mesh )
+        function obj = CommonWriter( output_path, name, varargin )
             
-            assert( ischar( name ) );
+            if numel( varargin ) == 1
+                obj.spacing = varargin{ 1 }.spacing;
+                obj.origin = varargin{ 1 }.origin;
+            elseif numel( varargin ) == 2
+                obj.spacing = varargin{ 1 };
+                obj.origin = varargin{ 2 };
+            else
+                assert( false );
+            end
             
             obj.path = output_path;
             obj.name = name;
-            obj.spacing = Mesh.spacing;
-            obj.origin = Mesh.origin;
             
         end
         
