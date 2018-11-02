@@ -106,13 +106,6 @@ classdef (Sealed) ProcessManager < Cancelable & Notifier & handle
         end
         
         
-        function prepare_dir( obj )
-            
-            prepare_child_dir( obj.writer.path, name );
-            
-        end
-        
-        
         function write_all( obj )
             
             keyset = obj.results.get_keys();
@@ -199,19 +192,22 @@ classdef (Sealed) ProcessManager < Cancelable & Notifier & handle
             
             assert( obj.results.exists( Component.NAME ) );
             assert( obj.results.exists( Mesh.NAME ) );
+            name_of_component = obj.results.get( Component.NAME ).name;
             obj.writer = CommonWriter( ...
                 obj.options.output_path, ...
-                obj.results.get( Component.NAME ).name, ...
+                name_of_component, ...
                 obj.results.get( Mesh.NAME ) ...
                 );
-            obj.writer.prepare_output_path();
+            prepare_dir( obj.options.output_path );
             
         end
         
         
         function write_result( obj, key, writer )
             
-            obj.notify_observer( 'Writing :%s', key );
+            if obj.has_observer()
+                obj.notify_observer( 'Writing :%s', key );
+            end
             obj.results.get( key ).write( key, writer );
             
         end
