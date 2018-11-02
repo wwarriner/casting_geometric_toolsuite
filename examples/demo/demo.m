@@ -30,6 +30,7 @@ for i = 1 : input_count
         fprintf( 1, '%s\n', getReport( e ) );
         fprintf( 1, '%s\n', stl_paths{ i } );
     end
+    pm.write_all();
     [ ~, name, ~ ] = fileparts( stl_paths{ i } );
     data{ i } = pm.generate_summary( name );
     
