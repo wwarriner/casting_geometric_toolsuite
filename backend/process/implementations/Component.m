@@ -48,12 +48,13 @@ classdef (Sealed) Component < Process & matlab.mixin.Copyable
             
             if ~isempty(obj.options)
                 obj.stl_path = obj.options.input_stl_path;
+                assert( ~isempty( obj.stl_path ) );
             end
             
-            assert( ~isempty( obj.stl_path ) );
-            
             obj.printf( 'Preparing component...\n' );
-            obj.read_from_path( obj.stl_path );
+            if ~isempty( obj.stl_path )
+                obj.read_from_path( obj.stl_path );
+            end
             obj.printf( '\b %s\n', obj.name );
             [ obj.convex_hull_fv, obj.convex_hull_volume ] = ...
                 Component.determine_convex_hull( obj.fv.vertices );
