@@ -37,13 +37,16 @@ classdef ThinWall < Process
                 obj.profile = obj.results.get( EdtProfile.NAME );
             end
             
-            obj.region = obj.DEFAULT_REGION;
-            obj.sweep_coefficient = obj.DEFAULT_SWEEP_COEFFICIENT;
             if ~isempty(obj.options)
-                if isprop( obj.options, 'thin_wall_region' )
-                    obj.region = obj.options.thin_wall_region;
-                end
+%                 if isprop( obj.options, 'thin_wall_region' )
+%                     obj.region = obj.options.thin_wall_region;
+%                 else
+%                     obj.region = obj.DEFAULT_REGION;
+%                 end
                 obj.threshold_in_component_units = obj.select_threshold_from_options( obj.region, obj.options );
+                % have to halve the threshold, because EDT is half of thickness
+                obj.threshold_in_component_units = 0.5 * obj.threshold_in_component_units;
+                obj.sweep_coefficient = obj.select_sweep_coefficient_from_options( obj.region, obj.options );
                 if isprop( obj.options, 'sweep_coefficient' )
                     obj.sweep_coefficient = obj.options.sweep_coefficient;
                 end
@@ -267,6 +270,20 @@ classdef ThinWall < Process
             end
             
         end
+        
+        
+        function threshold = select_sweep_coefficient_from_options( region, options )
+            
+            if strcmpi( region, ThinWall.CAVITY )
+                threshold = options.thin_wall_cavity_sweep_coefficient;
+            elseif strcmpi( region, ThinWall.DIE ) || strcmpi( region, ThinWall.MOLD )
+                threshold = options.thin_wall_cavity_sweep_coefficient;
+            else
+                error( "incorrect region\n" );
+            end
+            
+        end
+        
         
     end
     
