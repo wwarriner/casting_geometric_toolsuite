@@ -1,3 +1,5 @@
+% Modified by William Warriner 1 Nov 2018 - silenced console output, line 131
+
 function stlwrite(filename, varargin)
 %STLWRITE   Write STL file from patch or surface data.
 %
@@ -126,7 +128,7 @@ end
 
 % Close the file
 fclose(fid);
-fprintf('Wrote %d faces\n',size(faces, 2));
+%fprintf('Wrote %d faces\n',size(faces, 2));
 
 
 %% Input handling subfunctions
