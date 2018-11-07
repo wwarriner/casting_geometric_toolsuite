@@ -3,6 +3,7 @@ classdef (Sealed) PartingPerimeter < Process
     properties ( GetAccess = public, SetAccess = private )
         %% inputs
         mesh
+        do_optimize_parting_line
         
         %% outputs
         projected_area
@@ -23,6 +24,10 @@ classdef (Sealed) PartingPerimeter < Process
         length_ratio
         area_ratio
         draw_ratio
+        
+        %% optional outputs
+        parting_line
+        flatness
         
     end
     
@@ -49,14 +54,22 @@ classdef (Sealed) PartingPerimeter < Process
                 obj.mesh = obj.results.get( Mesh.NAME );
             end
             
+            if ~isempty( obj.options )
+                obj.do_optimize_parting_line = obj.options.do_optimize_parting_line;
+            end
+            
+            if isempty( obj.do_optimize_parting_line )
+                obj.do_optimize_parting_line = false;
+            end
+            
             assert( ~isempty( obj.mesh ) );
             assert( ~isempty( obj.parting_dimension ) );
+            assert( ~isempty( obj.do_optimize_parting_line ) );
             
             obj.printf( ...
                 'Locating parting perimeter for axis %d...\n', ...
                 obj.parting_dimension ...
-                );
-            
+                );            
             [ rotated_interior, inverse ] = rotate_to_dimension( ...
                 obj.parting_dimension, ...
                 obj.mesh.interior, ...
@@ -88,8 +101,7 @@ classdef (Sealed) PartingPerimeter < Process
                 inverse ...
                 );
             
-            obj.printf( '  Finding jog-free perimeter...\n' );
-            
+            obj.printf( '  Finding jog-free perimeter...\n' );            
             projected_cc = bwconncomp( obj.projected_perimeter );
             [ unprojected_jog_free, jog_height_voxel_units ] = ...
                 PartingPerimeter.compute_jog_free_perimeter( ...
@@ -98,6 +110,49 @@ classdef (Sealed) PartingPerimeter < Process
                 obj.min_slice, ...
                 obj.max_slice ...
                 );
+            unprojected_jog_free = rotate_from_dimension( ...
+                unprojected_jog_free, ...
+                inverse ...
+                );
+            JOG_FREE_VALUE = 2;
+            obj.perimeter( unprojected_jog_free ) = JOG_FREE_VALUE;
+            
+            if obj.do_optimize_parting_line
+                obj.printf( '  Optimizing parting line...\n' );
+                [ loop_indices, right_side_distances ] = ...
+                    obj.order_indices_by_loop( obj.projected_perimeter );
+                pl = PartingLine( ...
+                    obj.min_slice( loop_indices ), ...
+                    obj.max_slice( loop_indices ), ...
+                    right_side_distances ...
+                    );
+
+                path = nan( size( obj.projected_perimeter ) );
+                path( loop_indices ) = round( pl.parting_line );
+                outer_perimeter = zeros( size( obj.projected_perimeter ) );
+                outer_perimeter( loop_indices ) = 1;
+                unprojected_parting_line = obj.unproject_perimeter( ...
+                    rotated_interior, ...
+                    outer_perimeter, ...
+                    path, ...
+                    path ...
+                    );
+                unprojected_parting_line = rotate_from_dimension( ...
+                    unprojected_parting_line, ...
+                    inverse ...
+                );
+                PARTING_LINE_VALUE = 3;
+                obj.perimeter( unprojected_parting_line > 0 ) = PARTING_LINE_VALUE;
+                obj.flatness = pl.flatness;
+                
+            end
+            
+            obj.printf( '  Computing statistics...\n' );            
+            obj.heights = obj.mesh.to_stl_units( obj.max_slice - obj.min_slice + 1 );
+            cc = bwconncomp( obj.projected_perimeter );
+            obj.count = cc.NumObjects;
+            rp = regionprops( imfill( projected_interior, 'holes' ), 'perimeter' );
+            obj.perimeter_length = obj.mesh.to_stl_units( sum( [ rp.Perimeter ] ) );
             obj.draw = PartingPerimeter.compute_draw( ...
                 jog_height_voxel_units, ...
                 projected_cc, ...
@@ -108,18 +163,6 @@ classdef (Sealed) PartingPerimeter < Process
                 );
             largest_length = obj.mesh.to_stl_units( obj.mesh.get_largest_length() );
             obj.draw_ratio = 2 .* obj.draw / largest_length;
-            obj.jog_free_perimeter = rotate_from_dimension( ...
-                unprojected_jog_free, ...
-                inverse ...
-                );
-            
-            obj.printf( '  Computing statistics...\n' );
-            
-            obj.heights = obj.mesh.to_stl_units( obj.max_slice - obj.min_slice + 1 );
-            cc = bwconncomp( obj.projected_perimeter );
-            obj.count = cc.NumObjects;
-            rp = regionprops( imfill( projected_interior, 'holes' ), 'perimeter' );
-            obj.perimeter_length = obj.mesh.to_stl_units( sum( [ rp.Perimeter ] ) );
             obj.length_ratio = obj.perimeter_length ./ largest_length;
             cc = bwconncomp( squeeze( any( obj.jog_free_perimeter, obj.parting_dimension ) ) );
             obj.jog_free_count = cc.NumObjects;
@@ -127,10 +170,14 @@ classdef (Sealed) PartingPerimeter < Process
         end
         
         
-        function legacy_run( obj, mesh, parting_dimension )
+        function legacy_run( obj, mesh, parting_dimension, do_optimize_parting_line )
             
+            if nargin < 4
+                do_optimize_parting_line = false;
+            end
             obj.mesh = mesh;
             obj.parting_dimension = parting_dimension;
+            obj.do_optimize_parting_line = do_optimize_parting_line;
             obj.run();
             
         end
@@ -146,8 +193,6 @@ classdef (Sealed) PartingPerimeter < Process
         function write( obj, title, common_writer )
             
             common_writer.write_array( title, obj.perimeter );
-            jog_free_title = [ 'jog_free_' title ];
-            common_writer.write_array( jog_free_title, obj.jog_free_perimeter );
             common_writer.write_table( title, obj.to_table() );
             
         end
@@ -184,15 +229,18 @@ classdef (Sealed) PartingPerimeter < Process
     
     methods ( Access = protected )
         
-        function names = get_table_names( ~ )
+        function names = get_table_names( obj )
             
             names = { ...
                 'draw_ratio', ...
                 'length_ratio', ...
                 'area_ratio', ...
                 'count', ...
-                'jog_free_count' ...
+                'jog_free_count', ...
                 };
+            if obj.do_optimize_parting_line
+                names = [ names 'flatness' ];
+            end
             
         end
         
@@ -206,6 +254,9 @@ classdef (Sealed) PartingPerimeter < Process
                 obj.count, ...
                 obj.jog_free_count ...
                 };
+            if obj.do_optimize_parting_line
+                values = [ values 'flatness' ];
+            end
             
         end
         
@@ -215,6 +266,28 @@ classdef (Sealed) PartingPerimeter < Process
     properties ( Access = private, Constant )
         
         ANALYSIS_DIMENSION = 3;
+        
+    end
+    
+    
+    methods ( Access = private )
+        
+        function parting_line_array = create_parting_line_array( ...
+                obj, ...
+                rotated_interior, ...
+                outer_perimeter, ...
+                path ...
+                )
+            
+            path( path == 0 ) = nan;
+            parting_line_array = obj.unproject_perimeter( ...
+                rotated_interior, ...
+                outer_perimeter, ...
+                path, ...
+                path ...
+                );
+            
+        end
         
     end
     
@@ -348,6 +421,57 @@ classdef (Sealed) PartingPerimeter < Process
                 
             end
             draw = max( draws );
+            
+        end
+        
+        
+        function [ loop_indices, right_side_distances ] = ...
+                order_indices_by_loop( projected_perimeter )
+            %% Setup
+            outer_perimeter = bwperim( imfill( projected_perimeter, 'holes' ) );
+            loop_indices = zeros( 1, sum( outer_perimeter( : ) ) + 1 );
+            right_side_distances = zeros( 1, sum( outer_perimeter( : ) ) );
+            
+            %% Loop Constants
+            INVALID_ELEMENT = 0;
+            VALID_ELEMENT = 1;
+            offsets = generate_neighbor_offsets( outer_perimeter );
+            preferred_neighbors = [ 7 8 5 3 2 1 4 6 ];
+            neighbor_distances = [ sqrt( 2 ) 1 sqrt( 2 ) 1 1 sqrt( 2) 1 sqrt( 2 ) ];
+            
+            %% Special Case
+            % first iteration is a special case so we end up with a closed loop
+            itr = 1;
+            loop_indices( itr ) = find( outer_perimeter, 1 );
+            itr = itr + 1;
+            
+            %% Identify Loop Indices
+            while true
+                
+                % get next index
+                neighbors = loop_indices( itr - 1 ) + offsets;
+                valid_neighbors = outer_perimeter( neighbors ) == VALID_ELEMENT;
+                first_available_preference = find( valid_neighbors( preferred_neighbors ), 1 );
+                
+                % end condition
+                if isempty( first_available_preference )
+                    % either loop is complete, or isn't a closed loop
+                    % because we are marking elements invalid as we pass
+                    break;
+                end
+                
+                % updates
+                next_index = neighbors( preferred_neighbors( first_available_preference ) );
+                loop_indices( itr ) = next_index;
+                right_side_distances( itr - 1 ) = neighbor_distances( preferred_neighbors( first_available_preference ) );
+                outer_perimeter( next_index ) = INVALID_ELEMENT;
+                itr = itr + 1;
+                
+            end
+                        
+            %% Prepare Output
+            assert( loop_indices( 1 ) == loop_indices( end ) );
+            loop_indices = loop_indices( 1 : end - 1 );
             
         end
         
