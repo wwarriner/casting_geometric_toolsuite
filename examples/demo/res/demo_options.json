@@ -9,5 +9,6 @@
 "thin_wall_mold_sweep_coefficient":2.0,
 "user_needs":["cavity_thin_wall", "mold_thin_wall", "waterfall", "feeders", "undercuts", "bottle_cores"],
 "parting_dimensions":[1,2,3],
-"gravity_directions":["up","down"]
+"gravity_directions":["up","down"],
+"do_optimize_parting_line": true
 }
