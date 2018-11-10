@@ -13,6 +13,7 @@ classdef (Sealed) Component < Process & matlab.mixin.Copyable
         normals
         envelope
         draft_angles
+        draft_metric
         convex_hull_fv
         
         % invariant
@@ -58,7 +59,6 @@ classdef (Sealed) Component < Process & matlab.mixin.Copyable
             obj.printf( '\b %s\n', obj.name );
             [ obj.convex_hull_fv, obj.convex_hull_volume ] = ...
                 Component.determine_convex_hull( obj.fv.vertices );
-            obj.update();
             
             obj.printf( '  Computing statistics...\n' );
             obj.triangle_areas = ...
@@ -79,6 +79,8 @@ classdef (Sealed) Component < Process & matlab.mixin.Copyable
                 obj.volume, ...
                 obj.convex_hull_volume ...
                 );
+            
+            obj.update();
             
         end
         
@@ -191,6 +193,7 @@ classdef (Sealed) Component < Process & matlab.mixin.Copyable
             
             obj.envelope = MeshEnvelope( obj.fv );
             obj.draft_angles = Component.compute_draft_angles( obj.normals );
+            obj.draft_metric = obj.compute_draft_metric();
             
         end
         
@@ -214,6 +217,25 @@ classdef (Sealed) Component < Process & matlab.mixin.Copyable
             obj.name = name;
             obj.fv = fv;
             obj.normals = compute_normals( obj.fv );
+            
+        end
+        
+        
+        function draft_metric = compute_draft_metric( obj )
+            
+            norm_draft_angles = obj.draft_angles ./ ( pi / 2 );
+            contribution = norm_draft_angles;
+            near_vertical_contribution =  89/90; % one degree from vertical
+            contribution( contribution > near_vertical_contribution ) = 1;
+            contribution( contribution < 1 ) = interp1( ...
+                [ 0 1 ], ...
+                [ 0 0.1 ], ...
+                contribution( contribution < 1 ) ...
+                );
+            
+            norm_triangles = obj.triangle_areas ./ obj.surface_area;
+            
+            draft_metric = sum( contribution .* norm_triangles );
             
         end
         
