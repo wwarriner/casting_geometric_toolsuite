@@ -90,6 +90,13 @@ classdef (Sealed) Feeders < Process & matlab.mixin.Copyable
         end
         
         
+        function height = get_total_rigged_height( obj, dimension )
+            
+            height = obj.envelope.lengths( dimension );
+            
+        end
+        
+        
         function ratios = get_accessibility_ratios( obj )
             
             ratios = [ obj.feeders.accessibility_ratio ];
