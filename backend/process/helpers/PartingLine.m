@@ -51,7 +51,7 @@ classdef (Sealed) PartingLine < ProcessHelper
             obj.parting_line = obj.prepare_output_path( path );
             obj.flatness = obj.compute_flatness( obj.parting_line, right_side_distances );
             
-            assert( all( min( obj.lower_bound ) < obj.parting_line & obj.parting_line < max( obj.upper_bound ) ) );
+            assert( all( min( obj.lower_bound ) - 0.5 <= obj.parting_line & obj.parting_line <= max( obj.upper_bound ) + 0.5 ) );
             assert( obj.flatness >= 1 );
             
         end
