@@ -283,7 +283,7 @@ classdef ( Sealed ) Mesh < Process
                 'uniformoutput', 0 ...
                 );
             interior = VOXELISE( points{ 1 }, points{ 2 }, points{ 3 }, fv );
-            interior = padarray( interior, [ 1 1 1 ], 'both' );
+            interior = padarray( interior, [ 1 1 1 ], 0, 'both' );
             
         end
         
