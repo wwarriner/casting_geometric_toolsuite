@@ -49,7 +49,7 @@ classdef (Sealed) PartingPerimeter < Process
         
         
         function run( obj )
-            
+            %% VALIDATION
             if ~isempty( obj.results )
                 obj.mesh = obj.results.get( Mesh.NAME );
             end
@@ -66,6 +66,7 @@ classdef (Sealed) PartingPerimeter < Process
             assert( ~isempty( obj.parting_dimension ) );
             assert( ~isempty( obj.do_optimize_parting_line ) );
             
+            %% PARTING PERIMETER
             obj.printf( ...
                 'Locating parting perimeter for axis %d...\n', ...
                 obj.parting_dimension ...
@@ -101,6 +102,7 @@ classdef (Sealed) PartingPerimeter < Process
                 inverse ...
                 );
             
+            %% JOG FREE PERIMETER
             obj.printf( '  Finding jog-free perimeter...\n' );
             projected_cc = bwconncomp( obj.projected_perimeter );
             [ unprojected_jog_free, jog_height_voxel_units ] = ...
@@ -117,13 +119,12 @@ classdef (Sealed) PartingPerimeter < Process
             JOG_FREE_VALUE = 2;
             obj.perimeter( logical( unprojected_jog_free ) ) = JOG_FREE_VALUE;
             
+            %% PARTING LINE
+            outer_perimeter = bwmorph( bwmorph( bwmorph( bwperim( imfill( obj.projected_perimeter, 'holes' ) ), 'thin', inf ), 'spur' ), 'thin', inf );
+            [ loop_indices, right_side_distances ] = ...
+                obj.order_indices_by_loop( outer_perimeter);
             if obj.do_optimize_parting_line
                 obj.printf( '  Optimizing parting line...\n' );
-                
-                outer_perimeter = bwmorph( bwmorph( bwmorph( bwperim( imfill( obj.projected_perimeter, 'holes' ) ), 'thin', inf ), 'spur' ), 'thin', inf );
-                
-                [ loop_indices, right_side_distances ] = ...
-                    obj.order_indices_by_loop( outer_perimeter);
                 pl = PartingLine( ...
                     obj.min_slice( loop_indices ), ...
                     obj.max_slice( loop_indices ), ...
@@ -145,9 +146,12 @@ classdef (Sealed) PartingPerimeter < Process
                 PARTING_LINE_VALUE = 3;
                 obj.perimeter( unprojected_parting_line > 0 ) = PARTING_LINE_VALUE;
                 obj.flatness = pl.flatness;
-                
+            else
+                average_height = ( obj.min_slice( loop_indices ) + obj.max_slice( loop_indices ) ) ./ 2;
+                obj.flatness = PartingLine.compute_flatness( average_height, right_side_distances );
             end
             
+            %% STATISTICS
             obj.printf( '  Computing statistics...\n' );
             obj.heights = obj.mesh.to_stl_units( obj.max_slice - obj.min_slice + 1 );
             cc = bwconncomp( obj.projected_perimeter );
