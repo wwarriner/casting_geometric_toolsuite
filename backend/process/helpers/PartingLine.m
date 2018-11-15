@@ -68,6 +68,17 @@ classdef (Sealed) PartingLine < ProcessHelper
     
     methods ( Access = public, Static )
         
+        function f = compute_flatness( path_height, right_side_distances )
+            
+            % 1D version of Flatness criterion
+            % from Ravi B and Srinivasa M N, Computer-Aided Design 22(1), pp 11-18
+            h = diff( [ path_height path_height( 1 ) ] );
+            d = sqrt( h .^ 2 + right_side_distances .^ 2 );
+            f = sum( d ) ./ sum( right_side_distances );
+            
+        end
+        
+        
         function trn = get_table_row_names()
             
             trn = { 'flatness' };
@@ -266,17 +277,6 @@ classdef (Sealed) PartingLine < ProcessHelper
                 )
             
             starting_path = ( upper_bound_wrap_scale + lower_bound_wrap_scale ) ./ 2;
-            
-        end
-        
-        
-        function f = compute_flatness( path, db )
-            
-            % 1D version of Flatness criterion
-            % from Ravi B and Srinivasa M N, Computer-Aided Design 22(1), pp 11-18
-            h = diff( [ path path( 1 ) ] );
-            d = sqrt( h .^ 2 + db .^ 2 );
-            f = sum( d ) ./ sum( db );
             
         end
         
