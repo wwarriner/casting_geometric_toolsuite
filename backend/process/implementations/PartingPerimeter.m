@@ -21,13 +21,10 @@ classdef (Sealed) PartingPerimeter < Process
         count
         jog_free_count
         
+        flatness
         length_ratio
         area_ratio
         draw_ratio
-        
-        %% optional outputs
-        parting_line
-        flatness
         
     end
     
@@ -129,15 +126,14 @@ classdef (Sealed) PartingPerimeter < Process
                     obj.min_slice( loop_indices ), ...
                     obj.max_slice( loop_indices ), ...
                     right_side_distances ...
-                    );
-                
-                path = nan( size( outer_perimeter ) );
-                path( loop_indices ) = round( pl.parting_line );
+                    );                
+                path_height = nan( size( outer_perimeter ) );
+                path_height( loop_indices ) = round( pl.parting_line );
                 unprojected_parting_line = obj.unproject_perimeter( ...
                     rotated_interior, ...
                     outer_perimeter, ...
-                    path, ...
-                    path ...
+                    path_height, ...
+                    path_height ...
                     );
                 unprojected_parting_line = rotate_from_dimension( ...
                     unprojected_parting_line, ...
@@ -147,8 +143,13 @@ classdef (Sealed) PartingPerimeter < Process
                 obj.perimeter( unprojected_parting_line > 0 ) = PARTING_LINE_VALUE;
                 obj.flatness = pl.flatness;
             else
-                average_height = ( obj.min_slice( loop_indices ) + obj.max_slice( loop_indices ) ) ./ 2;
-                obj.flatness = PartingLine.compute_flatness( average_height, right_side_distances );
+                if jog_height_voxel_units < 0
+                    %path_height = mean( [ max( obj.min_slice( : ) ) min( obj.max_slice( : ) ) ] );
+                    obj.flatness = 1;
+                else
+                    path_height = ( obj.min_slice( loop_indices ) + obj.max_slice( loop_indices ) ) ./ 2;
+                    obj.flatness = PartingLine.compute_flatness( path_height, right_side_distances );
+                end
             end
             
             %% STATISTICS
@@ -166,6 +167,9 @@ classdef (Sealed) PartingPerimeter < Process
                 obj.mesh.scale, ...
                 obj.mesh.get_extrema( PartingPerimeter.ANALYSIS_DIMENSION ) ...
                 );
+            % TODO expand parting line opt to every connected component of the
+            % parting perimeter
+            % TODO compute draw using parting line values
             largest_length = obj.mesh.to_stl_units( obj.mesh.get_largest_length() );
             obj.draw_ratio = 2 .* obj.draw / largest_length;
             obj.length_ratio = obj.perimeter_length ./ largest_length;
