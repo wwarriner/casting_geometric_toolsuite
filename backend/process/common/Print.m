@@ -51,7 +51,7 @@ classdef Print < handle
                 is_verbose = true;
             end
             
-            if nargin > 1
+            if nargin > 0
                 is_verbose = set_verbose;
             end
             get_verbose = is_verbose;
