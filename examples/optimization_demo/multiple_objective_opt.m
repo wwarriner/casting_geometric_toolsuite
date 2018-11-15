@@ -36,7 +36,7 @@ if nargin == 0
 end
 
 % setup
-cleanup_tasks = onCleanup( @() Print.turn_print_on() );
+cleanup_tasks = onCleanup( @Print.turn_print_on );
 Print.turn_print_off();
 
 % metric computation
