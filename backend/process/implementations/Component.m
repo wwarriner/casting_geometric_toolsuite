@@ -223,19 +223,19 @@ classdef (Sealed) Component < Process & matlab.mixin.Copyable
         
         function draft_metric = compute_draft_metric( obj )
             
-            norm_draft_angles = obj.draft_angles ./ ( pi / 2 );
-            contribution = norm_draft_angles;
-            near_vertical_contribution =  89/90; % one degree from vertical
-            contribution( contribution > near_vertical_contribution ) = 1;
-            contribution( contribution < 1 ) = interp1( ...
-                [ 0 1 ], ...
-                [ 0 0.1 ], ...
-                contribution( contribution < 1 ) ...
-                );
-            
-            norm_triangles = obj.triangle_areas ./ obj.surface_area;
-            
-            draft_metric = sum( contribution .* norm_triangles );
+            normalized_draft_angles = obj.draft_angles ./ ( pi / 2 );
+%             contribution = norm_draft_angles;
+            NEAR_VERTICAL = 89/90; % one degree from vertical
+            contribution = zeros( size( normalized_draft_angles ) );
+            contribution( normalized_draft_angles >= NEAR_VERTICAL ) = 1;
+            contribution( normalized_draft_angles <= NEAR_VERTICAL ) = 0;
+%             contribution( contribution < 1 ) = interp1( ...
+%                 [ 0 1 ], ...
+%                 [ 0 0.1 ], ...
+%                 contribution( contribution < 1 ) ...
+%                 );            
+            normalized_triangle_areas = obj.triangle_areas ./ obj.surface_area;            
+            draft_metric = sum( contribution .* normalized_triangle_areas );
             
         end
         
