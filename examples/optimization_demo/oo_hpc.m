@@ -13,12 +13,13 @@ s.legacy_run( e, m );
 f = Feeders();
 f.legacy_run( s, m );
 
+rot_fn = @(angles) OrientationOptimizer.rotate_objects( c, f, op.element_count, angles );
 sampled_angles = generate_sphere_angles( 1000 );
 count = size( sampled_angles, 1 );
 samp = nan( count, numel( multiple_objective_opt() ) );
 parfor i = 1 : count
     
-    samp( i, : ) = objective_opt( rot_fn, sampled_angles( i, : ) );
+    samp( i, : ) = multiple_objective_opt( rot_fn, sampled_angles( i, : ) );
     
 end
 filename = [ 'samp_' c.name ];
