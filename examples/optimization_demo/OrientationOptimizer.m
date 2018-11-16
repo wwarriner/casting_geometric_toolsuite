@@ -49,15 +49,12 @@ classdef OrientationOptimizer < handle
         
         function [ c, m, f ] = rotate( obj, angles )
             
-            r = rotator( angles );
-            c = obj.component.rotate( r );
-            if nargout > 1
-                m = Mesh();
-                m.legacy_run( c, obj.element_count );
-            end
-            if nargout > 2
-                f = obj.feeders.rotate( r, m );
-            end
+            [ c, m, f ] = obj.rotate_objects( ...
+                obj.component, ...
+                obj.feeders, ...
+                obj.element_count, ...
+                angles ...
+                );
             
         end
         
@@ -115,6 +112,25 @@ classdef OrientationOptimizer < handle
                 
             end
             phs{ end } = patch( c.fv, 'facecolor', [ 0.5 0.5 0.5 ], 'facealpha', 0.5 );
+            
+        end
+        
+    end
+    
+    
+    methods ( Access = public, Static )
+        
+        function [ cr, mr, fr ] = rotate_objects( c, f, element_count, angles )
+            
+            r = rotator( angles );
+            cr = c.rotate( r );
+            if nargout > 1
+                mr = Mesh();
+                mr.legacy_run( cr, element_count );
+            end
+            if nargout > 2
+                fr = f.rotate( r, mr );
+            end
             
         end
         
