@@ -1,8 +1,11 @@
-function oo_hpc( input_path, option_path, output_mat_dir, theta, phi )
+function oo_hpc( input_path, option_path, csv_path, output_mat_dir )
+
+index = getenv( 'SLURM_ARRAY_TASK_ID' );
+angles = dlmread( csv_path, ',', [ index 0 index 1 ] );
 
 op = Options( 'option_defaults.json', option_path, input_path, '' );
 
-r = rotator( [ theta phi ] );
+r = rotator( angles );
 
 c = Component();
 c.legacy_run( input_path );
