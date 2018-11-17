@@ -1,8 +1,4 @@
-function oo_hpc( input_path, option_path, theta, phi, output_mat_dir )
-
-%index = str2double( getenv( 'SLURM_ARRAY_TASK_ID' ) );
-%angles = dlmread( csv_path, ',', [ index 0 index 1 ] );
-angles = [ theta phi ];
+function oo_hpc( input_path, option_path, angles, output_mat_dir )
 
 op = Options( 'option_defaults.json', option_path, input_path, '' );
 
