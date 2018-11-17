@@ -1,6 +1,8 @@
-function oo_hpc( input_path, option_path, output_mat_dir )
+function oo_hpc( input_path, option_path, output_mat_dir, theta, phi )
 
 op = Options( 'option_defaults.json', option_path, input_path, '' );
+
+r = rotator( [ theta phi ] );
 
 c = Component();
 c.legacy_run( input_path );
@@ -13,15 +15,22 @@ s.legacy_run( e, m );
 f = Feeders();
 f.legacy_run( s, m );
 
-rot_fn = @(angles) OrientationOptimizer.rotate_objects( c, f, op.element_count, angles );
-sampled_angles = generate_sphere_angles( 1000 );
-count = size( sampled_angles, 1 );
-samp = nan( count, numel( multiple_objective_opt() ) );
-parfor i = 1 : count
+cr = c.rotate( r );
+fr = f.rotate( r );
+mr = Mesh();
+m.legacy_run( cr, op.element_count );
+
+
+
+rot_fn = @(angles) [ cr, mr, fr ];
+%sampled_angles = generate_sphere_angles( 1000 );
+%count = size( sampled_angles, 1 );
+%samp = nan( count, numel( multiple_objective_opt() ) );
+%parfor i = 1 : count
     
-    samp( i, : ) = multiple_objective_opt( rot_fn, sampled_angles( i, : ) );
+samp = multiple_objective_opt( rot_fn, angles );
     
-end
+%end
 filename = [ 'samp_' c.name ];
 save( fullfile( output_mat_dir, filename ), 'samp' );
 
