@@ -41,7 +41,7 @@ classdef (Sealed) PartingLine < ProcessHelper
             obj.input_count = length( right_side_distances );
             
             if obj.is_jog_free( lower_bound, upper_bound )
-                obj.path = obj.generate_jog_free_path();
+                path = obj.generate_jog_free_path();
             else
                 [ lb, ub, rsd, x_scaled ] = obj.wrap_and_scale_inputs();
                 starting_path = obj.generate_starting_path( lb, ub );
