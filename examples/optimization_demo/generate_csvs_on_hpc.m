@@ -1,4 +1,4 @@
-function oo_hpc( input_path, option_path, angles, index, output_mat_dir )
+function generate_csvs_on_hpc( input_path, option_path, angles, index, output_mat_dir )
 
 op = Options( 'option_defaults.json', option_path, input_path, '' );
 
