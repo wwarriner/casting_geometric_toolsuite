@@ -2,13 +2,14 @@ function plot_unit_sphere_response_surface( ...
     interpolant, ...
     resolution, ...
     title, ...
+    color_map, ...
     type ...
     )
 
 if strcmpi( type, '3d' )
-    plot_3d( title, interpolant, resolution )
+    plot_3d( title, interpolant, resolution, color_map )
 elseif strcmpi( type, '2d' )
-    plot_2d( title, interpolant, resolution )
+    plot_2d( title, interpolant, resolution, color_map )
 else
     assert( false );
 end
@@ -16,7 +17,7 @@ end
 end
 
 
-function plot_3d( title, interpolant, resolution )
+function plot_3d( title, interpolant, resolution, color_map )
     
     angles = generate_sphere_angles( 10000, 'octahedral' );
     figure_handle = figure( ...
@@ -36,14 +37,14 @@ function plot_3d( title, interpolant, resolution )
     hold( axes_handle, 'on' );
     shading( axes_handle, 'interp' );
     colorbar( axes_handle );
-    colormap( axes_handle, viridis() );
+    colormap( axes_handle, color_map );
     box( axes_handle, 'on' );
     axis( axes_handle, 'vis3d' );
 
 end
 
 
-function plot_2d( title, interpolant, resolution )
+function plot_2d( title, interpolant, resolution, color_map )
 
     figure( ...
         'name', title, ...
@@ -66,7 +67,7 @@ function plot_2d( title, interpolant, resolution )
     Y = rad2deg( Y );
     
     subplot( 1, 2, 1 );
-    axes_handle = prepare_axesm( newpole( 90, 0 ) );
+    axes_handle = prepare_axesm( newpole( 90, 0 ), color_map );
     patch_handle = surfacem( Y, X, metric_results );
     uistack( patch_handle, 'bottom' );
     original_axes_size = axes_handle.Position;
@@ -74,14 +75,14 @@ function plot_2d( title, interpolant, resolution )
     axes_handle.Position = original_axes_size;
     
     subplot( 1, 2, 2 );
-    prepare_axesm( newpole( 90, 180 ) );
+    prepare_axesm( newpole( 90, 180 ), color_map );
     patch_handle = surfacem( Y, X, metric_results );
     uistack( patch_handle, 'bottom' );
     
 end
 
 
-function axes_handle = prepare_axesm( origin_newpole )
+function axes_handle = prepare_axesm( origin_newpole, color_map )
 
 axes_handle = axesm( ...
     'breusing', ...
@@ -101,6 +102,6 @@ axes_handle = axesm( ...
     'origin', origin_newpole...
     );
 axis( axes_handle, 'off' );
-colormap( axes_handle, plasma() );
+colormap( axes_handle, color_map );
 
 end
