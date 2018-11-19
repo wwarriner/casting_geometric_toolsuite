@@ -5,7 +5,7 @@ if nargin < 4
 end
 
 %% DETERMINE WEIGHTS AND VALUES FROM FUNCTION
-[ phis, thetas ] = unit_sph_grid_values( resolution );
+[ phis, thetas ] = unit_sphere_grid_values( resolution );
 [ phis, thetas ] = meshgrid( phis, thetas );
 weights = abs( sin( thetas ) );
 values = func_phi_theta( phis, thetas );
