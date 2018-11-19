@@ -15,6 +15,7 @@ if strcmpi( method, 'spiral' )
 elseif strcmpi( method, 'octahedral' )
     angles = octahedral_angles( point_count, error_cutoff );
 end
+angles = unique( angles, 'rows' );
 
 % plot_distance_histogram( angles, desired_mean_separation_deg );
 % plot_points( angles );
@@ -76,7 +77,7 @@ for m = 0 : m_theta
     end
     
 end
-angles = unique( angles( 1 : count, : ), 'rows' );
+angles = angles( 1 : count );
 
 end
 
