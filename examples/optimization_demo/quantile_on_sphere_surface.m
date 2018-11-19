@@ -1,51 +1,69 @@
-function divisions = quantile_on_sphere_surface( func_theta_phi, quantiles, interp_method )
+function divisions = quantile_on_sphere_surface( func_phi_theta, quantiles, interp_method, resolution )
+%% INPUTS
+if nargin < 4
+    resolution = 200;
+end
 
-    function [ value, weight ] = sample( theta, phi )
-        
-        weight = abs( sin( phi ) );
-        value = func_theta_phi( theta, phi );
-        
-    end
+%% DETERMINE WEIGHTS AND VALUES FROM FUNCTION
+[ phis, thetas ] = unit_sph_grid_values( resolution );
+[ phis, thetas ] = meshgrid( phis, thetas );
+weights = abs( sin( thetas ) );
+values = func_phi_theta( phis, thetas );
 
-n = 200;
-theta_n = 2 * n + 1;
-thetas = linspace( -pi, pi, theta_n );
-phi_n = n + 1;
-phis = linspace( -pi / 2, pi / 2, phi_n );
-[ thetas, phis ] = meshgrid( thetas, phis );
-[ values, weights ] = sample( thetas, phis );
+%% CREATE Q-Q-LIKE PLOT
+samples = sortrows( [ values( : ) weights( : ) ], 1 );
+values = samples( :, 1 );
+weights = samples( :, 2 );
+normalized_cumulative_weight = cumsum( weights ) ./ sum( weights );
+[ unique_values, unique_indices ] = unique( values );
+unique_weights = normalized_cumulative_weight( unique_indices );
+[ unique_weights, unique_indices ] = unique( unique_weights );
+unique_values = unique_values( unique_indices );
 
-% need special case for nearest neighbor interp
+%% DETERMINE DIVISIONS
+if strcmpi( interp_method, 'nearest' )
+    interp_method = 'next';
+end
+divisions = interp1( unique_weights, unique_values, quantiles, interp_method );
+if isnan( divisions( end ) )
+    divisions( end ) = max( unique_values );
+end
 
-samples = [ values( : ) weights( : ) ];
-samples = sortrows( samples, 1 );
-v = samples( :, 1 );
-w = samples( :, 2 );
-w_n = cumsum( w ) ./ sum( w );
-[ v_subset, w_ind ] = unique( v );
-w_subset = w_n( w_ind );
-[ w_subset, v_ind ] = unique( w_subset );
-v_subset = v_subset( v_ind );
+%% PLOT Q-Q
 fh = figure( 'color', 'w', 'name', 'Q-Q Plot' );
 axh = axes( fh );
 hold on;
-if length( v_subset ) > 100
+if length( unique_values ) > 100
     linespec = 'k';
 else
     linespec = 'k.';
 end
-plot( axh, w_subset, rescale( v_subset ), linespec ); axis( 'square' ); xlim( [ 0 1 ] );
+value_scaler = create_value_scaler( unique_values );
+scaled_values = value_scaler( unique_values );
+plot( axh, unique_weights, scaled_values, linespec ); axis( 'square' ); xlim( [ 0 1 ] );
 plot( axh, [ 0 1 ], [ 0 1 ], 'k:' );
-if strcmpi( interp_method, 'nearest' )
-    interp_method = 'next';
-end
-divisions = interp1( w_subset, v_subset, quantiles, interp_method );
-qq_divisions = interp1( w_subset, rescale( v_subset ), quantiles, interp_method );
+qq_divisions = value_scaler( divisions );
 for i = 1 : length( divisions )
     
     plot( axh, quantiles, qq_divisions, 'r+' );
     
 end
+
+end
+
+
+function value_scaler = create_value_scaler( values )
+
+    function vq = vs( xq )
+        
+        vq = interp1( ...
+            [ min( values( : ) ) max( values( : ) ) ], ...
+            [ 0 1 ], ...
+            xq ...
+            );
+        
+    end
+value_scaler = @vs;
 
 end
 
