@@ -1,10 +1,9 @@
-function plot_csv_data( results_dir, stl_name )
+function plot_csv_data( results_table )
 
-results = organize_csv_data( results_dir, stl_name );
 ANGLE_COLUMNS = [ 1 2 ];
-angles = results{ :, ANGLE_COLUMNS };
+angles = results_table{ :, ANGLE_COLUMNS };
 OBJECTIVE_START_COLUMN = max( ANGLE_COLUMNS ) + 1;
-objectives = results{ :, OBJECTIVE_START_COLUMN : end };
+objectives = results_table{ :, OBJECTIVE_START_COLUMN : end };
 
 [ interp_methods, titles ] = multiple_objective_opt();
 count = numel( titles );
@@ -12,8 +11,8 @@ interpolants = cell( count, 1 );
 for i = 1 : count
     
     interpolants{ i } = generate_scattered_spherical_interpolant( ...
-        angles{ :, : }, ...
-        objectives{ :, i }, ...
+        angles, ...
+        objectives( :, i ), ...
         interp_methods{ i } ...
         );
     plot_response_surface( ...
