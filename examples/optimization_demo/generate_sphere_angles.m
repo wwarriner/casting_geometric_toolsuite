@@ -77,7 +77,7 @@ for m = 0 : m_theta
     end
     
 end
-angles = angles( 1 : count );
+angles = angles( 1 : count, : );
 
 end
 
