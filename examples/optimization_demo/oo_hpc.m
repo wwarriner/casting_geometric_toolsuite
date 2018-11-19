@@ -19,15 +19,17 @@ mr = Mesh();
 mr.legacy_run( cr, op.element_count );
 fr = f.rotate( r, mr );
 
-
-
 rotation_function = @(angles) deal( cr, mr, fr );    
 objectives = multiple_objective_opt( rotation_function, angles );
-objectives = array2table( objectives );
-[ ~, titles ] = multiple_objective_opt();
-objectives.Properties.VariableNames = titles;
+results = [ angles( 1 ) angles( 2 ) objectives ];
 
-filename = [ 'objectives_' c.name '_' sprintf( '%i', index ) '.csv' ];
-writetable( objectives, fullfile( output_mat_dir, filename ) );
+[ ~, titles ] = multiple_objective_opt();
+titles = [ 'phi' 'theta' titles ];
+
+results = array2table( results );
+results.Properties.VariableNames = titles;
+
+filename = [ 'results_' c.name '_' sprintf( '%i', index ) '.csv' ];
+writetable( results, fullfile( output_mat_dir, filename ) );
 
 end
