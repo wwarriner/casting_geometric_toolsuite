@@ -130,11 +130,13 @@ classdef (Sealed) Feeder < ProcessHelper & matlab.mixin.Copyable
         end
         
         
-        function feeder_mesh = mesh_feeder( obj, mesh, min_z )
+        function feeder_mesh = mesh_feeder( obj, mesh, min_z_offset )
             
             if nargin < 3
-                min_z = 0;
+                min_z_offset = 0;
             end
+            
+            Z_OFFSET = mesh.to_mesh_units( min_z_offset );
             
             sz = size( mesh.interior );
             x = 1 : sz( 1 );
@@ -144,13 +146,13 @@ classdef (Sealed) Feeder < ProcessHelper & matlab.mixin.Copyable
             O = mesh.subs_from_position( obj.position );
             X = X - O( 1 );
             Y = Y - O( 2 );
-            Z = Z - O( 3 );
+            Z = Z - O( 3 ) - Z_OFFSET;
             R = mesh.to_mesh_units( obj.radius );
             H = mesh.to_mesh_units( obj.height );
             feeder_mesh = zeros( sz );
             feeder_mesh( ...
                 ( ( X .^ 2 + Y .^ 2 ) <= R .^ 2 ) ...
-                & ( min_z <= Z ) ...
+                & ( 0 <= Z ) ...
                 & ( Z <= H ) ...
                 ) ...
                 = 1;
@@ -161,11 +163,8 @@ classdef (Sealed) Feeder < ProcessHelper & matlab.mixin.Copyable
         function accessibility_ratio = determine_accessibility( obj, mesh )
             
             VERTICAL_DIMENSION = 3;
-            min_z = ...
-                obj.position( VERTICAL_DIMENSION ) ...
-                + obj.magnitude ...
-                + obj.radius;
-            accessibility_mesh = obj.mesh_feeder( mesh, min_z );
+            min_z_offset = obj.magnitude;
+            accessibility_mesh = obj.mesh_feeder( mesh, min_z_offset );
             intersect = Feeder.compute_intersection_volume( ...
                 accessibility_mesh, ...
                 mesh ...
