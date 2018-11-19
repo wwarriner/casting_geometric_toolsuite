@@ -41,14 +41,14 @@ classdef (Sealed) PartingLine < ProcessHelper
             obj.input_count = length( right_side_distances );
             
             if obj.is_jog_free( lower_bound, upper_bound )
-                path = obj.generate_jog_free_path();
+                obj.parting_line = obj.generate_jog_free_path();
             else
                 [ lb, ub, rsd, x_scaled ] = obj.wrap_and_scale_inputs();
                 starting_path = obj.generate_starting_path( lb, ub );
                 path = obj.optimize_path( starting_path, lb, ub, rsd );
                 path = obj.straighten_path( path, lb, ub, x_scaled );
+                obj.parting_line = obj.prepare_output_path( path );
             end
-            obj.parting_line = obj.prepare_output_path( path );
             obj.flatness = obj.compute_flatness( obj.parting_line, right_side_distances );
             
             assert( all( min( obj.lower_bound ) - 0.5 <= obj.parting_line & obj.parting_line <= max( obj.upper_bound ) + 0.5 ) );
