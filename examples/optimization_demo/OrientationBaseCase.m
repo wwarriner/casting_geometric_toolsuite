@@ -21,7 +21,7 @@ classdef (Sealed) OrientationBaseCase < handle
             if nargin < 3
                 objective_variables_path = obj.options.objective_variables_path;
             end
-            obj.objective_variables = obj.read_objective_variables( objective_variables_path );
+            obj.objective_variables = read_objective_variables( objective_variables_path );
             obj.base_case = obj.generate_base_case( obj.options );
             
         end
@@ -115,6 +115,13 @@ classdef (Sealed) OrientationBaseCase < handle
     
     methods ( Access = public, Static )
         
+        function titles = get_decision_variable_titles()
+            
+            titles = { 'phi', 'theta' };
+            
+        end
+        
+        
         function lb = get_decision_variable_lower_bounds()
             
             [ phi, theta ] = unit_sphere_ranges();
@@ -133,23 +140,22 @@ classdef (Sealed) OrientationBaseCase < handle
     end
     
     
-    methods ( Access = private )
+    properties ( Access = private )
         
+        options
+        objective_variables
+        decision_variables
         
-        function titles = get_objective_variable_titles( obj )
-            
-            titles = obj.objective_variables{ :, { 'title' } }.';
-            
-        end
+        base_case
         
     end
     
     
-    methods ( Access = public, Static )
+    methods ( Access = private )
         
-        function titles = get_decision_variable_titles()
+        function titles = get_objective_variable_titles( obj )
             
-            titles = { 'phi', 'theta' };
+            titles = obj.objective_variables{ :, { 'title' } }.';
             
         end
         
@@ -194,24 +200,6 @@ classdef (Sealed) OrientationBaseCase < handle
             rotated_case.add( Feeders.NAME, base_case.get( Feeders.NAME ).rotate( r, mr ) );
             
         end
-        
-        
-        function objectives = read_objective_variables( path )
-            
-            objectives = struct2table( read_json_file( path ) );
-            
-        end
-        
-    end
-    
-    
-    properties ( Access = private )
-        
-        options
-        objective_variables
-        decision_variables
-        
-        base_case
         
     end
     
