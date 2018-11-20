@@ -162,7 +162,6 @@ classdef (Sealed) Feeder < ProcessHelper & matlab.mixin.Copyable
         
         function accessibility_ratio = determine_accessibility( obj, mesh )
             
-            VERTICAL_DIMENSION = 3;
             min_z_offset = obj.magnitude;
             accessibility_mesh = obj.mesh_feeder( mesh, min_z_offset );
             intersect = Feeder.compute_intersection_volume( ...
