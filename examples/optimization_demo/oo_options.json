@@ -1,6 +1,7 @@
 {
 "input_stl_path":"",
 "output_path":"",
+"objective_variables_path":"objective_variables.json",
 "element_count":1e6,
 "component_count":1,
 "thin_wall_cavity_threshold":1.0,
