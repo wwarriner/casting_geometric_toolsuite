@@ -1,0 +1,90 @@
+[
+	{
+		"title": "pp_projected_area_reciprocal",
+		"type": "continuous",
+		"process": "PartingPerimeter",
+		"value": "projected_area",
+		"metric": "1 ./ value",
+		"notes": "projected area along parting direction ideally maximized"
+	},
+	{
+		"title": "pp_flatness",
+		"type": "continuous",
+		"process": "PartingPerimeter",
+		"value": "flatness",
+		"metric": "value",
+		"notes": "flatness of parting line ideally minimized"
+	},
+	{
+		"title": "pp_draw",
+		"type": "continuous",
+		"process": "PartingPerimeter",
+		"value": "draw",
+		"metric": "value",
+		"notes": "draw along parting direction ideally minimized"
+	},
+	{
+		"title": "draft_metric",
+		"type": "continuous",
+		"process": "Component",
+		"value": "draft_metric",
+		"metric": "value",
+		"notes": "volume of material added by required draft ideally minimized"
+	},
+	{
+		"title": "uc_volume",
+		"type": "continuous",
+		"process": "Undercuts",
+		"value": "volume",
+		"metric": "value",
+		"notes": "volume of undercuts ideally minimized"
+	},
+	{
+		"title": "fd_inaccessibility_max",
+		"type": "continuous",
+		"process": "Feeders",
+		"value": "get_accessibility_ratios()",
+		"metric": "max( 1 - value )",
+		"notes": "worst case of accessibility over all feeders minimized"
+	},
+	{
+		"title": "fd_total_intersection_volume",
+		"type": "continuous",
+		"process": "Feeders",
+		"value": "get_total_intersection_volume()",
+		"metric": "value",
+		"notes": "intersection between component and feeders minimized"
+	},
+	{
+		"title": "fd_total_interface_area",
+		"type": "continuous",
+		"process": "Feeders",
+		"value": "get_total_interface_area()",
+		"metric": "value",
+		"notes": "interface area between component and feeders minimized"
+	},
+	{
+		"title": "wf_gating_opportunity_reciprocal",
+		"type": "continuous",
+		"process": "Waterfall",
+		"value": "gating_opportunity",
+		"metric": "1 ./ value",
+		"notes": "gating_opportunity ideally maximized"
+	},
+	{
+		"title": "wf_worst_drop_max",
+		"type": "continuous",
+		"process": "Waterfall",
+		"value": "worst_drop",
+		"metric": "max( value( : ) )",
+		"notes": "worst case of drop height minimized"
+	},
+	{
+		"title": "flask_height",
+		"type": "continuous",
+		"process": "Feeders",
+		"value": "get_total_rigged_height( DIM )",
+		"metric": "value",
+		"notes": "required flask height ideally minimized"
+	}
+]
