@@ -1,8 +1,12 @@
-function generate_csvs_on_hpc( input_path, option_path, angles, index, output_mat_dir )
+function generate_csvs_on_hpc( input_path, option_path, angles, index, id, output_mat_dir )
 
-opt = Optimizer( option_path, input_path );
+opt = OrientationBaseCase( option_path, input_path );
 results = opt.determine_results_as_table( angles );
-filename = [ 'results_' opt.get_name() '_' sprintf( '%i', index ) '.csv' ];
+filename = sprintf( ...
+    'results_%s_%i_%i.csv', ...
+    opt.get_name(), ...
+    id, ...
+    index );
 writetable( results, fullfile( output_mat_dir, filename ) );
 
 end
