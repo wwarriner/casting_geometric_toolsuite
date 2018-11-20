@@ -164,14 +164,14 @@ classdef ( Sealed ) Mesh < Process
         
         function values_stl_units = to_stl_area( obj, values_mesh_units )
             
-            values_stl_units = values_mesh_units .* obj.element.area;
+            values_stl_units = values_mesh_units .* obj.get_element_area();
             
         end
         
         
         function values_stl_units = to_stl_volume( obj, values_mesh_units )
             
-            values_stl_units = values_mesh_units .* obj.element.area;
+            values_stl_units = values_mesh_units .* obj.get_element_volume();
             
         end
         
