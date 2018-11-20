@@ -44,27 +44,6 @@ classdef (Sealed) OrientationBaseCase < handle
         end
         
         
-        function titles = get_titles( obj )
-            
-            titles = [ ...
-                obj.get_decision_variable_titles() ...
-                obj.get_objective_variable_titles() ...
-                ];
-            
-        end
-        
-        
-        function name = get_name( obj )
-            
-            name = obj.base_case.get( Component.NAME ).name;
-            
-        end
-        
-    end
-    
-    
-    methods ( Access = private )
-        
         function objectives = determine_objectives( obj, angles )
             
             rotated_case = obj.generate_rotated_case( ...
@@ -106,6 +85,28 @@ classdef (Sealed) OrientationBaseCase < handle
             end
             
         end
+        
+        
+        function titles = get_titles( obj )
+            
+            titles = [ ...
+                obj.get_decision_variable_titles() ...
+                obj.get_objective_variable_titles() ...
+                ];
+            
+        end
+        
+        
+        function name = get_name( obj )
+            
+            name = obj.base_case.get( Component.NAME ).name;
+            
+        end
+        
+    end
+    
+    
+    methods ( Access = private )
         
         
         function titles = get_objective_variable_titles( obj )
