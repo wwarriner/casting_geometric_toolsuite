@@ -97,9 +97,36 @@ classdef (Sealed) OrientationBaseCase < handle
         end
         
         
+        function count = get_decision_variable_count( obj )
+            
+            count = numel( obj.get_decision_variable_titles() );
+            
+        end
+        
+        
         function name = get_name( obj )
             
             name = obj.base_case.get( Component.NAME ).name;
+            
+        end
+        
+    end
+    
+    
+    methods ( Access = public, Static )
+        
+        function lb = get_decision_variable_lower_bounds()
+            
+            [ phi, theta ] = unit_sphere_ranges();
+            lb = [ phi( 1 ); theta( 1 ) ];
+            
+        end
+        
+        
+        function ub = get_decision_variable_upper_bounds()
+            
+            [ phi, theta ] = unit_sphere_ranges();
+            ub = [ phi( 2 ); theta( 2 ) ];
             
         end
         
