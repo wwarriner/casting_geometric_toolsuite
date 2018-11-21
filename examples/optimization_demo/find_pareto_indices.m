@@ -9,41 +9,51 @@ for i = 1 : objective_count
 end
 scaled_sums = sum( scaled_sums, 2 );
 
-%% INDICES TO STORE LATER
+%% ORIGINAL INDICES TO STORE AS PARETO INDICES
 row_count = size( objectives, 1 );
-indices = ( 1 : row_count ).';
+original_indices = ( 1 : row_count ).';
+
+%% ORIGINAL OBJECTIVES TO ENSURE PARETO DOMINANCE
+full_objectives = objectives;
+
+%% CANDIDATE OBJECTIVE
+% dominated points are removed at each iteration
+candidate_objectives = objectives;
 
 %% FIND PARETO INDICES
 pareto_indices = nan( row_count, 1 );
 index_count = 1;
-while ~isempty( objectives )
-    %% SORT BY SCALED SUMS
+while ~isempty( candidate_objectives )
+    %% SORT CANDIDATES BY SCALED SUMS
     [ scaled_sums, sort_indices ] = sort( scaled_sums, 1, 'ascend' );
-    objectives = objectives( sort_indices, : );
-    indices = indices( sort_indices );
+    candidate_objectives = candidate_objectives( sort_indices, : );
+    original_indices = original_indices( sort_indices );
     
-    %% DETERMINE IF CURRENT IS PARETO DOMINANT
+    %% DETERMINE IF TOP IS PARETO DOMINANT
     % and which others it is dominant over
-    top = objectives( 1, : );
-    less = ( top < objectives( 2 : end, : ) );
-    less_equal = ( top <= objectives( 2 : end, : ) );
-    dominated = all( less_equal, 2 ) & any( less, 2 );
-    pareto_dominant = sum( dominated ) > 0;
+    top = candidate_objectives( 1, : );
+    greater = ( top > full_objectives );
+    greater_equal = ( top >= full_objectives );
+    pareto_dominant = ~( all( greater_equal ) & any( greater ) );
     
     %% REMOVE NON-DOMINANT ENTRIES
     % and store index if current is dominant
     if pareto_dominant
-        objectives( dominated, : ) = [];
+        less = ( top < candidate_objectives );
+        less_equal = ( top <= candidate_objectives );
+        dominated = all( less_equal, 2 ) & any( less, 2 );
+    
+        candidate_objectives( dominated, : ) = [];
         scaled_sums( dominated, : ) = [];
-        indices( dominated, : ) = [];
-        pareto_indices( index_count ) = indices( 1 );
+        original_indices( dominated, : ) = [];
+        pareto_indices( index_count ) = original_indices( 1 );
         index_count = index_count + 1;
-    else
-        % not pareto dominant
     end
-    objectives( 1, : ) = [];
+    
+    %% REMOVE TOP FROM CANDIDATES
+    candidate_objectives( 1, : ) = [];
     scaled_sums( 1, : ) = [];
-    indices( 1, : ) = [];
+    original_indices( 1, : ) = [];
     
 end
 pareto_indices( any( isnan( pareto_indices ), 2 ) ) = [];
