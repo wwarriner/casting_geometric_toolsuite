@@ -38,6 +38,7 @@ ps <- ggpairs(pairs,
         columns = 2:ncol(pairs),
         upper = list(continuous = "blank"),
         diag = list(continuous = "blankDiag"),
+        switch = "both",
         progress = FALSE) +
   #theme_bw() +
   theme(axis.text = element_blank(),
@@ -45,7 +46,7 @@ ps <- ggpairs(pairs,
         aspect.ratio = 1)
 for (row in seq_len(ps$nrow)) {
     for (col in seq_len(ps$ncol)) {
-        if (row < col) {
+        if (row > col) {
           ps[row, col] <- ps[row, col] +
             scale_x_continuous(limits = c(0, 1),
                                breaks = c(0, 1),
