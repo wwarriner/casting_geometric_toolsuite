@@ -97,13 +97,6 @@ classdef (Sealed) OrientationBaseCase < handle
         end
         
         
-        function count = get_decision_variable_count( obj )
-            
-            count = numel( obj.get_decision_variable_titles() );
-            
-        end
-        
-        
         function name = get_name( obj )
             
             name = obj.base_case.get( Component.NAME ).name;
@@ -115,9 +108,17 @@ classdef (Sealed) OrientationBaseCase < handle
     
     methods ( Access = public, Static )
         
+        
         function titles = get_decision_variable_titles()
             
             titles = { 'phi', 'theta' };
+            
+        end
+        
+        
+        function count = get_decision_variable_count()
+            
+            count = numel( OrientationBaseCase.get_decision_variable_titles() );
             
         end
         
