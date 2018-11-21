@@ -43,7 +43,7 @@ results.Properties.VariableNames = headers;
 
 %% append useful data
 results.Properties.UserData.Name = stl_name;
-results.Properties.UserData.ObjectiveStartColumn = 3; % because angles are first two
+results.Properties.UserData.ObjectiveStartColumn = OrientationBaseCase.get_decision_variable_count() + 1;
 OBJECTIVE_VARIABLES_NAME = 'objective_variables';
 OBJECTIVE_VARIABLES_EXT = '.json';
 job_ids = sort( numbers( :, 1 ), 'ascend' );
@@ -80,6 +80,14 @@ if isempty( objectives_path )
         );
 end
 results.Properties.UserData.ObjectiveVariablesPath = objectives_path;
+
+%% mark pareto frontier
+pareto_indices = find_pareto_indices( results{ :, results.Properties.UserData.ObjectiveStartColumn : end } );
+is_pareto_dominant = false( count, 1 );
+is_pareto_dominant( pareto_indices ) = true;
+results.is_pareto_dominant = is_pareto_dominant;
+results = movevars( results, 'is_pareto_dominant', 'before', results.Properties.UserData.ObjectiveStartColumn );
+results.Properties.UserData.ObjectiveStartColumn = results.Properties.UserData.ObjectiveStartColumn + 1;
 
 end
 
