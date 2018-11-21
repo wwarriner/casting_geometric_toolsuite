@@ -1,19 +1,22 @@
 function plot_pareto_fronts( results )
 
-objective_count = size( results, 2 ) - 2;
-values = results{ :, 3 : end };
-pareto_indices = find_pareto_indices( values );
+objective_start_column = results.Properties.UserData.ObjectiveStartColumn;
+column_count = size( results, 2 );
+objective_count = column_count - objective_start_column + 1;
 fh = figure();
-for i = 1 : objective_count
+for i = objective_start_column : column_count
 
-    for j = i + 1 : objective_count
+    for j = i + 1 : column_count
     
-        axh = subplot( objective_count, objective_count, i * objective_count + j );
+        subplot_position = ...
+            ( i - objective_start_column ) * objective_count ...
+            + ( j - objective_start_column ) + 1;
+        axh = subplot( objective_count, objective_count, subplot_position );
         hold( axh, 'on' );
-        vj = rescale( values( :, j ) );
-        vi = rescale( values( :, i ) );
+        vj = rescale( results{ :, j } );
+        vi = rescale( results{ :, i } );
         plot( vj, vi, 'k*' );
-        plot( vj( pareto_indices ), vi( pareto_indices ), 'r*' );
+        plot( vj( results.is_pareto_dominant ), vi( results.is_pareto_dominant ), 'r*' );
         axis( axh, 'square' );
         
     end
