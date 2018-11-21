@@ -15,7 +15,8 @@ library(tikzDevice)
 Import data.
 
 ```{r}
-data <- read.csv("steering_column_mount_data.txt")
+file <- "bearing_block"
+data <- read.csv(paste0(file,"_data.txt"))
 head(data)
 ```
 
@@ -36,6 +37,7 @@ ps <- ggpairs(pairs,
             fill = as.factor(is_pareto_dominant),
             shape = as.factor(is_pareto_dominant)),
         columns = 2:ncol(pairs),
+        columnLabels = vapply(seq(1, ncol(pairs)-1), as.character, c("")),
         upper = list(continuous = "blank"),
         diag = list(continuous = "blankDiag"),
         switch = "both",
@@ -73,4 +75,5 @@ gpairs_lower <- function(g){
 }
 ps <- gpairs_lower(ps)
 print(ps)
+ggsave(paste0(file,"_pareto.png"))
 ```
