@@ -14,6 +14,7 @@ You will also need various libraries available on the MATLAB File Exchange, all 
 - [A suite of minimal bounding objects](https://www.mathworks.com/matlabcentral/fileexchange/34767-a-suite-of-minimal-bounding-objects) (MinBoundSuite, BSD)
 - [stlwrite - write ASCII or Binary STL files](https://www.mathworks.com/matlabcentral/fileexchange/20922-stlwrite-write-ascii-or-binary-stl-files) (stlwrite, BSD)
 - [vtkwrite : Exports various 2D/3D data to ParaView in VTK file format](https://www.mathworks.com/matlabcentral/fileexchange/47814-vtkwrite-exports-various-2d-3d-data-to-paraview-in-vtk-file-format) (vtkwrite, MIT)
+- [subtightplot](https://www.mathworks.com/matlabcentral/fileexchange/39664-subtightplot) (subtightplot, BSD)
 
 The MATLAB toolboxes listed below are also required.
 
@@ -31,6 +32,7 @@ The MATLAB toolboxes listed below are also required.
 
 # Planned Updates
 - Simple graphical user interface for analysis
+- Orientation optimization tool
 - Additional sample geometries
-- Orientation optimization example
 - Improved documentation
+- Example visualizations
