@@ -43,7 +43,8 @@ results.Properties.VariableNames = headers;
 
 %% append useful data
 results.Properties.UserData.Name = stl_name;
-results.Properties.UserData.ObjectiveStartColumn = OrientationBaseCase.get_decision_variable_count() + 1;
+results.Properties.UserData.DecisionEndColumn = OrientationBaseCase.get_decision_variable_count();
+results.Properties.UserData.ObjectiveStartColumn = results.Properties.UserData.DecisionEndColumn + 1;
 OBJECTIVE_VARIABLES_NAME = 'objective_variables';
 OBJECTIVE_VARIABLES_EXT = '.json';
 job_ids = sort( numbers( :, 1 ), 'ascend' );
@@ -87,6 +88,7 @@ is_pareto_dominant = false( count, 1 );
 is_pareto_dominant( pareto_indices ) = true;
 results.is_pareto_dominant = is_pareto_dominant;
 results = movevars( results, 'is_pareto_dominant', 'before', results.Properties.UserData.ObjectiveStartColumn );
+results.Properties.UserData.ParetoIndicesColumn = results.Properties.UserData.ObjectiveStartColumn;
 results.Properties.UserData.ObjectiveStartColumn = results.Properties.UserData.ObjectiveStartColumn + 1;
 
 end
