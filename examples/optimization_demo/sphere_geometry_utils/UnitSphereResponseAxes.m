@@ -30,8 +30,8 @@ classdef (Sealed) UnitSphereResponseAxes < handle
             
             obj.surface_plot_handles = obj.create_plot_handles( @(side,values)obj.create_surface_plot( side, phi_grid, theta_grid, values ) );
             [ PHI_INDEX, THETA_INDEX ] = unit_sphere_plot_indices();
-            obj.minimum_plot_handles = obj.create_plot_handles( @(side,points)obj.create_minimum_plot( side, PHI_INDEX, THETA_INDEX, points ) );
-            obj.pareto_front_plot_handles = obj.create_plot_handles( @(side,points)obj.create_pareto_front_plot( side, PHI_INDEX, THETA_INDEX, points ) );
+            obj.minimum_plot_handles = obj.create_plot_handles( @(side,points)obj.create_minimum_plot( PHI_INDEX, THETA_INDEX, points ) );
+            obj.pareto_front_plot_handles = obj.create_plot_handles( @(side,points)obj.create_pareto_front_plot( PHI_INDEX, THETA_INDEX, points ) );
             
         end
         
@@ -148,22 +148,26 @@ classdef (Sealed) UnitSphereResponseAxes < handle
             
             colormap( obj.color_map );
             if side == obj.LEFT_SIDE
-                axes_h = obj.get_axes( side );
-                original_axes_size = axes_h.Position;
-                colorbar( axes_h, 'off' );
-                cbar = colorbar( axes_h );
-                clim = cbar.Limits;
-                COLORBAR_TICK_COUNT = 11;
-                cbar.Ticks = linspace( clim( 1 ), clim( 2 ), COLORBAR_TICK_COUNT );
-                axes_h.Position = original_axes_size;
-                pos = cbar.Position;
-                new_pos = pos;
-                SCALING_FACTOR = 0.8;
-                new_pos( 4 ) = pos( 4 ) * SCALING_FACTOR;
-                new_pos( 2 ) = pos( 2 ) + ( pos( 4 ) - new_pos( 4 ) ) / 2;
-                cbar.Position = new_pos;
+                colorbar_handle = obj.add_colorbar( side );
+                obj.rescale_colorbar( colorbar_handle );
             end
             
+        end
+        
+        
+        function colorbar_handle = add_colorbar( obj, side )
+            
+            axes_handle = obj.get_axes( side );
+            original_axes_size = axes_handle.Position;
+            
+            colorbar( axes_handle, 'off' );
+            colorbar_handle = colorbar( axes_handle );
+            clim = colorbar_handle.Limits;
+            COLORBAR_TICK_COUNT = 11;
+            colorbar_handle.Ticks = linspace( clim( 1 ), clim( 2 ), COLORBAR_TICK_COUNT );
+            
+            axes_handle.Position = original_axes_size;
+                
         end
         
         
@@ -183,11 +187,10 @@ classdef (Sealed) UnitSphereResponseAxes < handle
             subtightplot( 1, 2, subplot_position, 0.08 );
             handle = axesm( ...
                 'breusing', ...
-                'grid', 'on', ...
-                'gcolor', 'w', ...
-                'glinewidth', 1, ...
                 'frame', 'on', ...
-                'labelformat', 'signed', ...
+                'grid', 'on', ...
+                'origin', newpole( 90, polar_azimuth_deg ), ...
+                'glinewidth', 1, ...
                 'mlinelocation', 30, ...
                 'mlabellocation', 30, ...
                 'mlabelparallel', 15, ...
@@ -196,12 +199,14 @@ classdef (Sealed) UnitSphereResponseAxes < handle
                 'plabellocation', 30, ...
                 'plabelmeridian', polar_azimuth_deg, ...
                 'parallellabel', 'on', ...
-                'fontcolor', 'w', ...
-                'origin', newpole( 90, polar_azimuth_deg ) ...
+                'labelformat', 'signed', ...
+                'gcolor', 'w', ...
+                'fontcolor', 'w' ...
                 );
             handle.ButtonDownFcn = @obj.ui_axes_button_down_Callback;
-            handle.XColor = 'w';
-            handle.YColor = 'w';
+            handle.Color = 'none';
+            handle.XColor = 'none';
+            handle.YColor = 'none';
             
             ch = handle.Children;
             for i = 1 : numel( ch )
@@ -255,7 +260,7 @@ classdef (Sealed) UnitSphereResponseAxes < handle
     
     methods ( Access = private, Static )
         
-        function handle = create_minimum_plot( side, phi_index, theta_index, decisions )
+        function handle = create_minimum_plot( phi_index, theta_index, decisions )
             
             handle = UnitSphereResponseAxes.add_point_plot( phi_index, theta_index, decisions );
             handle.LineStyle = 'none';
@@ -268,7 +273,7 @@ classdef (Sealed) UnitSphereResponseAxes < handle
         end
         
         
-        function handle = create_pareto_front_plot( side, phi_index, theta_index, decisions )
+        function handle = create_pareto_front_plot( phi_index, theta_index, decisions )
             
             handle = UnitSphereResponseAxes.add_point_plot( phi_index, theta_index, decisions );
             handle.LineStyle = 'none';
@@ -284,6 +289,18 @@ classdef (Sealed) UnitSphereResponseAxes < handle
         function handle = add_point_plot( phi_index, theta_index, points )
             
             handle = plotm( points( :, theta_index ), points( :, phi_index ) );
+            
+        end
+        
+        
+        function rescale_colorbar( handle )
+            
+            pos = handle.Position;
+            new_pos = pos;
+            SCALING_FACTOR = 0.8;
+            new_pos( 4 ) = pos( 4 ) * SCALING_FACTOR;
+            new_pos( 2 ) = pos( 2 ) + ( pos( 4 ) - new_pos( 4 ) ) / 2;
+            handle.Position = new_pos;
             
         end
         
