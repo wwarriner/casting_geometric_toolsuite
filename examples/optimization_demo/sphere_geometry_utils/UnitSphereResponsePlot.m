@@ -17,8 +17,13 @@ classdef (Sealed) UnitSphereResponsePlot < handle
                 );
             
             obj.response_axes = unit_sphere_response_axes;
-            obj.response_axes.create_axes( obj.figure_h );
-            obj.response_axes.set_axes_button_down_Callback( @obj.ui_axes_button_down_Callback );
+            [ phi_grid, theta_grid ] = obj.response_data.get_grid_in_degrees();
+            obj.response_axes.create_axes( ...
+                obj.figure_h, ...
+                @obj.ui_axes_button_down_Callback, ...
+                phi_grid, ...
+                theta_grid ...
+                );
             
             obj.update_surface_plots();
             
@@ -162,13 +167,6 @@ classdef (Sealed) UnitSphereResponsePlot < handle
                 obj.get_quantile_value(), ...
                 obj.get_objective_index() ...
                 );
-            
-        end
-        
-        
-        function [ phi_grid, theta_grid ] = get_grid_in_degrees( obj )
-            
-            [ phi_grid, theta_grid ] = obj.response_data.get_grid_in_degrees();
             
         end
         
@@ -522,12 +520,7 @@ classdef (Sealed) UnitSphereResponsePlot < handle
         
         function update_surface_plots( obj )
             
-            [ phi, theta ] = obj.get_grid_in_degrees();
-            obj.response_axes.update_surface_plots( ...
-                phi, ...
-                theta, ...
-                obj.get_surface_plot_values() ...
-                );
+            obj.response_axes.update_surface_plots( obj.get_surface_plot_values() );
             
         end
         
