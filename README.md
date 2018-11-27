@@ -21,6 +21,7 @@ The MATLAB toolboxes listed below are also required.
 #### MATLAB Toolboxes
 - [Image Processing Toolbox](https://www.mathworks.com/products/image.html)
 - [Statistics and Machine Learning Toolbox](https://www.mathworks.com/products/statistics.html)
+- [Mapping Toolbox](https://www.mathworks.com/products/mapping.html) (orientation optimization only)
 
 # Analyses Available
 - Feeders (geometry-based)
