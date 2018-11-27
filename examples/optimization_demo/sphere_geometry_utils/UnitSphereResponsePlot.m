@@ -50,6 +50,8 @@ classdef (Sealed) UnitSphereResponsePlot < handle
         quantile_value_edit_text_h
         old_quantile_value
         
+        minima_checkbox_h
+        
     end
     
     
@@ -109,15 +111,15 @@ classdef (Sealed) UnitSphereResponsePlot < handle
             obj.quantile_checkbox_h.Value = obj.QUANTILE_OFF;
             obj.old_quantile_value = obj.get_quantile_value();
             
-            [ minima_checkbox_h, pareto_front_checkbox_h ] = ...
+            [ obj.minima_checkbox_h, pareto_front_checkbox_h ] = ...
                 widgets.add_point_plot_widgets( ...
                 figure_h, ...
                 @obj.ui_minima_checkbox_Callback, ...
                 @obj.ui_pareto_front_checkbox_Callback ...
                 );
-            minima_checkbox_h.Min = obj.MINIMA_OFF;
-            minima_checkbox_h.Max = obj.MINIMA_ON;
-            minima_checkbox_h.Value = obj.MINIMA_OFF;
+            obj.minima_checkbox_h.Min = obj.MINIMA_OFF;
+            obj.minima_checkbox_h.Max = obj.MINIMA_ON;
+            obj.minima_checkbox_h.Value = obj.MINIMA_OFF;
             pareto_front_checkbox_h.Min = obj.PARETO_FRONT_OFF;
             pareto_front_checkbox_h.Max = obj.PARETO_FRONT_ON;
             pareto_front_checkbox_h.Value = obj.PARETO_FRONT_OFF;
@@ -132,6 +134,7 @@ classdef (Sealed) UnitSphereResponsePlot < handle
                 obj.update_minima();
                 obj.update_old_listbox_value();
             end
+            drawnow();
             
         end
         
@@ -173,16 +176,9 @@ classdef (Sealed) UnitSphereResponsePlot < handle
         end
         
         
-        function ui_minima_checkbox_Callback( obj, handle, ~, ~ )
+        function ui_minima_checkbox_Callback( obj, ~, ~, ~ )
             
-            switch handle.Value
-                case obj.MINIMA_OFF
-                    obj.response_axes.remove_minima();
-                case obj.MINIMA_ON
-                    obj.update_minima();
-                otherwise
-                    assert( false );
-            end
+            obj.update_minima();
             drawnow();
             
         end
@@ -190,7 +186,14 @@ classdef (Sealed) UnitSphereResponsePlot < handle
         
         function update_minima( obj )
             
-            obj.response_axes.update_minima( obj.get_minima_decisions() );
+            switch obj.minima_checkbox_h.Value
+                case obj.MINIMA_OFF
+                    obj.response_axes.remove_minima();
+                case obj.MINIMA_ON
+                    obj.response_axes.update_minima( obj.get_minima_decisions() );
+                otherwise
+                    assert( false );
+            end
             
         end
         
@@ -216,6 +219,7 @@ classdef (Sealed) UnitSphereResponsePlot < handle
                 otherwise
                     assert( false );
             end
+            obj.update_minima();
             drawnow();
             
         end
@@ -265,6 +269,7 @@ classdef (Sealed) UnitSphereResponsePlot < handle
                 ', Value: %s' ...
                 ];
             obj.static_text_h.String = sprintf( pattern, phi, theta, value );
+            drawnow();
             
         end
         
