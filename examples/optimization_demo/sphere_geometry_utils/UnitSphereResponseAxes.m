@@ -14,57 +14,59 @@ classdef (Sealed) UnitSphereResponseAxes < handle
         end
         
         
-        function create_axes( obj, figure_handle )
+        function create_axes( ...
+                obj, ...
+                figure_handle, ...
+                button_down_Callback, ...
+                phi_grid, ...
+                theta_grid ...
+                )
             
             set( 0, 'CurrentFigure', figure_handle );
-            obj.build_axes( obj.LEFT_SIDE );
-            obj.build_axes( obj.RIGHT_SIDE );
+            obj.left_axes_h = obj.build_axes( obj.LEFT_SIDE );
+            obj.right_axes_h = obj.build_axes( obj.RIGHT_SIDE );
+            
+            obj.set_axes_button_down_Callback( button_down_Callback )
+            
+            obj.surface_plot_handles = obj.create_plot_handles( @(side,values)obj.create_surface_plot( side, phi_grid, theta_grid, values ) );
+            [ PHI_INDEX, THETA_INDEX ] = unit_sphere_plot_indices();
+            obj.minimum_plot_handles = obj.create_plot_handles( @(side,points)obj.create_minimum_plot( side, PHI_INDEX, THETA_INDEX, points ) );
+            obj.pareto_front_plot_handles = obj.create_plot_handles( @(side,points)obj.create_pareto_front_plot( side, PHI_INDEX, THETA_INDEX, points ) );
             
         end
         
         
-        function update_surface_plots( obj, phi_grid, theta_grid, objective_values )
+        function update_surface_plots( obj, values )
             
-            obj.update_both_sides( @(side)obj.update_surface_plot( side, phi_grid, theta_grid, objective_values ) );
+            obj.update_plot_handles( obj.surface_plot_handles, values );
             
         end
         
         
-        function update_minima( obj, minima_decisions )
+        function update_minima( obj, values )
             
-            obj.update_both_sides( @(side)obj.update_minimum( side, minima_decisions ) );
+            obj.update_plot_handles( obj.minimum_plot_handles, values );
             
         end
         
         
         function remove_minima( obj )
             
-            obj.update_both_sides( @(side)obj.remove_minimum( side ) );
+            obj.remove_plot_handles( obj.minimum_plot_handles );
             
         end
         
         
-        function update_pareto_fronts( obj, pareto_front_decisions )
+        function update_pareto_fronts( obj, values )
             
-            obj.update_both_sides( @(side)obj.update_pareto_front( side, pareto_front_decisions ) );
+            obj.update_plot_handles( obj.pareto_front_plot_handles, values );
             
         end
         
         
         function remove_pareto_fronts( obj )
             
-            obj.update_both_sides( @(side)obj.remove_pareto_front( side ) );
-            
-        end
-        
-        
-        function set_axes_button_down_Callback( obj, callback )
-            
-            assert( ~isempty( obj.left_axes_h ) );
-            assert( ~isempty( obj.right_axes_h ) );
-            
-            obj.left_axes_h.ButtonDownFcn = callback;
-            obj.right_axes_h.ButtonDownFcn = callback;
+            obj.remove_plot_handles( obj.pareto_front_plot_handles );
             
         end
         
@@ -77,6 +79,10 @@ classdef (Sealed) UnitSphereResponseAxes < handle
         color_map
         left_axes_h
         right_axes_h
+        
+        surface_plot_handles
+        minimum_plot_handles
+        pareto_front_plot_handles
         
     end
     
@@ -91,16 +97,77 @@ classdef (Sealed) UnitSphereResponseAxes < handle
     
     methods ( Access = private )
         
-        
-        function update_surface_plot( obj, side, phi_grid, theta_grid, objective_values )
+        function set_axes_button_down_Callback( obj, button_down_Callback )
             
-            obj.update_patch( side, phi_grid, theta_grid, objective_values );
+            assert( ~isempty( obj.left_axes_h ) );
+            assert( ~isempty( obj.right_axes_h ) );
+            
+            obj.left_axes_h.ButtonDownFcn = button_down_Callback;
+            obj.right_axes_h.ButtonDownFcn = button_down_Callback;
+            
+        end
+        
+        
+        function update_plot_handles( obj, handles, values )
+            
+            update_fn = @(side)handles( side ).update( values );
+            obj.update_both_sides( update_fn );
+            
+        end
+        
+        
+        function remove_plot_handles( obj, handles )
+            
+            update_fn = @(side)handles( side ).remove();
+            obj.update_both_sides( update_fn );
+            
+        end
+        
+        
+        function handles = create_plot_handles( obj, plot_function )
+            
+            handles = [ ...
+                AxesPlotHandle( obj.get_axes( obj.LEFT_SIDE ), @(x)plot_function( obj.LEFT_SIDE, x ) ) ...
+                AxesPlotHandle( obj.get_axes( obj.RIGHT_SIDE ), @(x)plot_function( obj.RIGHT_SIDE, x ) ) ...
+                ];
+            
+        end
+        
+        
+        function handle = create_surface_plot( obj, side, phi_grid, theta_grid, values )
+            
+            handle = surfacem( theta_grid, phi_grid, values );
+            handle.HitTest = 'off';
+            uistack( handle, 'bottom' );
             obj.update_colorbar( side );
             
         end
         
         
-        function build_axes( obj, side )
+        function update_colorbar( obj, side )
+            
+            colormap( obj.color_map );
+            if side == obj.LEFT_SIDE
+                axes_h = obj.get_axes( side );
+                original_axes_size = axes_h.Position;
+                colorbar( axes_h, 'off' );
+                cbar = colorbar( axes_h );
+                clim = cbar.Limits;
+                COLORBAR_TICK_COUNT = 11;
+                cbar.Ticks = linspace( clim( 1 ), clim( 2 ), COLORBAR_TICK_COUNT );
+                axes_h.Position = original_axes_size;
+                pos = cbar.Position;
+                new_pos = pos;
+                SCALING_FACTOR = 0.8;
+                new_pos( 4 ) = pos( 4 ) * SCALING_FACTOR;
+                new_pos( 2 ) = pos( 2 ) + ( pos( 4 ) - new_pos( 4 ) ) / 2;
+                cbar.Position = new_pos;
+            end
+            
+        end
+        
+        
+        function handle = build_axes( obj, side )
             
             switch side
                 case obj.LEFT_SIDE
@@ -114,7 +181,7 @@ classdef (Sealed) UnitSphereResponseAxes < handle
             end
             
             subtightplot( 1, 2, subplot_position, 0.08 );
-            axes_h = axesm( ...
+            handle = axesm( ...
                 'breusing', ...
                 'grid', 'on', ...
                 'gcolor', 'w', ...
@@ -132,175 +199,15 @@ classdef (Sealed) UnitSphereResponseAxes < handle
                 'fontcolor', 'w', ...
                 'origin', newpole( 90, polar_azimuth_deg ) ...
                 );
-            axes_h.ButtonDownFcn = @obj.ui_axes_button_down_Callback;
-            axes_h.XColor = 'w';
-            axes_h.YColor = 'w';
+            handle.ButtonDownFcn = @obj.ui_axes_button_down_Callback;
+            handle.XColor = 'w';
+            handle.YColor = 'w';
             
-            ch = axes_h.Children;
+            ch = handle.Children;
             for i = 1 : numel( ch )
                 
                 ch( i ).HitTest = 'off';
                 
-            end
-            
-            obj.set_axes( axes_h, side );
-            
-        end
-        
-        
-        function update_patch( obj, side, phi_grid, theta_grid, values )
-            
-            obj.remove_patch( side );
-            obj.plot_patch( side, phi_grid, theta_grid, values );
-            
-        end
-        
-        
-        function plot_patch( obj, side, phi_grid, theta_grid, values )
-            
-            plot_h = obj.add_surface_plot( obj.get_patch_tag( side ), phi_grid, theta_grid, values );
-            plot_h.HitTest = 'off';
-            uistack( plot_h, 'bottom' );
-            
-        end
-        
-        
-        function remove_patch( obj, side )
-            
-            obj.remove_existing_tag( side, obj.get_patch_tag( side ) );
-            
-        end
-        
-        
-        function tag = get_patch_tag( obj, side )
-            
-            tag = obj.generate_tag( 'patch', side );
-            
-        end
-        
-        
-        function update_minimum( obj, side, decisions )
-            
-            obj.remove_minimum( side );
-            obj.plot_minimum( side, decisions );
-            
-        end
-        
-        
-        function plot_minimum( obj, side, decisions )
-            
-            plot_h = obj.add_point_plot( obj.get_minimum_tag( side ), decisions );
-            plot_h.LineStyle = 'none';
-            plot_h.Marker = 'o';
-            plot_h.MarkerSize = 6;
-            plot_h.MarkerEdgeColor = 'k';
-            plot_h.MarkerFaceColor = 'g';
-            plot_h.HitTest = 'off';
-            
-        end
-        
-        
-        function remove_minimum( obj, side )
-            
-            obj.remove_existing_tag( side, obj.get_minimum_tag( side ) )
-            
-        end
-        
-        
-        function tag = get_minimum_tag( obj, side )
-            
-            tag = obj.generate_tag( 'minimum', side );
-            
-        end
-        
-        
-        function update_pareto_front( obj, side, decisions )
-            
-            obj.remove_pareto_front( side );
-            obj.plot_pareto_front( side, decisions );
-            
-        end
-        
-        
-        function plot_pareto_front( obj, side, decisions )
-            
-            plot_h = obj.add_point_plot( obj.get_pareto_front_tag( side ), decisions );
-            plot_h.LineStyle = 'none';
-            plot_h.Marker = 'o';
-            plot_h.MarkerSize = 4;
-            plot_h.MarkerEdgeColor = 'k';
-            plot_h.MarkerFaceColor = 'r';
-            plot_h.HitTest = 'off';
-            
-        end
-        
-        
-        function remove_pareto_front( obj, side )
-            
-            obj.remove_existing_tag( side, obj.get_pareto_front_tag( side ) )
-            
-        end
-        
-        
-        function tag = get_pareto_front_tag( obj, side )
-            
-            tag = obj.generate_tag( 'pareto_front', side );
-            
-        end
-        
-        
-        function tag = generate_tag( obj, side, prefix )
-            
-            tag = sprintf( '%s_%i', prefix, side );
-            
-        end
-        
-        
-        function remove_existing_tag( obj, side, tag )
-            
-            handle = findobj( obj.get_axes( side ), 'tag', tag );
-            if ~isempty( handle )
-                delete( handle );
-            end
-            
-        end
-        
-        
-        function handle = add_surface_plot( obj, tag, phi_grid, theta_grid, values )
-            
-            handle = surfacem( theta_grid, phi_grid, values );
-            handle.Tag = tag;
-            
-        end
-        
-        
-        function handle = add_point_plot( obj, tag, points )
-            
-            [ PHI_INDEX, THETA_INDEX ] = unit_sphere_plot_indices();
-            handle = plotm( points( :, THETA_INDEX ), points( :, PHI_INDEX ) );
-            handle.Tag = tag;
-            
-        end
-        
-        
-        function update_colorbar( obj, side )
-            
-            colormap( obj.get_axes( side ), obj.color_map );
-            if side == obj.LEFT_SIDE
-                axes_h = obj.get_axes( side );
-                original_axes_size = axes_h.Position;
-                colorbar( axes_h, 'off' );
-                cbar = colorbar( axes_h );
-                clim = cbar.Limits;
-                COLORBAR_TICK_COUNT = 11;
-                cbar.Ticks = linspace( clim( 1 ), clim( 2 ), COLORBAR_TICK_COUNT );
-                axes_h.Position = original_axes_size;
-                pos = cbar.Position;
-                new_pos = pos;
-                SCALING_FACTOR = 0.8;
-                new_pos( 4 ) = pos( 4 ) * SCALING_FACTOR;
-                new_pos( 2 ) = pos( 2 ) + ( pos( 4 ) - new_pos( 4 ) ) / 2;
-                cbar.Position = new_pos;
             end
             
         end
@@ -343,17 +250,40 @@ classdef (Sealed) UnitSphereResponseAxes < handle
             
         end
         
+    end
+    
+    
+    methods ( Access = private, Static )
         
-        function set_axes( obj, axes_h, side )
+        function handle = create_minimum_plot( side, phi_index, theta_index, decisions )
             
-            switch side
-                case obj.LEFT_SIDE
-                    obj.left_axes_h = axes_h;
-                case obj.RIGHT_SIDE
-                    obj.right_axes_h = axes_h;
-                otherwise
-                    assert( false );
-            end
+            handle = UnitSphereResponseAxes.add_point_plot( phi_index, theta_index, decisions );
+            handle.LineStyle = 'none';
+            handle.Marker = 'o';
+            handle.MarkerSize = 6;
+            handle.MarkerEdgeColor = 'k';
+            handle.MarkerFaceColor = 'g';
+            handle.HitTest = 'off';
+            
+        end
+        
+        
+        function handle = create_pareto_front_plot( side, phi_index, theta_index, decisions )
+            
+            handle = UnitSphereResponseAxes.add_point_plot( phi_index, theta_index, decisions );
+            handle.LineStyle = 'none';
+            handle.Marker = 'o';
+            handle.MarkerSize = 4;
+            handle.MarkerEdgeColor = 'k';
+            handle.MarkerFaceColor = 'r';
+            handle.HitTest = 'off';
+            
+        end
+        
+        
+        function handle = add_point_plot( phi_index, theta_index, points )
+            
+            handle = plotm( points( :, theta_index ), points( :, phi_index ) );
             
         end
         
