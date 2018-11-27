@@ -4,29 +4,23 @@ classdef (Sealed) UnitSphereResponsePlot < handle
         
         function obj = UnitSphereResponsePlot( ...
                 unit_sphere_response_data, ...
-                figure_resolution_px, ...
-                color_map ...
+                unit_sphere_response_axes, ...
+                figure_resolution_px ...
                 )
             
-            if nargin < 2
-                figure_resolution_px = 600;
-            end
-            if nargin < 3
-                color_map = plasma();
-            end
-            
-            obj.usrd = unit_sphere_response_data;
-            obj.color_map = color_map;
+            obj.response_data = unit_sphere_response_data;
             
             obj.figure_h = obj.create_base_figure( ...
                 figure_resolution_px, ...
-                obj.usrd.get_name(), ...
-                obj.usrd.get_all_titles() ...
+                obj.response_data.get_name(), ...
+                obj.response_data.get_all_titles() ...
                 );
-            obj.create_axes( obj.LEFT_SIDE );
-            obj.create_axes( obj.RIGHT_SIDE );
             
-            obj.update_figure();
+            obj.response_axes = unit_sphere_response_axes;
+            obj.response_axes.create_axes( obj.figure_h );
+            obj.response_axes.set_axes_button_down_Callback( @obj.ui_axes_button_down_Callback );
+            
+            obj.update_surface_plots();
             
         end
         
@@ -35,9 +29,11 @@ classdef (Sealed) UnitSphereResponsePlot < handle
     
     properties ( Access = private )
         
-        usrd
+        response_data
+        response_axes
         
         figure_h
+        
         static_text_h
         
         listbox_h
@@ -53,179 +49,38 @@ classdef (Sealed) UnitSphereResponsePlot < handle
         
         pareto_front_checkbox_h
         
-        current_axes_h
-        left_axes_h
-        right_axes_h
-        color_map
+    end
+    
+    
+    properties ( Access = private, Constant )
+        
+        INITIAL_LISTBOX_VALUE = 1;
+        
+        PHI_INDEX = 1;
+        THETA_INDEX = 2;
+        
+        QUANTILE_OFF = false;
+        QUANTILE_ON = true;
+        
+        QUANTILE_MIN = 0.0;
+        QUANTILE_MAX = 1.0;
+        INITIAL_QUANTILE_VALUE = 0.01;
+        
+        MINIMA_OFF = false;
+        MINIMA_ON = true;
+        
+        PARETO_FRONT_OFF = false;
+        PARETO_FRONT_ON = true;
         
     end
     
     
     methods ( Access = private )
         
-        function update_figure( obj )
-            
-            obj.update_title();
-            obj.update_both_sides( @obj.update_minima );
-            %obj.update_both_sides( @obj.update_pareto_front );
-            obj.update_both_sides( @obj.update_surface_plot );
-            drawnow();
-            
-        end
-        
-        
-        function update_both_sides( obj, update_function )
-            
-            obj.select_axes( obj.LEFT_SIDE );
-            update_function( obj.LEFT_SIDE );
-            
-            obj.select_axes( obj.RIGHT_SIDE );
-            update_function( obj.RIGHT_SIDE );
-            
-        end
-        
-        
-        function set_axes( obj, axes_h, side )
-            
-            switch side
-                case obj.LEFT_SIDE
-                    obj.left_axes_h = axes_h;
-                case obj.RIGHT_SIDE
-                    obj.right_axes_h = axes_h;
-                otherwise
-                    assert( false );
-            end
-            
-        end
-        
         
         function update_title( obj )
             
             obj.figure_h.Name = obj.get_title( obj.get_objective_index() );
-            
-        end
-        
-        
-        function update_surface_plot( obj, side )
-            
-            obj.update_patch( side );
-            obj.update_colorbar( side );
-            
-        end
-        
-        
-        function update_patch( obj, side )
-            
-            % remove existing plot if exists
-            tag = sprintf( 'patch_%s', side );
-            existing_plot_h = findobj( obj.get_axes( side ), 'tag', tag );
-            if ~isempty( existing_plot_h )
-                delete( existing_plot_h );
-            end
-            
-            switch obj.get_quantile_state()
-                case obj.QUANTILE_OFF
-                    values = obj.get_objective_values();
-                case obj.QUANTILE_ON
-                    values = obj.get_quantile_values();
-                otherwise
-                    assert( false );
-            end
-            [ phi, theta ] = obj.get_grid_in_degrees();
-            plot_h = surfacem( ...
-                theta, phi, ...
-                values, ...
-                'tag', tag ...
-                );
-            plot_h.HitTest = 'off';
-            uistack( plot_h, 'bottom' );
-            
-        end
-        
-        
-        function update_colorbar( obj, side )
-            
-            colormap( obj.get_axes( side ), obj.color_map );
-            if side == obj.LEFT_SIDE
-                axes_h = obj.get_axes( side );
-                original_axes_size = axes_h.Position;
-                colorbar( axes_h, 'off' );
-                cbar = colorbar( axes_h );
-                clim = cbar.Limits;
-                COLORBAR_TICK_COUNT = 11;
-                cbar.Ticks = linspace( clim( 1 ), clim( 2 ), COLORBAR_TICK_COUNT );
-                axes_h.Position = original_axes_size;
-                pos = cbar.Position;
-                new_pos = pos;
-                SCALING_FACTOR = 0.8;
-                new_pos( 4 ) = pos( 4 ) * SCALING_FACTOR;
-                new_pos( 2 ) = pos( 2 ) + ( pos( 4 ) - new_pos( 4 ) ) / 2;
-                cbar.Position = new_pos;
-            end
-            
-        end
-        
-        
-        function update_minima( obj, side )
-            
-            % remove existing plot if exists
-            tag = sprintf( 'minima_%s', side );
-            existing_plot_h = findobj( obj.get_axes( side ), 'tag', tag );
-            if ~isempty( existing_plot_h )
-                delete( existing_plot_h );
-            end
-            
-            switch obj.get_minima_state()
-                case obj.MINIMA_OFF
-                    % do nothing
-                case obj.MINIMA_ON
-                    decisions = obj.get_minima_decisions();
-                    plot_h = plotm( ...
-                        decisions( obj.THETA_INDEX ), ...
-                        decisions( obj.PHI_INDEX ), ...
-                        'linestyle', 'none', ...
-                        'marker', 'o', ...
-                        'markersize', 6, ...
-                        'markeredgecolor', 'k', ...
-                        'markerfacecolor', 'g', ...
-                        'tag', tag ...
-                        );
-                    plot_h.HitTest = 'off';
-                otherwise
-                    assert( false );
-            end
-            
-        end
-        
-        
-        function update_pareto_front( obj, side )
-            
-            % remove existing plot if exists
-            tag = sprintf( 'pareto_front_%s', side );
-            existing_plot_h = findobj( obj.get_axes( side ), 'tag', tag );
-            if ~isempty( existing_plot_h )
-                delete( existing_plot_h );
-            end
-            
-            switch obj.get_pareto_front_state()
-                case obj.PARETO_FRONT_OFF
-                    % do nothing
-                case obj.PARETO_FRONT_ON
-                    decisions = obj.get_pareto_front_decisions();
-                    plot_h = plotm( ...
-                        decisions( :, obj.THETA_INDEX ), ...
-                        decisions( :, obj.PHI_INDEX ), ...
-                        'linestyle', 'none', ...
-                        'marker', 'o', ...
-                        'markersize', 4, ...
-                        'markeredgecolor', 'k', ...
-                        'markerfacecolor', 'r', ...
-                        'tag', tag ...
-                        );
-                    plot_h.HitTest = 'off';
-                otherwise
-                    assert( false );
-            end
             
         end
         
@@ -251,24 +106,16 @@ classdef (Sealed) UnitSphereResponsePlot < handle
         end
         
         
-        function axes_h = select_axes( obj, side )
-            
-            axes_h = obj.get_axes( side );
-            axes( axes_h );
-            
-        end
-        
-        
         function title = get_title( obj, index )
             
-            title = obj.usrd.get_title( index );
+            title = obj.response_data.get_title( index );
             
         end
         
         
         function value = get_objective_value( obj, phi_index, theta_index )
             
-            value = obj.usrd.get_objective_value( ...
+            value = obj.response_data.get_objective_value( ...
                 phi_index, ...
                 theta_index, ...
                 obj.get_objective_index() ...
@@ -279,14 +126,14 @@ classdef (Sealed) UnitSphereResponsePlot < handle
         
         function values = get_objective_values( obj )
             
-            values = obj.usrd.get_objective_values( obj.get_objective_index() );
+            values = obj.response_data.get_objective_values( obj.get_objective_index() );
             
         end
         
         
         function values = get_quantile_values( obj )
             
-            values = obj.usrd.get_quantile_values( ...
+            values = obj.response_data.get_quantile_values( ...
                 obj.get_quantile_value(), ...
                 obj.get_objective_index() ...
                 );
@@ -297,21 +144,21 @@ classdef (Sealed) UnitSphereResponsePlot < handle
         
         function decisions = get_minima_decisions( obj )
             
-            decisions = obj.usrd.get_minima_decisions_in_degrees( obj.get_objective_index() );
+            decisions = obj.response_data.get_minima_decisions_in_degrees( obj.get_objective_index() );
             
         end
         
         
         function decisions = get_pareto_front_decisions( obj )
             
-            decisions = obj.usrd.get_pareto_front_decisions_in_degrees();
+            decisions = obj.response_data.get_pareto_front_decisions_in_degrees();
             
         end
         
         
         function value = get_quantile_threshold_value( obj )
             
-            value = obj.usrd.get_quantile_threshold_value( ...
+            value = obj.response_data.get_quantile_threshold_value( ...
                 obj.get_quantile_value(), ...
                 obj.get_objective_index() ...
                 );
@@ -321,14 +168,14 @@ classdef (Sealed) UnitSphereResponsePlot < handle
         
         function [ phi_grid, theta_grid ] = get_grid_in_degrees( obj )
             
-            [ phi_grid, theta_grid ] = obj.usrd.get_grid_in_degrees();
+            [ phi_grid, theta_grid ] = obj.response_data.get_grid_in_degrees();
             
         end
         
         
         function [ phi_index, theta_index ] = get_grid_indices_from_decisions( obj, phi, theta )
             
-            [ phi_index, theta_index ] = obj.usrd.get_grid_indices_from_decisions( phi, theta );
+            [ phi_index, theta_index ] = obj.response_data.get_grid_indices_from_decisions( phi, theta );
             
         end
         
@@ -382,20 +229,6 @@ classdef (Sealed) UnitSphereResponsePlot < handle
         end
         
         
-        function axes_h = get_axes( obj, side )
-            
-            switch side
-                case obj.LEFT_SIDE
-                    axes_h = obj.left_axes_h;
-                case obj.RIGHT_SIDE
-                    axes_h = obj.right_axes_h;
-                otherwise
-                    assert( false );
-            end
-            
-        end
-        
-        
         function is_changed = has_listbox_value_changed( obj )
             
             is_changed = ( obj.get_objective_index() ~= obj.old_listbox_value );
@@ -421,68 +254,6 @@ classdef (Sealed) UnitSphereResponsePlot < handle
             elseif value < obj.QUANTILE_MIN
                 obj.set_quantile_value( obj.QUANTILE_MIN );
             end
-            
-        end
-        
-        
-        function create_axes( obj, side )
-            
-            switch side
-                case UnitSphereResponsePlot.LEFT_SIDE
-                    subplot_position = 1;
-                    polar_azimuth_deg = 0;
-                case UnitSphereResponsePlot.RIGHT_SIDE
-                    subplot_position = 2;
-                    polar_azimuth_deg = 180;
-                otherwise
-                    assert( false )
-            end
-            
-            subtightplot( 1, 2, subplot_position, 0.08 );
-            axes_h = axesm( ...
-                'breusing', ...
-                'grid', 'on', ...
-                'gcolor', 'w', ...
-                'glinewidth', 1, ...
-                'frame', 'on', ...
-                'labelformat', 'signed', ...
-                'mlinelocation', 30, ...
-                'mlabellocation', 30, ...
-                'mlabelparallel', 15, ...
-                'meridianlabel', 'on', ...
-                'plinelocation', 30, ...
-                'plabellocation', 30, ...
-                'plabelmeridian', polar_azimuth_deg, ...
-                'parallellabel', 'on', ...
-                'fontcolor', 'w', ...
-                'origin', newpole( 90, polar_azimuth_deg ) ...
-                );
-            axes_h.ButtonDownFcn = @obj.ui_axes_button_down_Callback;
-            axes_h.XColor = 'w';
-            axes_h.YColor = 'w';
-            
-            ch = axes_h.Children;
-            for i = 1 : numel( ch )
-                
-                ch( i ).HitTest = 'off';
-                
-            end
-            
-            obj.set_axes( axes_h, side );
-            
-        end
-        
-        
-        function ui_axes_button_down_Callback( obj, h, ~, ~ )
-            
-            point_values = gcpmap( h );
-            phi = point_values( 1, 2 );
-            theta = point_values( 1, 1 );
-            [ phi_index, theta_index ] = obj.get_grid_indices_from_decisions( phi, theta );
-            value = num2str( obj.get_objective_value( theta_index, phi_index ) );
-            degrees = char( 176 );
-            pattern = [ 'Selected Point is @X: %.2f' degrees ', @Y: %.2f' degrees ', Value: %s' ];
-            obj.static_text_h.String = sprintf( pattern, phi, theta, value );
             
         end
         
@@ -670,9 +441,45 @@ classdef (Sealed) UnitSphereResponsePlot < handle
         function ui_dropdown_Callback( obj, ~, ~, ~ )
             
             if obj.has_listbox_value_changed()
+                obj.update_surface_plots();
                 obj.update_old_listbox_value();
-                obj.update_figure();
             end
+            
+        end
+        
+        
+        function ui_quantile_checkbox_Callback( obj, ~, ~, ~ )
+            
+            obj.update_surface_plots();
+            drawnow();
+            
+        end
+        
+        
+        function ui_quantile_value_edit_text_Callback( obj, ~, ~, ~ )
+            
+            obj.validate_quantile_value();
+            if obj.has_quantile_value_changed()
+                obj.update_surface_plots();
+                obj.update_old_quantile_value();
+            end
+            drawnow();
+            
+        end
+        
+        
+        function ui_minima_checkbox_Callback( obj, ~, ~, ~ )
+            
+            obj.update_minima();
+            drawnow();
+            
+        end
+        
+        
+        function ui_pareto_front_checkbox_Callback( obj, ~, ~, ~ )
+            
+            obj.update_pareto_fronts();
+            drawnow();
             
         end
         
@@ -699,62 +506,72 @@ classdef (Sealed) UnitSphereResponsePlot < handle
         end
         
         
-        function ui_quantile_checkbox_Callback( obj, ~, ~, ~ )
+        function ui_axes_button_down_Callback( obj, h, ~, ~ )
             
-            obj.update_both_sides( @obj.update_surface_plot );
+            point_values = gcpmap( h );
+            phi = point_values( 1, 2 );
+            theta = point_values( 1, 1 );
+            [ phi_index, theta_index ] = obj.get_grid_indices_from_decisions( phi, theta );
+            value = num2str( obj.get_objective_value( theta_index, phi_index ) );
+            degrees = char( 176 );
+            pattern = [ 'Selected Point is @X: %.2f' degrees ', @Y: %.2f' degrees ', Value: %s' ];
+            obj.static_text_h.String = sprintf( pattern, phi, theta, value );
             
         end
         
         
-        function ui_quantile_value_edit_text_Callback( obj, ~, ~, ~ )
+        function update_surface_plots( obj )
             
-            obj.validate_quantile_value();
-            if obj.has_quantile_value_changed()
-                obj.update_both_sides( @obj.update_surface_plot );
-                obj.update_old_quantile_value();
+            [ phi, theta ] = obj.get_grid_in_degrees();
+            obj.response_axes.update_surface_plots( ...
+                phi, ...
+                theta, ...
+                obj.get_surface_plot_values() ...
+                );
+            
+        end
+        
+        
+        function update_minima( obj )
+            
+            switch obj.get_minima_state()
+                case obj.MINIMA_OFF
+                    obj.response_axes.remove_minima();
+                case obj.MINIMA_ON
+                    obj.response_axes.update_minima( obj.get_minima_decisions() );
+                otherwise
+                    assert( false );
             end
             
         end
         
         
-        function ui_minima_checkbox_Callback( obj, ~, ~, ~ )
+        function update_pareto_fronts( obj )
             
-            obj.update_both_sides( @obj.update_minima )
+            switch obj.get_pareto_front_state()
+                case obj.PARETO_FRONT_OFF
+                    obj.response_axes.remove_pareto_fronts();
+                case obj.PARETO_FRONT_ON
+                    obj.response_axes.update_pareto_fronts( obj.get_pareto_front_decisions() );
+                otherwise
+                    assert( false );
+            end
             
         end
         
         
-        function ui_pareto_front_checkbox_Callback( obj, ~, ~, ~ )
+        function values = get_surface_plot_values( obj )
             
-            obj.update_both_sides( @obj.update_pareto_front )
+            switch obj.get_quantile_state()
+                case obj.QUANTILE_OFF
+                    values = obj.get_objective_values();
+                case obj.QUANTILE_ON
+                    values = obj.get_quantile_values();
+                otherwise
+                    assert( false );
+            end
             
         end
-        
-    end
-    
-    
-    properties ( Access = private, Constant )
-        
-        INITIAL_LISTBOX_VALUE = 1;
-        
-        LEFT_SIDE = 1;
-        RIGHT_SIDE = 2;
-        
-        PHI_INDEX = 1;
-        THETA_INDEX = 2;
-        
-        QUANTILE_OFF = false;
-        QUANTILE_ON = true;
-        
-        QUANTILE_MIN = 0.0;
-        QUANTILE_MAX = 1.0;
-        INITIAL_QUANTILE_VALUE = 0.01;
-        
-        MINIMA_OFF = false;
-        MINIMA_ON = true;
-        
-        PARETO_FRONT_OFF = false;
-        PARETO_FRONT_ON = true;
         
     end
     
