@@ -18,7 +18,11 @@ classdef (Sealed) OrientationBaseCase < handle
                 '' ...
                 );
             
-            obj.objective_variables = objective_variables;
+            if ischar( objective_variables ) || isstring( objective_variables )
+                obj.objective_variables = ObjectiveVariables( objective_variables_path );
+            else
+                obj.objective_variables = objective_variables;
+            end
             obj.base_case = obj.generate_base_case( obj.options );
             
         end
