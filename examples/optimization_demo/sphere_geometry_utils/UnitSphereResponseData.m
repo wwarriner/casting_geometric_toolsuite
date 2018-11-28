@@ -27,6 +27,8 @@ classdef (Sealed) UnitSphereResponseData < handle
                 objective_variables = ObjectiveVariables( titles, methods );
             end
             
+            obj.objective_variables;
+            
             obj.titles = objective_variables.get_titles();
             
             interpolants = obj.generate_interpolants( results, objective_variables );
@@ -59,6 +61,13 @@ classdef (Sealed) UnitSphereResponseData < handle
                 objective_variables, ...
                 obj.theta_grid ...
                 );
+            
+        end
+        
+        
+        function variables = get_objective_variables( obj )
+            
+            variables = obj.objective_variables;
             
         end
         
@@ -185,11 +194,24 @@ classdef (Sealed) UnitSphereResponseData < handle
             
         end
         
+        
+        function [ phi, theta ] = get_grid_decisions_from_indices_in_radians( ...
+                obj, ...
+                phi_index, ...
+                theta_index ...
+                )
+            
+            phi = obj.phi_grid( 1, phi_index );
+            theta = obj.theta_grid( theta_index, 1 );
+            
+        end
+        
     end
     
     
     properties ( Access = private )
         
+        objective_variables
         name
         titles
         phi_grid
