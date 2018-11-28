@@ -19,7 +19,7 @@ classdef (Sealed) OrientationBaseCase < handle
                 );
             
             if ischar( objective_variables ) || isstring( objective_variables )
-                obj.objective_variables = ObjectiveVariables( objective_variables_path );
+                obj.objective_variables = ObjectiveVariables( objective_variables );
             else
                 obj.objective_variables = objective_variables;
             end
