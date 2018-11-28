@@ -24,6 +24,7 @@ classdef (Sealed) UnitSphereResponsePlot < handle
                 phi_grid, ...
                 theta_grid ...
                 );
+            obj.last_picked_decisions = [ 0 0 ];
             
             obj.update_surface_plots();
             
@@ -35,7 +36,9 @@ classdef (Sealed) UnitSphereResponsePlot < handle
     properties ( Access = private )
         
         response_data
+        
         response_axes
+        last_picked_decisions
         
         figure_h
         
@@ -234,16 +237,38 @@ classdef (Sealed) UnitSphereResponsePlot < handle
         
         function ui_visualize_button_Callback( obj, h, ~, ~ )
             
-            fprintf( 'not yet implemented\n' );
-            return;
+            %fprintf( 'not yet implemented\n' );
+            %return;
             % attach options when running on hpc so we are consistent
             % attach stl when running etc etc
             % add both paths to result table
             obc = OrientationBaseCase( ...
-                obj.option_path, ...
-                obj.stl_path, ...
-                obj.objective_variables_path ...
+                'D:\wwarr\dev\repos\casting_geometric_toolsuite\examples\optimization_demo\oo_options.json', ...
+                '\\ENG-FS0\mse-annex$\Student Folders\William\Geometries\grabcad\stl\sent\week 3\base_plate.stl', ...
+                obj.response_data.get_objective_variables() ...
                 );
+            bc = obc.get_base_case();
+            rc = obc.get_rotated_case( obj.last_picked_decisions );
+            
+            fh = figure();
+            axh = axes( fh );
+            axh.Color = 'none';
+            axis( axh, 'equal', 'vis3d', 'off' );
+            hold( axh, 'on' );
+            base_component = bc.get( Component.NAME );
+            bh = patch( axh, base_component.fv );
+            bh.FaceColor = [ 0.9 0.9 0.9 ];
+            bh.FaceAlpha = 0.2;
+            bh.EdgeColor = 'none';
+            rot_component = rc.get( Component.NAME );
+            rh = patch( axh, rot_component.fv );
+            rh.FaceColor = [ 0.9 0.9 0.9 ];
+            rh.EdgeColor = 'none';
+            max_pt = max( [ base_component.envelope.max_point; rot_component.envelope.max_point ], [], 1 );
+            min_pt = min( [ base_component.envelope.min_point; rot_component.envelope.min_point ], [], 1 );
+            add_pretty_3d_axes( axh, min_pt, max_pt, [ 0 0 0 ] );
+            view( 3 );
+            camlight( axh );
             % attach observer for status updates?
             % factor out feature computation from determine_objectives in obc
             % generate desired visualization based on results table, i.e. using
@@ -257,10 +282,14 @@ classdef (Sealed) UnitSphereResponsePlot < handle
         function ui_axes_button_down_Callback( obj, h, ~, ~ )
             
             point_values = gcpmap( h );
-            phi = point_values( 1, 2 );
-            theta = point_values( 1, 1 );
+            phi_raw = point_values( 1, 2 );
+            theta_raw = point_values( 1, 1 );
             [ phi_index, theta_index ] = ...
-                obj.get_grid_indices_from_decisions( phi, theta );
+                obj.get_grid_indices_from_decisions( phi_raw, theta_raw );
+            [ phi, theta ] = ...
+                obj.response_data.get_grid_decisions_from_indices_in_radians( phi_index, theta_index );
+            phi_deg = rad2deg( phi );
+            theta_deg = rad2deg( theta );
             value = num2str( obj.get_objective_value( theta_index, phi_index ) );
             degrees = char( 176 );
             pattern = [ ...
@@ -268,8 +297,9 @@ classdef (Sealed) UnitSphereResponsePlot < handle
                 ', @Y: %.2f' degrees ...
                 ', Value: %s' ...
                 ];
-            obj.static_text_h.String = sprintf( pattern, phi, theta, value );
+            obj.static_text_h.String = sprintf( pattern, phi_deg, theta_deg, value );
             drawnow();
+            obj.last_picked_decisions = [ phi theta ];
             
         end
         
