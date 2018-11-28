@@ -40,6 +40,21 @@ classdef (Sealed) ObjectiveVariables < handle
         end
         
         
+        % retrieval function must take a process name and return the desired process object
+        function value = evaluate( obj, index, retrieval_function )
+            
+            metric_fn = eval( sprintf( ...
+                '@(property)%s;\n', ...
+                obj.get_metric( index ) ...
+                ) );
+            process = eval( sprintf( '%s.NAME', obj.get_process( index ) ) );
+            process = retrieval_function( process );
+            property = obj.get_property( index );
+            value = metric_fn( process.(property) );
+            
+        end
+        
+        
         function count = get_objective_count( obj )
             
             count = size( obj.variables, 1 );
@@ -52,6 +67,33 @@ classdef (Sealed) ObjectiveVariables < handle
     properties ( Access = private )
         
         variables
+        
+    end
+    
+    
+    methods ( Access = private )
+        
+        function process = get_process( obj, index )
+            
+            process = obj.variables{ index, 'process' }{ 1 };
+            
+        end
+        
+        
+        function property = get_property( obj, index )
+            
+            
+            property = obj.variables{ index, 'property' }{ 1 };
+            
+        end
+        
+        
+        function metric = get_metric( obj, index )
+            
+            
+            metric = obj.variables{ index, 'metric' }{ 1 };
+            
+        end
         
     end
     
