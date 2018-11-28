@@ -80,22 +80,11 @@ classdef (Sealed) OrientationBaseCase < handle
             wf.legacy_run( rotated_case.get( Mesh.NAME ), pp, UP );
             rotated_case.add( wf.NAME, wf );
             
-            objective_count = size( obj.objective_variables, 1 );
+            objective_count = obj.objective_variables.get_objective_count();
             objectives = nan( 1, objective_count );
             for i = 1 : objective_count
                 
-                phrase = [ ...
-                    'value = rotated_case.get( %s.NAME ).%s;\n' ...
-                    'value = %s;\n' ...
-                    ];
-                command = sprintf( ...
-                    phrase, ...
-                    obj.objective_variables{ i, 'process' }{ 1 }, ...
-                    obj.objective_variables{ i, 'value' }{ 1 }, ...
-                    obj.objective_variables{ i, 'metric' }{ 1 } ...
-                    );
-                eval( command );
-                objectives( i ) = value;
+                objectives( i ) = obj.objective_variables.evaluate( i, @rotated_case.get );
                 
             end
             
@@ -126,7 +115,7 @@ classdef (Sealed) OrientationBaseCase < handle
         
         function titles = get_decision_variable_titles()
             
-            titles = { 'phi', 'theta' };
+            titles = { 'phi'; 'theta' };
             
         end
         
@@ -171,7 +160,7 @@ classdef (Sealed) OrientationBaseCase < handle
         
         function titles = get_objective_variable_titles( obj )
             
-            titles = obj.objective_variables{ :, { 'title' } }.';
+            titles = obj.objective_variables.get_titles();
             
         end
         
