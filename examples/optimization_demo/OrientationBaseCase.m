@@ -5,7 +5,7 @@ classdef (Sealed) OrientationBaseCase < handle
         function obj = OrientationBaseCase( ...
                 option_path, ...
                 stl_path, ...
-                objective_variables_path ...
+                objective_variables ...
                 )
             
             if nargin < 2
@@ -18,10 +18,7 @@ classdef (Sealed) OrientationBaseCase < handle
                 '' ...
                 );
             
-            if nargin < 3
-                objective_variables_path = obj.options.objective_variables_path;
-            end
-            obj.objective_variables = read_objective_variables( objective_variables_path );
+            obj.objective_variables = objective_variables;
             obj.base_case = obj.generate_base_case( obj.options );
             
         end
@@ -44,13 +41,27 @@ classdef (Sealed) OrientationBaseCase < handle
         end
         
         
-        function objectives = determine_objectives( obj, angles )
+        function base_case = get_base_case( obj )
+            
+            base_case = obj.base_case;
+            
+        end
+        
+        
+        function rotated_case = get_rotated_case( obj, angles )
             
             rotated_case = obj.generate_rotated_case( ...
                 angles, ...
                 obj.base_case, ...
                 obj.options ...
                 );
+            
+        end
+        
+        
+        function objectives = determine_objectives( obj, angles )
+            
+            rotated_case = obj.get_rotated_case( angles );
             
             DIM = 3;
             UP = 'up';
