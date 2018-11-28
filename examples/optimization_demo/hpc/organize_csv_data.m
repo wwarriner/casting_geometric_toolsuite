@@ -45,42 +45,19 @@ results.Properties.VariableNames = headers;
 results.Properties.UserData.Name = stl_name;
 results.Properties.UserData.DecisionEndColumn = OrientationBaseCase.get_decision_variable_count();
 results.Properties.UserData.ObjectiveStartColumn = results.Properties.UserData.DecisionEndColumn + 1;
-OBJECTIVE_VARIABLES_NAME = 'objective_variables';
-OBJECTIVE_VARIABLES_EXT = '.json';
+
+%% append objective_variables.json path
 job_ids = sort( numbers( :, 1 ), 'ascend' );
-objectives_path = [];
-if all( isnan( job_ids ) )
-    trial_objectives_path = fullfile( ...
-        results_dir, ...
-        [ OBJECTIVE_VARIABLES_NAME OBJECTIVE_VARIABLES_EXT ] ...
-        );
-    if isfile( trial_objectives_path )
-        objectives_path = trial_objectives_path;
-    end 
-else
-    for i = 1 : length( job_ids )
-        
-        objectives_name = sprintf( ...
-            '%s_%i%s', ...
-            OBJECTIVE_VARIABLES_NAME, ...
-            job_ids( i ), ...
-            OBJECTIVE_VARIABLES_EXT ...
-            );
-        objectives_path = fullfile( results_dir, objectives_name );
-        if isfile( objectives_path )
-            break;
-        end
-        
-    end
-end
-if isempty( objectives_path )
-    warning( ...
-        [ 'Unable to located objectives path in results dir\n' ...
-        '%s' ], ...
-        results_dir ...
-        );
-end
+objectives_path = get_path( 'objective_variables.json', results_dir, job_ids );
 results.Properties.UserData.ObjectiveVariablesPath = objectives_path;
+
+%% append name.stl path
+stl_path = get_path( [ stl_name '.stl' ], results_dir, job_ids );
+results.Properties.UserData.StlPath = stl_path;
+
+%% append oo_options.json path
+options_path = get_path( 'oo_options.json', results_dir, job_ids );
+results.Properties.UserData.OptionsPath = options_path;
 
 %% mark pareto frontier
 pareto_indices = find_pareto_indices( results{ :, results.Properties.UserData.ObjectiveStartColumn : end } );
@@ -90,6 +67,46 @@ results.is_pareto_dominant = is_pareto_dominant;
 results = movevars( results, 'is_pareto_dominant', 'before', results.Properties.UserData.ObjectiveStartColumn );
 results.Properties.UserData.ParetoIndicesColumn = results.Properties.UserData.ObjectiveStartColumn;
 results.Properties.UserData.ObjectiveStartColumn = results.Properties.UserData.ObjectiveStartColumn + 1;
+
+end
+
+
+function objectives_path = get_path( file_name_with_ext, results_dir, job_ids )
+
+[ ~, name, ext ] = fileparts( file_name_with_ext );
+if all( isnan( job_ids ) )
+    trial_objectives_path = fullfile( ...
+        results_dir, ...
+        [ name ext ] ...
+        );
+    if isfile( trial_objectives_path )
+        objectives_path = trial_objectives_path;
+    end 
+else
+    for i = 1 : length( job_ids )
+        
+        name = sprintf( ...
+            '%s_%i%s', ...
+            name, ...
+            job_ids( i ), ...
+            ext ...
+            );
+        objectives_path = fullfile( results_dir, name );
+        if isfile( objectives_path )
+            break;
+        end
+        
+    end
+    objectives_path = [];
+end
+
+if isempty( objectives_path )
+    warning( ...
+        [ 'Unable to locate path in results dir\n' ...
+        '%s' ], ...
+        results_dir ...
+        );
+end
 
 end
 
