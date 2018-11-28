@@ -17,6 +17,7 @@ classdef (Sealed) Component < Process & matlab.mixin.Copyable
         convex_hull_fv
         
         % invariant
+        centroid
         convex_hull_volume
         triangle_areas
         surface_area
@@ -64,7 +65,7 @@ classdef (Sealed) Component < Process & matlab.mixin.Copyable
             obj.triangle_areas = ...
                 Component.compute_triangle_areas( obj.fv );
             obj.surface_area = sum( obj.triangle_areas( : ) );
-            obj.volume = Component.compute_volume( obj.fv );
+            [ obj.volume, obj.centroid ] = Component.compute_volume( obj.fv );
             obj.hole_count = Component.count_holes( obj.fv );
             obj.flatness = Component.compute_flatness( ...
                 obj.fv.vertices, ...
@@ -263,9 +264,9 @@ classdef (Sealed) Component < Process & matlab.mixin.Copyable
         end
         
         
-        function volume = compute_volume( fv )
+        function [ volume, centroid ] = compute_volume( fv )
             
-            volume = compute_fv_volume( fv );
+            [ volume, centroid ] = compute_fv_volume( fv );
             
         end
         
