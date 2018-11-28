@@ -21,7 +21,7 @@ classdef (Sealed) ObjectiveVariables < handle
         
         function titles = get_titles( obj )
             
-            titles = obj.variables.title.';
+            titles = obj.variables.title;
             
         end
         
