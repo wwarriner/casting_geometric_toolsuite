@@ -14,14 +14,14 @@ classdef (Sealed) ObjectiveVariables < handle
             else
                 assert( false );
             end
-                
+            
             
         end
         
         
         function titles = get_titles( obj )
             
-            titles = obj.variables.title;
+            titles = obj.variables.title.';
             
         end
         
