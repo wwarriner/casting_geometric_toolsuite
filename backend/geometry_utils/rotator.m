@@ -1,14 +1,13 @@
-classdef rotator
+classdef (Sealed) rotator < handle
     
-    properties ( Access = private )
+    methods ( Access = public )
         
-        r
-        
-    end
-    
-    methods
-        
-        function obj = rotator( angles )
+        function obj = rotator( angles, center_of_rotation )
+            
+            if nargin < 2
+                center_of_rotation = [ 0 0 0 ];
+            end
+            obj.center_of_rotation = center_of_rotation;
             
             % angles length 2 applies for sand castings
             %  rotation about z produces the same process
@@ -27,7 +26,7 @@ classdef rotator
             sz = sin( angles( 3 ) );
 
             % X1Y2Z3 Euler Angles, extrinsic, active transformation
-            obj.r = [ ...
+            obj.rotation_matrix = [ ...
                 cy*cz, cz*sx*sy-cx*sz, cx*cz*sy+sx*sz; ...
                 cy*sz, cx*cz+sx*sy*sz, cx*sy*sz-cz*sx; ...
                 -sy, cy*sx, cx*cy ...
@@ -37,11 +36,22 @@ classdef rotator
         
         
         function vec = rotate( obj, vec )
-                
-            vec = vec * obj.r;
+            
+            vec = vec - obj.center_of_rotation;
+            vec = vec * obj.rotation_matrix;
+            vec = vec + obj.center_of_rotation;
             
         end
         
     end
+    
+    
+    properties ( Access = private )
+        
+        rotation_matrix
+        center_of_rotation
+        
+    end
+    
 end
 
