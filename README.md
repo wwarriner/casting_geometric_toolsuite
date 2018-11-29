@@ -24,8 +24,8 @@ The MATLAB toolboxes listed below are also required.
 - [Mapping Toolbox](https://www.mathworks.com/products/mapping.html) (orientation optimization only)
 
 #### Geometry Sources
-- `base_plate.stl` is [casting by catia](https://grabcad.com/library/casting-by-catia-1) from [grabcad.com] by user [RiBKa aTIKA](https://grabcad.com/ribka.atika-1)
-- `steering_column_mount.stl` is [Steering Column Mount](https://grabcad.com/library/steering-column-mount-1) from [grabcad.com] by user [Christian Mele](https://grabcad.com/christian.mele-1)
+- `base_plate.stl` is [casting by catia](https://grabcad.com/library/casting-by-catia-1) from [GrabCad](grabcad.com) by user [RiBKa aTIKA](https://grabcad.com/ribka.atika-1)
+- `steering_column_mount.stl` is [Steering Column Mount](https://grabcad.com/library/steering-column-mount-1) from [GrabCad](grabcad.com) by user [Christian Mele](https://grabcad.com/christian.mele-1)
 - `bearing_block.stl` is a 3D implementation of a 2D drawing from _Directional Solidification of Steel Castings_, R Wlodawer, Pergamon Press, Oxford, UK, 1966. ISBN: 9781483149110. Available from [Amazon](http://a.co/d/3Lwgh1f)
 - `bottle.stl`, `ring.stl`, `sphere.stl`, `wedge.stl` are all my own creations and subject to the terms of the license of this repository.
 
