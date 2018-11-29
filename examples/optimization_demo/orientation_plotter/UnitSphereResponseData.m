@@ -21,14 +21,22 @@ classdef (Sealed) UnitSphereResponseData < handle
                     objective_variables_path ...
                     );
                 objective_start_column = results.Properties.UserData.ObjectiveStartColumn;
-                objective_count = size( results_table, 2 ) - objective_start_column + 1;
+                objective_count = size( results, 2 ) - objective_start_column + 1;
                 titles = strcat( 'objective ', string( 1 : objective_count ) );
                 [ methods{ 1 : objective_count } ] = deal( 'natural' );
                 objective_variables = ObjectiveVariables( titles, methods );
             end
             
-            obj.objective_variables;
+            options_path = results.Properties.UserData.OptionsPath;
+            if isempty( options_path )
+                obj.options_path = which( 'oo_options.json' );
+            else
+                obj.options_path = options_path;
+            end
             
+            obj.objective_variables = objective_variables;
+            obj.stl_path = results.Properties.UserData.StlPath;
+            obj.name = results.Properties.UserData.Name;
             obj.titles = objective_variables.get_titles();
             
             interpolants = obj.generate_interpolants( results, objective_variables );
@@ -68,6 +76,20 @@ classdef (Sealed) UnitSphereResponseData < handle
         function variables = get_objective_variables( obj )
             
             variables = obj.objective_variables;
+            
+        end
+        
+        
+        function path = get_options_path( obj )
+            
+            path = obj.options_path;
+            
+        end
+        
+        
+        function path = get_stl_path( obj )
+            
+            path = obj.stl_path;
             
         end
         
@@ -212,6 +234,8 @@ classdef (Sealed) UnitSphereResponseData < handle
     properties ( Access = private )
         
         objective_variables
+        options_path
+        stl_path
         name
         titles
         phi_grid
