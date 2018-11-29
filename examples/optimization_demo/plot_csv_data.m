@@ -1,12 +1,15 @@
-load( 'base_plate_data.mat' );
-load( 'bearing_block_data.mat' );
-load( 'steering_column_mount_data.mat' );
+function usrp = plot_csv_data( sample_name )
 
-results_table = base_plate_data;
+data_file = [ sample_name '.mat' ];
+results = load( data_file );
+
 figure_resolution_px = 600;
 usra = UnitSphereResponseAxes();
 usrd = UnitSphereResponseData( ...
-    results_table, ...
+    results.(data_name), ...
     figure_resolution_px ...
     );
 usrp = UnitSphereResponsePlot( usrd, usra, figure_resolution_px );
+
+end
+
