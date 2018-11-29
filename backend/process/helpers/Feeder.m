@@ -162,6 +162,8 @@ classdef (Sealed) Feeder < ProcessHelper & matlab.mixin.Copyable
         
         function accessibility_ratio = determine_accessibility( obj, mesh )
             
+            % TODO include option for undercuts
+            % intersection with undercuts (i.e. cores) should be no-go
             min_z_offset = obj.magnitude;
             accessibility_mesh = obj.mesh_feeder( mesh, min_z_offset );
             intersect = Feeder.compute_intersection_volume( ...
