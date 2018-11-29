@@ -237,14 +237,26 @@ classdef (Sealed) UnitSphereResponsePlot < handle
         
         function ui_visualize_button_Callback( obj, h, ~, ~ )
             
+            % TODO lock out other callbacks while running
+            % TODO rotations around centroid, rather than origin
+            % probably best to change rotator, add second function
+            % TODO feeder intersection with undercuts means inaccessible
+            
+            stl_path = obj.response_data.get_stl_path();
+            % TODO turn into warning dialog
+            if isempty( stl_path )
+                fprintf( 1, 'unable to visualize component, no stl path provided\n' );
+                return;
+            end
+            
             %fprintf( 'not yet implemented\n' );
             %return;
             % attach options when running on hpc so we are consistent
             % attach stl when running etc etc
             % add both paths to result table
             obc = OrientationBaseCase( ...
-                'D:\wwarr\dev\repos\casting_geometric_toolsuite\examples\optimization_demo\oo_options.json', ...
-                '\\ENG-FS0\mse-annex$\Student Folders\William\Geometries\grabcad\stl\sent\week 3\base_plate.stl', ...
+                obj.response_data.get_options_path(), ...
+                stl_path, ...
                 obj.response_data.get_objective_variables() ...
                 );
             bc = obc.get_base_case();
