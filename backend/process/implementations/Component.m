@@ -13,9 +13,11 @@ classdef (Sealed) Component < Process & matlab.mixin.Copyable
         normals
         envelope
         draft_angles
+        draft_metric
         convex_hull_fv
         
         % invariant
+        centroid
         convex_hull_volume
         triangle_areas
         surface_area
@@ -58,13 +60,12 @@ classdef (Sealed) Component < Process & matlab.mixin.Copyable
             obj.printf( '\b %s\n', obj.name );
             [ obj.convex_hull_fv, obj.convex_hull_volume ] = ...
                 Component.determine_convex_hull( obj.fv.vertices );
-            obj.update();
             
             obj.printf( '  Computing statistics...\n' );
             obj.triangle_areas = ...
                 Component.compute_triangle_areas( obj.fv );
             obj.surface_area = sum( obj.triangle_areas( : ) );
-            obj.volume = Component.compute_volume( obj.fv );
+            [ obj.volume, obj.centroid ] = Component.compute_volume( obj.fv );
             obj.hole_count = Component.count_holes( obj.fv );
             obj.flatness = Component.compute_flatness( ...
                 obj.fv.vertices, ...
@@ -79,6 +80,8 @@ classdef (Sealed) Component < Process & matlab.mixin.Copyable
                 obj.volume, ...
                 obj.convex_hull_volume ...
                 );
+            
+            obj.update();
             
         end
         
@@ -191,6 +194,7 @@ classdef (Sealed) Component < Process & matlab.mixin.Copyable
             
             obj.envelope = MeshEnvelope( obj.fv );
             obj.draft_angles = Component.compute_draft_angles( obj.normals );
+            obj.draft_metric = obj.compute_draft_metric();
             
         end
         
@@ -214,6 +218,25 @@ classdef (Sealed) Component < Process & matlab.mixin.Copyable
             obj.name = name;
             obj.fv = fv;
             obj.normals = compute_normals( obj.fv );
+            
+        end
+        
+        
+        function draft_metric = compute_draft_metric( obj )
+            
+            normalized_draft_angles = obj.draft_angles ./ ( pi / 2 );
+%             contribution = norm_draft_angles;
+            NEAR_VERTICAL = 89/90; % one degree from vertical
+            contribution = zeros( size( normalized_draft_angles ) );
+            contribution( normalized_draft_angles >= NEAR_VERTICAL ) = 1;
+            contribution( normalized_draft_angles <= NEAR_VERTICAL ) = 0;
+%             contribution( contribution < 1 ) = interp1( ...
+%                 [ 0 1 ], ...
+%                 [ 0 0.1 ], ...
+%                 contribution( contribution < 1 ) ...
+%                 );            
+            normalized_triangle_areas = obj.triangle_areas ./ obj.surface_area;            
+            draft_metric = sum( contribution .* normalized_triangle_areas );
             
         end
         
@@ -241,9 +264,9 @@ classdef (Sealed) Component < Process & matlab.mixin.Copyable
         end
         
         
-        function volume = compute_volume( fv )
+        function [ volume, centroid ] = compute_volume( fv )
             
-            volume = compute_fv_volume( fv );
+            [ volume, centroid ] = compute_fv_volume( fv );
             
         end
         

@@ -18,20 +18,19 @@ classdef rotator
                 angles( 3 ) = 0;
             end
 
-            cx = cos( angles( 2 ) );
-            cy = cos( angles( 1 ) );
+            cx = cos( angles( 1 ) );
+            cy = cos( angles( 2 ) );
             cz = cos( angles( 3 ) );
 
-            sx = sin( angles( 2 ) );
-            sy = sin( angles( 1 ) );
+            sx = sin( angles( 1 ) );
+            sy = sin( angles( 2 ) );
             sz = sin( angles( 3 ) );
 
-            % X1Y2Z3 Tait-Bryan angles
-            % from https://en.wikipedia.org/wiki/Euler_angles#Rotation_matrix
+            % X1Y2Z3 Euler Angles, extrinsic, active transformation
             obj.r = [ ...
-                cy*cz,          -cy*sz,         sy; ...
-                cx*sz+cz*sx*sy, cx*cz-sx*sy*sz, -cy*sx; ...
-                sx*sz-cx*cz*sy, cz*sx+cx*sy*sz, cx*cy ...
+                cy*cz, cz*sx*sy-cx*sz, cx*cz*sy+sx*sz; ...
+                cy*sz, cx*cz+sx*sy*sz, cx*sy*sz-cz*sx; ...
+                -sy, cy*sx, cx*cy ...
                 ].';
             
         end
