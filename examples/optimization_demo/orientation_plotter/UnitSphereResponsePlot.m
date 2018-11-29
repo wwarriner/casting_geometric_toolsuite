@@ -237,54 +237,56 @@ classdef (Sealed) UnitSphereResponsePlot < handle
         end
         
         
-        function ui_visualize_button_Callback( obj, h, ~, ~ )
+        function ui_visualize_button_Callback( obj, ~, ~, ~ )
             
             % TODO lock out other callbacks while running
-            % TODO rotations around centroid, rather than origin
-            % probably best to change rotator, add second function
             % TODO feeder intersection with undercuts means inaccessible
-            
-            stl_path = obj.response_data.get_stl_path();
-            % TODO turn into warning dialog
-            if isempty( stl_path )
-                fprintf( 1, 'unable to visualize component, no stl path provided\n' );
-                return;
-            end
-            
-            obc = OrientationBaseCase( ...
-                obj.response_data.get_options_path(), ...
-                stl_path, ...
-                obj.response_data.get_objective_variables() ...
-                );
-            bc = obc.get_base_case();
-            rc = obc.get_rotated_case( obj.last_picked_decisions );
             
             fh = figure();
             axh = axes( fh );
             axh.Color = 'none';
-            axis( axh, 'equal', 'vis3d', 'off' );
+            axis( axh, 'square', 'vis3d', 'off' );
             hold( axh, 'on' );
-            base_component = bc.get( Component.NAME );
-            bh = patch( axh, base_component.fv );
-            bh.FaceColor = [ 0.9 0.9 0.9 ];
-            bh.FaceAlpha = 0.2;
-            bh.EdgeColor = 'none';
-            rot_component = rc.get( Component.NAME );
-            rh = patch( axh, rot_component.fv );
-            rh.FaceColor = [ 0.9 0.9 0.9 ];
-            rh.EdgeColor = 'none';
-            max_pt = max( [ base_component.envelope.max_point; rot_component.envelope.max_point ], [], 1 );
-            min_pt = min( [ base_component.envelope.min_point; rot_component.envelope.min_point ], [], 1 );
-            pa = PrettyAxes3D( min_pt, max_pt, [ 0 0 0 ] );
+            rc_fv = obj.response_data.get_rotated_component_fv( obj.last_picked_decisions );
+            rch = patch( axh, rc_fv, 'SpecularStrength', 0.0 );
+            rch.FaceColor = [ 0.9 0.9 0.9 ];
+            rch.EdgeColor = 'none';
+            
+            rf_fvs = obj.response_data.get_rotated_feeder_fvs( obj.last_picked_decisions );
+            for i = 1 : numel( rf_fvs )
+                
+                rfh = patch( axh, rf_fvs{ i }, 'SpecularStrength', 0.0 );
+                rfh.FaceColor = [ 0.75 0.0 0.0 ];
+                rfh.FaceAlpha = 0.5;
+                rfh.EdgeColor = 'none';
+                
+            end
+            
+            all_fvs = [ rf_fvs; rc_fv ];
+            min_point = [ 0 0 0 ];
+            max_point = [ 0 0 0 ];
+            for i = 1 : numel( all_fvs )
+                
+                curr_min_point = min( all_fvs{ i }.vertices );
+                min_point = min( [ curr_min_point; min_point ] );
+                
+                curr_max_point = max( all_fvs{ i }.vertices );
+                max_point = max( [ curr_max_point; max_point ] );
+                
+            end
+            cor_point = obj.response_data.get_center_of_rotation();
+            pa = PrettyAxes3D( min_point, max_point, cor_point );
             pa.draw( axh );
+            bm = BasicMold( min_point, max_point, cor_point );
+            bm.draw( axh );
             view( 3 );
-            camlight( axh );
+            light( axh, 'Position', [ 0 0 -1 ] );
+            light( axh, 'Position', [ 0 0 1 ] );
+            
             % attach observer for status updates?
             % factor out feature computation from determine_objectives in obc
             % generate desired visualization based on results table, i.e. using
             %  "process" and the appropriate visualization method
-            % create new figure etc
-            % display vis in figure
             
         end
         

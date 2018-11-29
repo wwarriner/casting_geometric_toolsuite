@@ -73,27 +73,6 @@ classdef (Sealed) UnitSphereResponseData < handle
         end
         
         
-        function variables = get_objective_variables( obj )
-            
-            variables = obj.objective_variables;
-            
-        end
-        
-        
-        function path = get_options_path( obj )
-            
-            path = obj.options_path;
-            
-        end
-        
-        
-        function path = get_stl_path( obj )
-            
-            path = obj.stl_path;
-            
-        end
-        
-        
         function name = get_name( obj )
             
             name = obj.name;
@@ -228,14 +207,33 @@ classdef (Sealed) UnitSphereResponseData < handle
             
         end
         
+        
+        function fv = get_rotated_component_fv( obj, angles )
+            
+            fv = obj.orientation_base_case.get_rotated_component_fv( angles );
+            
+        end
+        
+        
+        function fvs = get_rotated_feeder_fvs( obj, angles )
+            
+            fvs = obj.orientation_base_case.get_rotated_feeder_fvs( angles );
+            
+        end
+        
+        
+        function center = get_center_of_rotation( obj )
+            
+            center = obj.orientation_base_case.get_center_of_rotation();
+            
+        end
+        
     end
     
     
     properties ( Access = private )
         
-        objective_variables
-        options_path
-        stl_path
+        orientation_base_case
         name
         titles
         phi_grid
