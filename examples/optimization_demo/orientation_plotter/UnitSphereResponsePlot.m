@@ -249,11 +249,6 @@ classdef (Sealed) UnitSphereResponsePlot < handle
                 return;
             end
             
-            %fprintf( 'not yet implemented\n' );
-            %return;
-            % attach options when running on hpc so we are consistent
-            % attach stl when running etc etc
-            % add both paths to result table
             obc = OrientationBaseCase( ...
                 obj.response_data.get_options_path(), ...
                 stl_path, ...
@@ -278,7 +273,8 @@ classdef (Sealed) UnitSphereResponsePlot < handle
             rh.EdgeColor = 'none';
             max_pt = max( [ base_component.envelope.max_point; rot_component.envelope.max_point ], [], 1 );
             min_pt = min( [ base_component.envelope.min_point; rot_component.envelope.min_point ], [], 1 );
-            add_pretty_3d_axes( axh, min_pt, max_pt, [ 0 0 0 ] );
+            pa = PrettyAxes3D( min_pt, max_pt, [ 0 0 0 ] );
+            pa.draw( axh );
             view( 3 );
             camlight( axh );
             % attach observer for status updates?
