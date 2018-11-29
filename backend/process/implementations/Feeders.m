@@ -118,6 +118,19 @@ classdef (Sealed) Feeders < Process & matlab.mixin.Copyable
         end
         
         
+        function fvs = rotate_fvs_only( obj, rotator )
+            
+            clone = obj.copy();
+            fvs = cell( clone.count, 1 );
+            for i = 1 : clone.count
+                
+                fvs{ i } = obj.feeders( i ).rotate_fv_only( rotator );
+                
+            end
+            
+        end
+        
+        
         function write( obj, title, common_writer )
             
             common_writer.write_fv_sequence( title, obj.to_fvs() );
