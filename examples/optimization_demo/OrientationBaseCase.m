@@ -196,7 +196,7 @@ classdef (Sealed) OrientationBaseCase < handle
                 options ...
                 )
             
-            r = rotator( angles );
+            r = Rotator( angles );
             rotated_case = Results();
             rotated_case.add( Component.NAME, base_case.get( Component.NAME ).rotate( r ) );
             mr = Mesh( rotated_case, options );

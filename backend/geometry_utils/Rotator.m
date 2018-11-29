@@ -1,8 +1,8 @@
-classdef (Sealed) rotator < handle
+classdef (Sealed) Rotator < handle
     
     methods ( Access = public )
         
-        function obj = rotator( angles, center_of_rotation )
+        function obj = Rotator( angles, center_of_rotation )
             
             if nargin < 2
                 center_of_rotation = [ 0 0 0 ];
