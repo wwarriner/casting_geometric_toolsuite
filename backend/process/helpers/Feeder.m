@@ -48,6 +48,15 @@ classdef (Sealed) Feeder < ProcessHelper & matlab.mixin.Copyable
         end
         
         
+        function fv = rotate_fv_only( obj, rotator )
+            
+            clone = obj.copy();
+            clone.position = rotator.rotate( clone.position );
+            fv = clone.update_fv_only();
+            
+        end
+        
+        
         function tr = to_table_row( obj )
             
             tr = [ ...
@@ -126,6 +135,17 @@ classdef (Sealed) Feeder < ProcessHelper & matlab.mixin.Copyable
             %  determine exclusive vol
             %  determine interface area
             %  determine accesibility
+            
+        end
+        
+        
+        function fv = update_fv_only( obj )
+            
+            fv = Feeder.generate_fv( ...
+                obj.position, ...
+                obj.radius, ...
+                obj.height ...
+                );
             
         end
         
