@@ -54,11 +54,31 @@ classdef (Sealed) OrientationBaseCase < handle
         
         function rotated_case = get_rotated_case( obj, angles )
             
-            rotated_case = obj.generate_rotated_case( ...
-                angles, ...
-                obj.base_case, ...
-                obj.options ...
-                );
+            rotated_case = obj.generate_rotated_case( angles );
+            
+        end
+        
+        
+        function fv = get_rotated_component_fv( obj, angles )
+            
+            c = obj.base_case.get( Component.NAME );
+            rc = c.rotate( obj.create_rotator( angles ) );
+            fv = rc.fv;
+            
+        end
+        
+        
+        function fvs = get_rotated_feeder_fvs( obj, angles )
+            
+            f = obj.base_case.get( Feeders.NAME );
+            fvs = f.rotate_fvs_only( obj.create_rotator( angles ) );
+            
+        end
+        
+        
+        function center = get_center_of_rotation( obj )
+            
+            center = obj.base_case.get( Component.NAME ).centroid;
             
         end
         
@@ -164,6 +184,26 @@ classdef (Sealed) OrientationBaseCase < handle
             
         end
         
+        
+        function rotated_case = generate_rotated_case( obj, angles )
+            
+            r = obj.create_rotator( angles );
+            rotated_case = Results();
+            rotated_case.add( Component.NAME, obj.base_case.get( Component.NAME ).rotate( r ) );
+            mr = Mesh( rotated_case, obj.options );
+            mr.run();
+            rotated_case.add( Mesh.NAME, mr );
+            rotated_case.add( Feeders.NAME, obj.base_case.get( Feeders.NAME ).rotate( r, mr ) );
+            
+        end
+        
+        
+        function rotator = create_rotator( obj, angles )
+            
+            rotator = Rotator( angles, obj.get_center_of_rotation() );
+            
+        end
+        
     end
     
     
@@ -186,23 +226,6 @@ classdef (Sealed) OrientationBaseCase < handle
                 base_case.add( current.NAME, current );
                 
             end
-            
-        end
-        
-        
-        function rotated_case = generate_rotated_case( ...
-                angles, ...
-                base_case, ...
-                options ...
-                )
-            
-            r = Rotator( angles );
-            rotated_case = Results();
-            rotated_case.add( Component.NAME, base_case.get( Component.NAME ).rotate( r ) );
-            mr = Mesh( rotated_case, options );
-            mr.run();
-            rotated_case.add( Mesh.NAME, mr );
-            rotated_case.add( Feeders.NAME, base_case.get( Feeders.NAME ).rotate( r, mr ) );
             
         end
         
