@@ -1,4 +1,4 @@
-classdef (Sealed) PrettyAxes3D < handle & matlab.mixin.Copyable
+classdef PrettyAxes3D < handle & matlab.mixin.Copyable
     
     methods ( Access = public )
         
@@ -37,21 +37,16 @@ classdef (Sealed) PrettyAxes3D < handle & matlab.mixin.Copyable
                 axes_handle = gca();
             end
             
-            if ~ishold( axes_handle )
-                hold( axes_handle, 'on' );
-                old_hold_state = 'off';
-            else
-                old_hold_state = 'on';
-            end
+            state_restorer = obj.hold_if_not_held( axes_handle ); %#ok<NASGU>
             
-            [ min_pt, max_pt ] = obj.get_extrema( axes_handle );
-            
+            extrema = obj.get_extrema( axes_handle );
+            [ min_pt, max_pt ] = obj.extend_extrema( extrema, obj.scaling_factor );
             obj.plot_axis_lines( axes_handle, min_pt );
             obj.plot_axis_lines( axes_handle, max_pt );
+            
+            [ min_pt, max_pt ] = obj.extend_extrema( extrema, obj.scaling_factor + obj.LABEL_SCALING_FACTOR_ADDITION );
             obj.plot_text_labels( axes_handle, min_pt, +1 );
             obj.plot_text_labels( axes_handle, max_pt, -1 );
-            
-            hold( axes_handle, old_hold_state );
             
         end
         
@@ -136,8 +131,51 @@ classdef (Sealed) PrettyAxes3D < handle & matlab.mixin.Copyable
     
     properties ( Access = private, Constant )
         
-        DEFAULT_SCALING_FACTOR = 1.2;
-        LABEL_SCALING_FACTOR = 1.1;
+        DEFAULT_SCALING_FACTOR = 1.1;
+        LABEL_SCALING_FACTOR_ADDITION = 0.06;
+        
+    end
+    
+    
+    methods ( Access = protected )
+        
+        function origin = get_origin( obj )
+            
+            origin = obj.origin;
+            
+        end
+        
+        
+        function [ min_pt, max_pt ] = extend_extrema( ...
+                obj, ...
+                extrema, ...
+                scaling_factor ...
+                )
+            
+            extrema = extrema ...
+                + obj.compute_extensions( extrema, scaling_factor );
+            min_pt = extrema( 1, : );
+            max_pt = extrema( 2, : );
+            
+        end
+        
+        
+        function extrema = get_extrema( obj, axes_handle )
+            
+            extrema = [ ...
+                xlim( axes_handle ); ...
+                ylim( axes_handle ); ...
+                zlim( axes_handle ) ...
+                ].';
+            if ~isempty( obj.min_point )
+                extrema( 1, : ) = obj.min_point;
+            end
+            if ~isempty( obj.max_point )
+                extrema( 2, : ) = obj.max_point;
+            end
+            extrema = sort( extrema );
+            
+        end
         
     end
     
@@ -165,7 +203,6 @@ classdef (Sealed) PrettyAxes3D < handle & matlab.mixin.Copyable
         
         function plot_text_labels( obj, axes_handle, extreme, direction )
             
-            extreme = extreme * obj.LABEL_SCALING_FACTOR;
             for i = 1 : 3
                 
                 extents = obj.origin;
@@ -180,37 +217,6 @@ classdef (Sealed) PrettyAxes3D < handle & matlab.mixin.Copyable
                 obj.format_text( handle, obj.get_color( i ) );
                 
             end
-            
-        end
-        
-        
-        function [ min_pt, max_pt ] = get_extrema( obj, axes_handle )
-            
-            extrema = [ ...
-                xlim( axes_handle ); ...
-                ylim( axes_handle ); ...
-                zlim( axes_handle ) ...
-                ].';
-            if ~isempty( obj.min_point )
-                extrema( 1, : ) = obj.min_point;
-            end
-            if ~isempty( obj.max_point )
-                extrema( 2, : ) = obj.max_point;
-            end
-            extrema = sort( extrema ) + obj.get_extensions( extrema );
-            min_pt = extrema( 1, : );
-            max_pt = extrema( 2, : );
-        
-        end
-        
-        
-        function extensions = get_extensions( obj, extrema )
-            
-            base_extension = max( abs( extrema ) ) * ( obj.scaling_factor - 1 );
-            extensions = ...
-                base_extension .* ...
-                sign( extrema ) .* ...
-                ones( size( extrema ) );
             
         end
         
@@ -232,6 +238,34 @@ classdef (Sealed) PrettyAxes3D < handle & matlab.mixin.Copyable
         function color = get_color( obj, axis_index )
             
             color = obj.colors( axis_index, : );
+            
+        end
+        
+    end
+    
+    
+    methods ( Access = protected, Static )
+        
+        function extensions = compute_extensions( extrema, scaling_factor )
+            
+            base_extension = max( abs( extrema( : ) ) ) * ( scaling_factor - 1 );
+            extensions = ...
+                base_extension .* ...
+                sign( extrema ) .* ...
+                ones( size( extrema ) );
+            
+        end
+        
+        
+        function state_restorer = hold_if_not_held( axes_handle )
+            
+            if ~ishold( axes_handle )
+                hold( axes_handle, 'on' );
+                old_state = 'off';
+            else
+                old_state = 'on';
+            end
+            state_restorer = onCleanup( @()hold( axes_handle, old_state ) );
             
         end
         
