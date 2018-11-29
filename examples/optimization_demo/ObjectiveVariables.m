@@ -33,6 +33,13 @@ classdef (Sealed) ObjectiveVariables < handle
         end
         
         
+        function methods = get_interpolation_methods( obj )
+            
+            methods = obj.variables.interpolation_method;
+            
+        end
+        
+        
         function method = get_interpolation_method( obj, index )
             
             method = obj.variables.interpolation_method{ index };
