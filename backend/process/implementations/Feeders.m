@@ -110,7 +110,7 @@ classdef (Sealed) Feeders < Process & matlab.mixin.Copyable
             for i = 1 : clone.count
                 
                 clone.feeders( i ) = ...
-                    obj.feeders( i ).copy().rotate( rotator, mesh );
+                    obj.feeders( i ).rotate( rotator, mesh );
                 
             end
             clone.update( mesh );
