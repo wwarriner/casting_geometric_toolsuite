@@ -27,6 +27,7 @@ classdef (Sealed) UnitSphereResponsePlot < handle
             obj.last_picked_decisions = [ 0 0 ];
             
             obj.update_surface_plots();
+            obj.update_picked_point();
             
         end
         
@@ -135,6 +136,7 @@ classdef (Sealed) UnitSphereResponsePlot < handle
             if obj.get_objective_index() ~= obj.old_listbox_value
                 obj.update_surface_plots();
                 obj.update_minima();
+                obj.update_picked_point();
                 obj.update_old_listbox_value();
             end
             drawnow();
@@ -308,6 +310,14 @@ classdef (Sealed) UnitSphereResponsePlot < handle
             obj.static_text_h.String = sprintf( pattern, phi_deg, theta_deg, value );
             drawnow();
             obj.last_picked_decisions = [ phi theta ];
+            obj.update_picked_point();
+            
+        end
+        
+        
+        function update_picked_point( obj )
+            
+            obj.response_axes.update_picked_point( rad2deg( obj.last_picked_decisions ) );
             
         end
         
