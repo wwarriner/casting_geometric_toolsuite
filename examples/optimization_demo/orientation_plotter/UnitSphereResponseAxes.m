@@ -30,8 +30,9 @@ classdef (Sealed) UnitSphereResponseAxes < handle
             
             obj.surface_plot_handles = obj.create_plot_handles( @(side,values)obj.create_surface_plot( side, phi_grid, theta_grid, values ) );
             [ PHI_INDEX, THETA_INDEX ] = unit_sphere_plot_indices();
-            obj.minimum_plot_handles = obj.create_plot_handles( @(side,points)obj.create_minimum_plot( PHI_INDEX, THETA_INDEX, points ) );
+            obj.minimum_plot_handles = obj.create_plot_handles( @(side,point)obj.create_minimum_plot( PHI_INDEX, THETA_INDEX, point ) );
             obj.pareto_front_plot_handles = obj.create_plot_handles( @(side,points)obj.create_pareto_front_plot( PHI_INDEX, THETA_INDEX, points ) );
+            obj.picked_point_plot_handles = obj.create_plot_handles( @(side,point)obj.create_picked_point_plot( PHI_INDEX, THETA_INDEX, point ) );
             
         end
         
@@ -71,6 +72,13 @@ classdef (Sealed) UnitSphereResponseAxes < handle
         end
         
         
+        function update_picked_point( obj, values )
+            
+            obj.update_plot_handles( obj.picked_point_plot_handles, values );
+            
+        end
+        
+        
     end
     
     
@@ -83,6 +91,7 @@ classdef (Sealed) UnitSphereResponseAxes < handle
         surface_plot_handles
         minimum_plot_handles
         pareto_front_plot_handles
+        picked_point_plot_handles
         
     end
     
@@ -281,6 +290,19 @@ classdef (Sealed) UnitSphereResponseAxes < handle
             handle.MarkerSize = 4;
             handle.MarkerEdgeColor = 'k';
             handle.MarkerFaceColor = 'r';
+            handle.HitTest = 'off';
+            
+        end
+        
+        
+        function handle = create_picked_point_plot( phi_index, theta_index, decisions )
+            
+            handle = UnitSphereResponseAxes.add_point_plot( phi_index, theta_index, decisions );
+            handle.LineStyle = 'none';
+            handle.Marker = 'o';
+            handle.MarkerSize = 6;
+            handle.MarkerEdgeColor = 'k';
+            handle.MarkerFaceColor = 'b';
             handle.HitTest = 'off';
             
         end
