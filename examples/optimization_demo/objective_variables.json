@@ -83,7 +83,7 @@
 		"title": "flask_height",
 		"type": "continuous",
 		"process": "Feeders",
-		"property": "get_total_rigged_height( DIM )",
+		"property": "get_total_rigged_height( dimension )",
 		"metric": "property",
 		"notes": "required flask height ideally minimized"
 	}

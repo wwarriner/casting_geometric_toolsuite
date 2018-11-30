@@ -48,16 +48,16 @@ classdef (Sealed) ObjectiveVariables < handle
         
         
         % retrieval function must take a process name and return the desired process object
-        function value = evaluate( obj, index, retrieval_function )
+        function value = evaluate( obj, index, retrieval_function, dimension, gravity_direction ) %#ok<INUSD>
             
             metric_fn = eval( sprintf( ...
                 '@(property)%s;\n', ...
                 obj.get_metric( index ) ...
-                ) );
+                ) ); %#ok<NASGU>
             process = eval( sprintf( '%s.NAME', obj.get_process( index ) ) );
-            process = retrieval_function( process );
+            process = retrieval_function( process ); %#ok<NASGU>
             property = obj.get_property( index );
-            value = metric_fn( process.(property) );
+            value = eval( sprintf( 'metric_fn( process.%s )', property ) );
             
         end
         

@@ -88,7 +88,7 @@ classdef (Sealed) OrientationBaseCase < handle
             rotated_case = obj.get_rotated_case( angles );
             
             DIM = 3;
-            UP = 'up';
+            GRAVITY_DIRECTION = 'down';
             
             uc = Undercuts();
             uc.legacy_run( rotated_case.get( Mesh.NAME ), DIM );
@@ -97,14 +97,14 @@ classdef (Sealed) OrientationBaseCase < handle
             pp.legacy_run( rotated_case.get( Mesh.NAME ), DIM, true );
             rotated_case.add( pp.NAME, pp );
             wf = Waterfall();
-            wf.legacy_run( rotated_case.get( Mesh.NAME ), pp, UP );
+            wf.legacy_run( rotated_case.get( Mesh.NAME ), pp, GRAVITY_DIRECTION );
             rotated_case.add( wf.NAME, wf );
             
             objective_count = obj.objective_variables.get_objective_count();
             objectives = nan( 1, objective_count );
             for i = 1 : objective_count
                 
-                objectives( i ) = obj.objective_variables.evaluate( i, @rotated_case.get );
+                objectives( i ) = obj.objective_variables.evaluate( i, @rotated_case.get, DIM, GRAVITY_DIRECTION );
                 
             end
             
@@ -114,7 +114,7 @@ classdef (Sealed) OrientationBaseCase < handle
         function titles = get_titles( obj )
             
             titles = [ ...
-                obj.get_decision_variable_titles() ...
+                obj.get_decision_variable_titles(); ...
                 obj.get_objective_variable_titles() ...
                 ];
             
