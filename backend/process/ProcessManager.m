@@ -141,7 +141,7 @@ classdef (Sealed) ProcessManager < Cancelable & Notifier & handle
                 
                 key = keyset{ i };
                 result = obj.results.get( key );
-                summary = merge_tables( summary, result.to_summary(), key );
+                summary = [ summary result.to_summary() ];
                 
             end
             summary.Properties.RowNames = { row_name };
