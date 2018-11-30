@@ -48,7 +48,7 @@ classdef (Sealed) Component < Process & matlab.mixin.Copyable
         
         function run( obj )
             
-            if ~isempty(obj.options)
+            if ~isempty( obj.options )
                 obj.stl_path = obj.options.input_stl_path;
                 assert( ~isempty( obj.stl_path ) );
             end
@@ -93,8 +93,10 @@ classdef (Sealed) Component < Process & matlab.mixin.Copyable
         function legacy_run( obj, varargin )
             
             if nargin == 2
+                % stl_path
                 obj.stl_path = varargin{ 1 };
             elseif nargin == 3
+                % name, fv
                 obj.copy_from_fv( varargin{ 1 }, varargin{ 2 } );
             end
             obj.run();
