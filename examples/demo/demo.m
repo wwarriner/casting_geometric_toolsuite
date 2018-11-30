@@ -22,7 +22,10 @@ input_count = numel( stl_paths );
 data = cell( input_count, 1 );
 for i = 1 : input_count
     
-    options = Options( '', option_path, stl_paths{ i }, output_path );
+    stl_path = stl_paths{ i };
+    [ ~, stl_name, ~ ] = fileparts( stl_path );
+    current_output_path = fullfile( output_path, stl_name );
+    options = Options( '', option_path, stl_path, current_output_path );
     try
         pm = ProcessManager( pd, options );
         pm.run();
