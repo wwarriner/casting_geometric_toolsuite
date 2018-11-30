@@ -117,9 +117,18 @@ classdef (Sealed) PartingPerimeter < Process
             obj.perimeter( logical( unprojected_jog_free ) ) = JOG_FREE_VALUE;
             
             %% PARTING LINE
-            outer_perimeter = bwmorph( bwmorph( bwmorph( bwperim( imfill( obj.projected_perimeter, 'holes' ) ), 'thin', inf ), 'spur' ), 'thin', inf );
+            %p = padarray( obj.projected_perimeter, [ 1 1 ], 0, 'both' );
+            p = obj.projected_perimeter;
+            a = imfill( p, 'holes' );
+            %b = imdilate( a, conndef( 2, 'maximal' ) );
+            c = bwperim( a );
+            d = bwmorph( c, 'thin', inf );
+            e = bwmorph( d, 'spur', inf );
+            f = bwmorph( e, 'thin', inf );
+            outer_perimeter = f;
+            %outer_perimeter = f( 2 : end, 2 : end );
             [ loop_indices, right_side_distances ] = ...
-                obj.order_indices_by_loop( outer_perimeter);
+                obj.order_indices_by_loop( outer_perimeter );
             if obj.do_optimize_parting_line
                 obj.printf( '  Optimizing parting line...\n' );
                 pl = PartingLine( ...
