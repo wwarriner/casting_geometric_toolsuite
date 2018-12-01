@@ -59,13 +59,12 @@ segments_g( ...
     ) ...
     = -1;
 
-%% CORE STUFF
+%% CORE SEGMENTATION CLEANING
 starting_core_segments = segments_f;
 segment_count = max( starting_core_segments( : ) );
 total_pixel_count = sum( potential_cores( : ) );
 cc_pixel_counts = arrayfun( @(y)sum(starting_core_segments(:)==y), 1 : segment_count );
 cc_volume_ratios = cc_pixel_counts ./ total_pixel_count;
-min_ratio = 1 / total_pixel_count;
 indices_to_remove = cc_volume_ratios < 1/1000;
 cleaned_segments = starting_core_segments;
 for i = 1 : segment_count
@@ -74,25 +73,41 @@ for i = 1 : segment_count
     end
 end
 
+%% UNDERCUT CLEANING
 undercuts = data.get( Undercuts.NAME ).array;
+cc = bwconncomp( undercuts, conndef( 3, 'minimal' ) );
+undercut_segments = double( labelmatrix( cc ) );
+undercut_count = cc.NumObjects;
+total_pixel_count = sum( undercuts( : ) );
+cc_pixel_counts = arrayfun( @(y)sum(undercut_segments(:)==y), 1 : undercut_count );
+cc_volume_ratios = cc_pixel_counts ./ total_pixel_count;
+indices_to_remove = cc_volume_ratios < 1/1000;
+cleaned_undercuts = undercut_segments;
+for i = 1 : undercut_count
+    if indices_to_remove( i )
+        cleaned_undercuts( cleaned_undercuts == i ) = 0;
+    end
+end
+new_undercuts = double( cleaned_undercuts > 0 );
 
-undercut_segment_mask = ( cleaned_segments > 0 ) + ( cleaned_segments & undercuts );
+%% DELETING CORE SEGMENTS THAT DONT OVERLAP UNDERCUTS
+undercut_segment_mask = ( cleaned_segments > 0 ) + ( cleaned_segments & cleaned_undercuts );
 cc = bwconncomp( undercut_segment_mask > 0, conndef( 3, 'minimal' ) );
-undercut_segments = labelmatrix( cc );
+undercut_segments = double( labelmatrix( cc ) );
 undercut_only = undercut_segments;
 for i = 1 : cc.NumObjects
-    if ~sum( undercut_segments == i & undercuts )
+    if ~sum( undercut_segments == i & cleaned_undercuts )
         undercut_only( undercut_segments == i ) = 0;
     end
 end
 
 %% Thing of interest
-thing = undercut_only > 0 | undercuts;
+thing = new_undercuts > 0 | cleaned_undercuts;
 cleaned_thing = thing;
 for i = 1 : size( thing, DIMENSION )
     
     cc = bwconncomp( thing( :, :, i ), conndef( 2, 'minimal' ) );
-    uc_slice = undercuts( :, :, i );
+    uc_slice = cleaned_undercuts( :, :, i );
     ext_slice = m.exterior( :, :, i );
     ccs_to_remove = cellfun( @(x)~any( uc_slice( x ) ), cc.PixelIdxList );
     current_slice = cleaned_thing( :, :, i );
@@ -118,3 +133,9 @@ for i = 1 : cc.NumObjects
     
 end
 core_like_segments( interior ) = 0;
+% needs cleanup like above routine
+
+%% Visualize
+volumeViewer( double( core_like_segments > 0 ) - double( core_like_segments > 0 & new_undercuts ) + 2*new_undercuts + 3*interior );
+volumeViewer( core_like_segments );
+
