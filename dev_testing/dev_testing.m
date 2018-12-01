@@ -7,9 +7,6 @@ c = data.get( Component.NAME );
 cv = Component(); cv.legacy_run( 'convex_hull', c.convex_hull_fv );
 delta = ComponentDelta( c, cv, op.element_count );
 m = data.get( Mesh.NAME );
-% 
-% m_d = Mesh();
-% m_d.build_from_image( delta.delta == delta.REVISED_VALUE, delta.shared_envelope );
 
 %% DISTANCE FIELD
 interior = delta.delta == delta.get_shared_value();
@@ -26,19 +23,6 @@ TOLERANCE = 1e-4;
 height = ( 1 + TOLERANCE ) / max_edt;
 filt = max_edt .* imhmax( normalized_edt, height );
 
-%% TEST
-ult = bwulterode( filt );
-geod = bwdistgeodesic( potential_cores | exterior, ult );
-geod( ~potential_cores ) = 0;
-geod = max( geod( : ) ) - geod;
-
-max_edt = max( geod( : ) );
-normalized_edt = geod ./ max_edt;
-TOLERANCE = 1e-4;
-height = ( 1 + TOLERANCE ) / max_edt;
-geod = max_edt .* imhmax( normalized_edt, height );
-
-
 %% WATERSHED
 ws_filt = filt;
 ws_filt( ~potential_cores ) = -inf;
@@ -49,15 +33,33 @@ segments_f( ...
     & segments_f <= 0 ...
     ) ...
     = -1;
-ws_geod = geod;
-ws_geod( ~potential_cores ) = -inf;
-segments_g = double( watershed( -ws_geod ) );
-segments_g( ~potential_cores ) = 0;
-segments_g( ...
-    potential_cores ...
-    & segments_g <= 0 ...
-    ) ...
-    = -1;
+
+%% ALTERNATE METHOD
+% TODO test this method vs segments_f
+%
+% TODO is it possible to make use of ulterode for anything related to
+% segmentation, filtering, etc?
+% Ulterode
+% ult = bwulterode( filt );
+% geod = bwdistgeodesic( potential_cores | exterior, ult );
+% geod( ~potential_cores ) = 0;
+% geod = max( geod( : ) ) - geod;
+% 
+% max_edt = max( geod( : ) );
+% normalized_edt = geod ./ max_edt;
+% TOLERANCE = 1e-4;
+% height = ( 1 + TOLERANCE ) / max_edt;
+% geod = max_edt .* imhmax( normalized_edt, height );
+%
+% ws_geod = geod;
+% ws_geod( ~potential_cores ) = -inf;
+% segments_g = double( watershed( -ws_geod ) );
+% segments_g( ~potential_cores ) = 0;
+% segments_g( ...
+%     potential_cores ...
+%     & segments_g <= 0 ...
+%     ) ...
+%     = -1;
 
 %% CORE SEGMENTATION CLEANING
 starting_core_segments = segments_f;
@@ -102,6 +104,8 @@ for i = 1 : cc.NumObjects
 end
 
 %% Thing of interest
+% slicing + bwdistgeodesic has been slow in the past, make sure this works well
+% at higher resolutions
 thing = new_undercuts > 0 | cleaned_undercuts;
 cleaned_thing = thing;
 for i = 1 : size( thing, DIMENSION )
