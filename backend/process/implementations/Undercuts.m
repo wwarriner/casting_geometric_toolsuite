@@ -36,7 +36,7 @@ classdef (Sealed) Undercuts < Process
             if ~isempty( obj.results )
                 
                 obj.mesh = obj.results.get( Mesh.NAME );
-            
+                
             end
             
             assert( ~isempty( obj.mesh ) );
@@ -62,6 +62,7 @@ classdef (Sealed) Undercuts < Process
             obj.run();
             
         end
+        
         
         function write( obj, title, common_writer )
             
@@ -89,6 +90,7 @@ classdef (Sealed) Undercuts < Process
                 };
             
         end
+        
         
         function orientation_dependent = is_orientation_dependent()
             
@@ -150,14 +152,14 @@ classdef (Sealed) Undercuts < Process
             
             painting = false;
             for i = 1 : sz( 1 )
-
+                
                 for k = 1 : sz( 3 )
                     
                     painting = obj.paint_forward( i, k, sz( 2 ), painting );
                     painting = obj.unpaint_reverse( i, k, sz( 2 ), painting );
-
+                    
                 end
-
+                
             end
             
             obj.array = Undercuts.remove_spurious_undercuts( obj.array );
@@ -169,19 +171,19 @@ classdef (Sealed) Undercuts < Process
         function painting = paint_forward( obj, i, k, col_length, painting )
             
             for j = 1 : col_length
-
+                
                 if obj.rotated_interior( i, j, k ) == 1
-
+                    
                     painting = true;
-
+                    
                 end
-
+                
                 if painting == true && obj.rotated_interior( i, j, k ) == 0
-
+                    
                     obj.array( i, j, k ) = 1;
-
+                    
                 end
-
+                
             end
             
         end
@@ -190,21 +192,21 @@ classdef (Sealed) Undercuts < Process
         function painting = unpaint_reverse( obj, i, k, col_length, painting )
             
             for j = col_length : -1 : 1
-
+                
                 if painting == true
-
+                    
                     if obj.rotated_interior( i, j, k ) == 0
-
+                        
                         obj.array( i, j, k ) = 0;
-
+                        
                     else
-
+                        
                         painting = false;
-
+                        
                     end
-
+                    
                 end
-
+                
             end
             
         end
@@ -216,13 +218,7 @@ classdef (Sealed) Undercuts < Process
         
         function core_array = remove_spurious_undercuts( core_array )
             
-            % nhood only operates in xy plane
-            % deletes "stringy" vertical cores caused by triangle
-            % misalignments in stl
-            nhood = zeros( [ 3 3 3 ] );
-            nhood( :, :, 2 ) = ones( [ 3 3 ] );
-            core_array = imerode( core_array, nhood );
-            core_array = imdilate( core_array, nhood );
+            core_array = remove_small_connected_regions( core_array );
             
         end
         
