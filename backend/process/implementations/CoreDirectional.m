@@ -22,14 +22,24 @@ classdef (Sealed) CoreDirectional < Core
         
         function core_space = create_array( obj )
             
+            images{ obj.CORE_SPACE_INDEX } = obj.mesh.exterior;
+            images{ obj.UNDERCUT_INDEX } = obj.undercuts.array;
             core_space = map_slice_transform( ...
                 @(slices)obj.core_slice_transform( slices ), ...
-                { obj.mesh.exterior, obj.undercuts.array }, ...
+                images, ...
                 obj.DEFAULT_PARTING_DIMENSION ...
                 );
             core_space( obj.mesh.interior ) = 0;
             
         end
+        
+    end
+    
+    
+    properties ( Access = private )
+        
+        CORE_SPACE_INDEX = 1;
+        UNDERCUT_INDEX = 2;
         
     end
     
@@ -40,10 +50,10 @@ classdef (Sealed) CoreDirectional < Core
             
             % 1 is core_space
             % 2 is undercut
-            core_slice = slices{ 1 };
+            core_slice = slices{ obj.CORE_SPACE_INDEX };
             distances = bwdistgeodesic( ...
                 core_slice, ...
-                logical( slices{ 2 } ), ...
+                logical( slices{ obj.UNDERCUT_INDEX } ), ...
                 'quasi-euclidean' ...
                 );
             core_slice( distances > obj.get_threshold() ) = 0;
