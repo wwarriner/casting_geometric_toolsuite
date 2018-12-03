@@ -98,6 +98,8 @@ classdef (Sealed) Component < Process & matlab.mixin.Copyable
             elseif nargin == 3
                 % name, fv
                 obj.copy_from_fv( varargin{ 1 }, varargin{ 2 } );
+            else
+                assert( false );
             end
             obj.run();
             
