@@ -21,10 +21,10 @@ classdef (Sealed) ComponentDelta < handle
     properties ( Access = public, Constant )
         
         NAME = 'comparison'
-        EXTERIOR = 0;
+        EXTERIOR_VALUE = 0;
         CURRENT_VALUE = 1;
         REVISED_VALUE = 2;
-        % COMMON_VALUE = get_shared_value();
+        % SHARED_VALUE = get_shared_value();
         
     end
     
@@ -40,12 +40,82 @@ classdef (Sealed) ComponentDelta < handle
             obj.current_component = current_component;
             obj.revised_component = revised_component;
             obj.desired_element_count = desired_mesh_element_count;
-            obj.run();
+            obj.determine_delta();
             
         end
         
         
-        function run( obj )
+        function exterior = get_exterior( obj )
+            
+            exterior = ( obj.delta == obj.EXTERIOR_VALUE );
+            
+        end
+        
+        
+        function current = get_current_exclusive( obj )
+            
+            current = ( obj.delta == obj.CURRENT_VALUE );
+            
+        end
+        
+        
+        function revised = get_revised_exclusive( obj )
+            
+            revised = ( obj.delta == obj.REVISED_VALUE );
+            
+        end
+        
+        
+        function shared = get_shared( obj )
+            
+            shared = ( obj.delta == obj.get_shared_value() );
+            
+        end
+        
+    end
+    
+    
+    methods ( Access = public, Static )
+        
+        function common_value = get_shared_value()
+            
+            assert( ComponentDelta.CURRENT_VALUE ~= ComponentDelta.REVISED_VALUE );
+            common_value = ComponentDelta.CURRENT_VALUE + ComponentDelta.REVISED_VALUE;
+            
+        end
+        
+    end
+    
+    
+    methods ( Access = protected )
+        
+        function names = get_table_names( ~ )
+            
+            names = { ...
+                'removed_volume', ...
+                'added_volume', ...
+                'unchanged_volume' ...
+                };
+            
+        end
+        
+        
+        function values = get_table_values( obj )
+            
+            values = [ ...
+                obj.removed_volume, ...
+                obj.added_volume, ...
+                obj.unchanged_volume ...
+                ];
+            
+        end
+        
+    end
+    
+    
+    methods ( Access = private )
+        
+        function determine_delta( obj )
             %% Mesh both components on a common mesh
             obj.shared_envelope = MeshEnvelope( merge_fv( ...
                 obj.current_component.fv, ...
@@ -86,44 +156,6 @@ classdef (Sealed) ComponentDelta < handle
                 obj.get_shared_value(), ...
                 current_mesh.get_element_volume() ...
                 );
-            
-        end
-        
-    end
-    
-    
-    methods ( Access = public, Static )
-        
-        function common_value = get_shared_value()
-            
-            assert( ComponentDelta.CURRENT_VALUE ~= ComponentDelta.REVISED_VALUE );
-            common_value = ComponentDelta.CURRENT_VALUE + ComponentDelta.REVISED_VALUE;
-            
-        end
-        
-    end
-    
-    
-    methods ( Access = protected )
-        
-        function names = get_table_names( ~ )
-            
-            names = { ...
-                'removed_volume', ...
-                'added_volume', ...
-                'unchanged_volume' ...
-                };
-            
-        end
-        
-        
-        function values = get_table_values( obj )
-            
-            values = [ ...
-                obj.removed_volume, ...
-                obj.added_volume, ...
-                obj.unchanged_volume ...
-                ];
             
         end
         
