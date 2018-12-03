@@ -154,6 +154,20 @@ classdef ( Sealed ) Mesh < Process
         end
         
         
+        function values_mesh_units = to_mesh_area( obj, values_stl_units )
+            
+            values_mesh_units = values_stl_units ./ obj.get_element_area();
+            
+        end
+        
+        
+        function values_mesh_units = to_mesh_volume( obj, values_stl_units )
+            
+            values_mesh_units = values_stl_units ./ obj.get_element_volume();
+            
+        end
+        
+        
         % todo change stl to component
         function values_stl_units = to_stl_units( obj, values_mesh_units )
             
