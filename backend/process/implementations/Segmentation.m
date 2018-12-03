@@ -16,6 +16,7 @@ classdef (Sealed) Segmentation < Process
     properties ( Access = public, Constant )
         
         NAME = 'segmentation'
+        BOUNDARY_VALUE = -1;
         
     end
     
@@ -38,7 +39,7 @@ classdef (Sealed) Segmentation < Process
             
             assert( ~isempty( obj.mesh ) );
             assert( ~isempty( obj.profile ) );
-
+            
             obj.printf( 'Segmenting...\n' );
             obj.array = Segmentation.generate_array( ...
                 obj.profile.filtered_interior, ...
@@ -85,9 +86,9 @@ classdef (Sealed) Segmentation < Process
             neighbor_pairs = cell( possible_pair_count, 1 );
             pair_count = 0;
             for first = 1 : obj.count
-
+                
                 for second = first + 1 : obj.count
-
+                    
                     pair = SegmentPair( ...
                         obj, ...
                         [ first second ], ...
@@ -99,7 +100,7 @@ classdef (Sealed) Segmentation < Process
                     end
                     pair_count = pair_count + 1;
                     neighbor_pairs{ pair_count } = pair;
-
+                    
                 end
                 
             end
@@ -138,7 +139,7 @@ classdef (Sealed) Segmentation < Process
                 
                 clustered_segment_array( obj.array == segment_labels( i ) ) ...
                     = true;
-
+                
             end
             clustered_segment_array = ...
                 imdilate( clustered_segment_array, conndef( 3, 'maximal' ) );
@@ -207,67 +208,15 @@ classdef (Sealed) Segmentation < Process
     methods ( Access = private, Static )
         
         function watershed_array = generate_array( edt_array, Mesh )
+            %% INVERT
+            edt_array( ~Mesh.interior ) = -inf;
+            watershed_array = double( watershed( -edt_array ) );
             
-            % TODO can remove padding I think, test first
-            
-            % pad interior and edt to prepare for pseudo-masked watershed
-            watershed_interior = ...
-                Segmentation.pad_for_watershed( Mesh.interior );
-            watershed_array = ...
-                Segmentation.pad_for_watershed( edt_array );
-            
-            % pseudo-mask interior
-            %{
-                Note that we assign -inf (becomes -inf later) to forcibly 
-                divide interior segments from exterior segments.
-            %}
-            watershed_buffer = ...
-                imdilate( watershed_interior, conndef( 3, 'maximal' ) ) ...
-                & ~watershed_interior;
-            watershed_array( watershed_buffer ) = -inf;
-            
-            % watershed
-            watershed_array = uint16( watershed( -watershed_array ) );
-
-            % watershed boundary
-            watershed_array( ~watershed_interior ) = 0;
-            
-            % reorganizing labels
-            interior_segments = unique( watershed_array );
-            interior_count = length( interior_segments ) - 1;
-            lut_count = double( intmax( 'uint16' ) ) + 1;
-            lut = uint16( zeros( lut_count, 1 ) );
-            lut( interior_segments + 1 ) = 0 : interior_count;
-            watershed_array = intlut( watershed_array, lut );
-            
-            % assign boundary
-            if interior_count > intmax( 'int16' )
-                warning( 'Too many segments, clipping large values...\n' );
-            end
-            % R2017b clips signed integer values.
-            % e.g. intmax( 'int16' ) + 1 == intmax( 'int16' );
-            % works on conversion as well
-            watershed_array = int16( watershed_array );
-            watershed_array( ...
-                watershed_interior ...
-                & watershed_array <= 0 ...
-                ) ...
-                = -1;
-            
-            % unpad
-            watershed_array = watershed_array( ...
-                2 : end - 1, ...
-                2 : end - 1, ...
-                2 : end - 1 ...
-                );
-            
-            
-        end
-        
-        
-        function padded = pad_for_watershed( array )
-            
-            padded = padarray( array, ones( ndims( array ), 1 ), 'both' );
+            %% WATERSHED
+            watershed_array( ~Mesh.interior ) = 0;
+            % boundary marked separately from exterior
+            watershed_array( Mesh.interior & ( watershed_array ) <= 0 ) ...
+                = Segmentation.BOUNDARY_VALUE;
             
         end
         
@@ -285,16 +234,16 @@ classdef (Sealed) Segmentation < Process
                 mesh, ...
                 count ...
                 )
-           
+            
             Segments = Segment.empty( count, 0 );
             for i = 1 : count
-
+                
                 Segments( i ) = Segment( ...
                     edt_array, ...
                     watershed_array == i, ...
                     mesh ...
                     );
-
+                
             end
             
         end
