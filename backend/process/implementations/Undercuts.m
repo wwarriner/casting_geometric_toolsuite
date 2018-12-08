@@ -57,6 +57,10 @@ classdef (Sealed) Undercuts < Process
         
         function legacy_run( obj, mesh, parting_dimension )
             
+            if nargin < 3
+                parting_dimension = obj.DEFAULT_PARTING_DIMENSION;
+            end
+            
             obj.mesh = mesh;
             obj.parting_dimension = parting_dimension;
             obj.run();
