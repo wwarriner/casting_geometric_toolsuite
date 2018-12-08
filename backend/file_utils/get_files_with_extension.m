@@ -1,7 +1,7 @@
-function listing = get_files_with_extension( scan_dir, scan_ext )
+function listing = get_files_with_extension( scan_dir, scan_ext, varargin )
 
 assert( exist( scan_dir, 'dir' ) == 7 )
-if ~startsWith( scan_ext, '.' )
+if ~startsWith( scan_ext, '.', varargin{ : } )
     scan_ext = [ '.' scan_ext ];
 end
 
