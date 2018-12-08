@@ -45,7 +45,7 @@ classdef Core < Process
             
             obj.printf( '  Computing Statistics...\n' );
             obj.count = cc.NumObjects;
-            obj.volume = sum( obj.array( : ) > 0 );
+            obj.volume = obj.mesh.to_stl_volume( sum( obj.array( : ) > 0 ) );
             obj.volume_ratio = obj.volume ./ obj.mesh.volume;
             
         end
