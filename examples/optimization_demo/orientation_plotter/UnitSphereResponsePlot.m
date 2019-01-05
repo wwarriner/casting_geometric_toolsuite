@@ -255,27 +255,40 @@ classdef (Sealed) UnitSphereResponsePlot < handle
             % TODO lock out other callbacks while running
             % TODO feeder intersection with undercuts means inaccessible
             
+            decisions = obj.last_picked_decisions;
+            
             fh = figure();
+            fh.Name = sprintf( ...
+                'Visualization with @X: %.2f and @Y: %.2f', ...
+                rad2deg( decisions( 1 ) ), ...
+                rad2deg( decisions( 2 ) ) ...
+                );
+            fh.NumberTitle = 'off';
+            fh.MenuBar = 'none';
+            fh.ToolBar = 'none';
+            fh.DockControls = 'off';
+            fh.Resize = 'off';
+            cameratoolbar( fh, 'show' );
+            
             axh = axes( fh );
             axh.Color = 'none';
-            axis( axh, 'square', 'vis3d', 'off' );
             hold( axh, 'on' );
-            rc_fv = obj.response_data.get_rotated_component_fv( obj.last_picked_decisions );
-            rch = patch( axh, rc_fv, 'SpecularStrength', 0.0 );
+            rotated_component_fv = obj.response_data.get_rotated_component_fv( obj.last_picked_decisions );
+            rch = patch( axh, rotated_component_fv, 'SpecularStrength', 0.0 );
             rch.FaceColor = [ 0.9 0.9 0.9 ];
             rch.EdgeColor = 'none';
             
-            rf_fvs = obj.response_data.get_rotated_feeder_fvs( obj.last_picked_decisions );
-            for i = 1 : numel( rf_fvs )
+            rotated_feeder_fvs = obj.response_data.get_rotated_feeder_fvs( obj.last_picked_decisions );
+            for i = 1 : numel( rotated_feeder_fvs )
                 
-                rfh = patch( axh, rf_fvs{ i }, 'SpecularStrength', 0.0 );
+                rfh = patch( axh, rotated_feeder_fvs{ i }, 'SpecularStrength', 0.0 );
                 rfh.FaceColor = [ 0.75 0.0 0.0 ];
                 rfh.FaceAlpha = 0.5;
                 rfh.EdgeColor = 'none';
                 
             end
             
-            all_fvs = [ rf_fvs; rc_fv ];
+            all_fvs = [ rotated_feeder_fvs; rotated_component_fv ];
             min_point = [ 0 0 0 ];
             max_point = [ 0 0 0 ];
             for i = 1 : numel( all_fvs )
@@ -295,6 +308,8 @@ classdef (Sealed) UnitSphereResponsePlot < handle
             view( 3 );
             light( axh, 'Position', [ 0 0 -1 ] );
             light( axh, 'Position', [ 0 0 1 ] );
+            
+            axis( axh, 'equal', 'vis3d', 'off' );
             
             % attach observer for status updates?
             % factor out feature computation from determine_objectives in obc
