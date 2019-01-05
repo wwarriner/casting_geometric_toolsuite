@@ -3,13 +3,15 @@ classdef (Sealed) UnitSphereResponseAxes < handle
     methods ( Access = public )
         
         
-        function obj = UnitSphereResponseAxes( color_map )
+        function obj = UnitSphereResponseAxes( color_map, grid_color )
             
             if nargin < 1
                 color_map = plasma();
+                grid_color = [ 1 1 1 ];
             end
             
             obj.color_map = color_map;
+            obj.grid_color = grid_color;
             
         end
         
@@ -85,6 +87,7 @@ classdef (Sealed) UnitSphereResponseAxes < handle
     properties ( Access = private )
         
         color_map
+        grid_color
         left_axes_h
         right_axes_h
         
@@ -211,6 +214,8 @@ classdef (Sealed) UnitSphereResponseAxes < handle
                 'labelformat', 'signed', ...
                 'gcolor', 'w', ...
                 'fontcolor', 'w' ...
+                'gcolor', obj.grid_color, ...
+                'fontcolor', obj.grid_color ...
                 );
             handle.ButtonDownFcn = @obj.ui_axes_button_down_Callback;
             handle.Color = 'none';
