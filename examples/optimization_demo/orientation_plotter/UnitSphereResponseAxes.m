@@ -25,8 +25,8 @@ classdef (Sealed) UnitSphereResponseAxes < handle
                 )
             
             set( 0, 'CurrentFigure', figure_handle );
-            obj.left_axes_h = obj.build_axes( obj.LEFT_SIDE );
-            obj.right_axes_h = obj.build_axes( obj.RIGHT_SIDE );
+            obj.left_axes_h = obj.build_axes( obj.LEFT_SIDE, figure_handle );
+            %obj.right_axes_h = obj.build_axes( obj.RIGHT_SIDE );
             
             obj.set_axes_button_down_Callback( button_down_Callback )
             
@@ -112,10 +112,10 @@ classdef (Sealed) UnitSphereResponseAxes < handle
         function set_axes_button_down_Callback( obj, button_down_Callback )
             
             assert( ~isempty( obj.left_axes_h ) );
-            assert( ~isempty( obj.right_axes_h ) );
+            %assert( ~isempty( obj.right_axes_h ) );
             
             obj.left_axes_h.ButtonDownFcn = button_down_Callback;
-            obj.right_axes_h.ButtonDownFcn = button_down_Callback;
+            %obj.right_axes_h.ButtonDownFcn = button_down_Callback;
             
         end
         
@@ -140,8 +140,9 @@ classdef (Sealed) UnitSphereResponseAxes < handle
             
             handles = [ ...
                 AxesPlotHandle( obj.get_axes( obj.LEFT_SIDE ), @(x)plot_function( obj.LEFT_SIDE, x ) ) ...
-                AxesPlotHandle( obj.get_axes( obj.RIGHT_SIDE ), @(x)plot_function( obj.RIGHT_SIDE, x ) ) ...
                 ];
+                %AxesPlotHandle( obj.get_axes( obj.RIGHT_SIDE ), @(x)plot_function( obj.RIGHT_SIDE, x ) ) ...
+                %];
             
         end
         
@@ -183,7 +184,7 @@ classdef (Sealed) UnitSphereResponseAxes < handle
         end
         
         
-        function handle = build_axes( obj, side )
+        function handle = build_axes( obj, side, figure_handle )
             
             switch side
                 case obj.LEFT_SIDE
@@ -196,9 +197,9 @@ classdef (Sealed) UnitSphereResponseAxes < handle
                     assert( false )
             end
             
-            subtightplot( 1, 2, subplot_position, 0.08 );
+            %subtightplot( 1, 2, subplot_position, 0.08 );
             handle = axesm( ...
-                'breusing', ...
+                'pcarree', ...
                 'frame', 'on', ...
                 'grid', 'on', ...
                 'origin', newpole( 90, polar_azimuth_deg ), ...
@@ -212,11 +213,20 @@ classdef (Sealed) UnitSphereResponseAxes < handle
                 'plabelmeridian', polar_azimuth_deg, ...
                 'parallellabel', 'on', ...
                 'labelformat', 'signed', ...
-                'gcolor', 'w', ...
-                'fontcolor', 'w' ...
                 'gcolor', obj.grid_color, ...
                 'fontcolor', obj.grid_color ...
                 );
+            
+            axis( handle, 'tight' );
+            dims = figure_handle.InnerPosition( 3 : 4 );
+            ax_dims = dims * 0.70;
+            excess = ( dims - ax_dims ) ./ 2;
+            handle.Units = 'pixels';
+            handle.Position = [ excess ax_dims ];
+            x_adjust = round( 75 / 2 );
+            y_adjust = -round( 23 / 2 );
+            handle.Position( 1 : 2 ) = handle.Position( 1 : 2 ) - [ x_adjust y_adjust ];
+            
             handle.ButtonDownFcn = @obj.ui_axes_button_down_Callback;
             handle.Color = 'none';
             handle.XColor = 'none';
@@ -235,7 +245,7 @@ classdef (Sealed) UnitSphereResponseAxes < handle
         function update_both_sides( obj, update_function )
             
             obj.update_side( obj.LEFT_SIDE, update_function );
-            obj.update_side( obj.RIGHT_SIDE, update_function );
+            %obj.update_side( obj.RIGHT_SIDE, update_function );
             
         end
         
