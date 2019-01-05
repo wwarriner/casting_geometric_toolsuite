@@ -52,7 +52,7 @@ classdef (Sealed) UnitSphereResponsePlotWidgets < handle
                 callback ...
                 )
             
-            LISTBOX_WIDTH = 230;
+            LISTBOX_WIDTH = 300;
             handle = uicontrol();
             handle.Style = 'popupmenu';
             handle.String = titles;
