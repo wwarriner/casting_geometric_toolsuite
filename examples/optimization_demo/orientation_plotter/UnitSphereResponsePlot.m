@@ -31,6 +31,17 @@ classdef (Sealed) UnitSphereResponsePlot < handle
             
         end
         
+        
+        function set_background_color( obj, bg_color )
+            
+            obj.figure_h.Color = bg_color;
+            obj.static_text_h.BackgroundColor = bg_color;
+            obj.quantile_checkbox_h.BackgroundColor = bg_color;
+            obj.minima_checkbox_h.BackgroundColor = bg_color;
+            obj.pareto_front_checkbox_h.BackgroundColor = bg_color;
+            
+        end
+        
     end
     
     
@@ -55,6 +66,8 @@ classdef (Sealed) UnitSphereResponsePlot < handle
         old_quantile_value
         
         minima_checkbox_h
+        
+        pareto_front_checkbox_h
         
     end
     
@@ -115,7 +128,7 @@ classdef (Sealed) UnitSphereResponsePlot < handle
             obj.quantile_checkbox_h.Value = obj.QUANTILE_OFF;
             obj.old_quantile_value = obj.get_quantile_value();
             
-            [ obj.minima_checkbox_h, pareto_front_checkbox_h ] = ...
+            [ obj.minima_checkbox_h, obj.pareto_front_checkbox_h ] = ...
                 widgets.add_point_plot_widgets( ...
                 figure_h, ...
                 @obj.ui_minima_checkbox_Callback, ...
@@ -124,9 +137,9 @@ classdef (Sealed) UnitSphereResponsePlot < handle
             obj.minima_checkbox_h.Min = obj.MINIMA_OFF;
             obj.minima_checkbox_h.Max = obj.MINIMA_ON;
             obj.minima_checkbox_h.Value = obj.MINIMA_OFF;
-            pareto_front_checkbox_h.Min = obj.PARETO_FRONT_OFF;
-            pareto_front_checkbox_h.Max = obj.PARETO_FRONT_ON;
-            pareto_front_checkbox_h.Value = obj.PARETO_FRONT_OFF;
+            obj.pareto_front_checkbox_h.Min = obj.PARETO_FRONT_OFF;
+            obj.pareto_front_checkbox_h.Max = obj.PARETO_FRONT_ON;
+            obj.pareto_front_checkbox_h.Value = obj.PARETO_FRONT_OFF;
             
         end
         
