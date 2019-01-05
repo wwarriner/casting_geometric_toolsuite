@@ -1,6 +1,7 @@
 [
 	{
 		"title": "pp_projected_area_reciprocal",
+		"display": "Parting, Reciprocal of Projected Area",
 		"type": "continuous",
 		"process": "PartingPerimeter",
 		"property": "projected_area",
@@ -9,6 +10,7 @@
 	},
 	{
 		"title": "pp_flatness",
+		"display": "Parting, Flatness",
 		"type": "continuous",
 		"process": "PartingPerimeter",
 		"property": "flatness",
@@ -17,6 +19,7 @@
 	},
 	{
 		"title": "pp_draw",
+		"display": "Parting, Draw",
 		"type": "continuous",
 		"process": "PartingPerimeter",
 		"property": "draw",
@@ -25,6 +28,7 @@
 	},
 	{
 		"title": "draft_metric",
+		"display": "Draft Metric",
 		"type": "continuous",
 		"process": "Component",
 		"property": "draft_metric",
@@ -33,6 +37,7 @@
 	},
 	{
 		"title": "uc_volume",
+		"display": "Undercut Volume",
 		"type": "continuous",
 		"process": "Undercuts",
 		"property": "volume",
@@ -41,6 +46,7 @@
 	},
 	{
 		"title": "fd_inaccessibility_max",
+		"display": "Feeder Max of 1 - Validity",
 		"type": "continuous",
 		"process": "Feeders",
 		"property": "get_accessibility_ratios()",
@@ -49,6 +55,7 @@
 	},
 	{
 		"title": "fd_total_intersection_volume",
+		"display": "Feeder Intersection Volume",
 		"type": "continuous",
 		"process": "Feeders",
 		"property": "get_total_intersection_volume()",
@@ -57,6 +64,7 @@
 	},
 	{
 		"title": "fd_total_interface_area",
+		"display": "Feeder Interface Area",
 		"type": "continuous",
 		"process": "Feeders",
 		"property": "get_total_interface_area()",
@@ -65,6 +73,7 @@
 	},
 	{
 		"title": "wf_gating_opportunity_reciprocal",
+		"display": "Waterfall Reciprocal Gating Opportunity",
 		"type": "continuous",
 		"process": "Waterfall",
 		"property": "gating_opportunity",
@@ -73,6 +82,7 @@
 	},
 	{
 		"title": "wf_worst_drop_max",
+		"display": "Waterfall Max Worst-Case Drop Height",
 		"type": "continuous",
 		"process": "Waterfall",
 		"property": "worst_drop",
@@ -81,6 +91,7 @@
 	},
 	{
 		"title": "flask_height",
+		"display": "Flask Height",
 		"type": "continuous",
 		"process": "Feeders",
 		"property": "get_total_rigged_height( dimension )",

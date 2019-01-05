@@ -10,11 +10,26 @@ classdef (Sealed) ObjectiveVariables < handle
                 obj.variables = obj.read_objective_variables( path );
             elseif numel( varargin ) == 2
                 obj.variables.title = varargin{ 1 };
+                obj.variables.display = obj.variables.title;
                 obj.variables.interpolation_method = varargin{ 2 };
             else
                 assert( false );
             end
             
+            
+        end
+        
+        
+        function titles = get_display_titles( obj )
+            
+            titles = obj.variables.display;
+            
+        end
+        
+        
+        function title = get_display_title( obj, index )
+            
+            title = obj.variabls.display{ index };
             
         end
         

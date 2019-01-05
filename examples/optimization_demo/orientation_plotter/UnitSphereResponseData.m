@@ -38,6 +38,7 @@ classdef (Sealed) UnitSphereResponseData < handle
                 objective_variables ...
                 );
             
+            obj.display_titles = objective_variables.get_display_titles();
             obj.titles = objective_variables.get_titles();
             
             obj.name = results.Properties.UserData.Name;            
@@ -59,8 +60,8 @@ classdef (Sealed) UnitSphereResponseData < handle
                 );
             
             interpolation_methods = objective_variables.get_interpolation_methods();
-            [ obj.objective_values, obj.titles, interpolation_methods ] = ...
-                obj.append_scaled_maximum_objective( obj.objective_values, obj.titles, interpolation_methods );
+            [ obj.objective_values, obj.titles, obj.display_titles, interpolation_methods ] = ...
+                obj.append_scaled_maximum_objective( obj.objective_values, obj.titles, obj.display_titles, interpolation_methods );
             
             obj.minima_decisions = obj.generate_minima_decisions( ...
                 obj.objective_values, ...
@@ -81,6 +82,20 @@ classdef (Sealed) UnitSphereResponseData < handle
         function name = get_name( obj )
             
             name = obj.name;
+            
+        end
+        
+        
+        function title = get_display_title( obj, objective_index )
+            
+            title = obj.display_titles{ objective_index };
+            
+        end
+        
+        
+        function titles = get_all_display_titles( obj )
+            
+            titles = obj.display_titles;
             
         end
         
@@ -241,6 +256,7 @@ classdef (Sealed) UnitSphereResponseData < handle
         orientation_base_case
         name
         titles
+        display_titles
         phi_grid
         theta_grid
         objective_values
@@ -350,8 +366,8 @@ classdef (Sealed) UnitSphereResponseData < handle
         end
         
         
-        function [ objective_values, titles, interp_methods ] = ...
-                append_scaled_maximum_objective( objective_values, titles, interp_methods )
+        function [ objective_values, titles, display_titles, interp_methods ] = ...
+                append_scaled_maximum_objective( objective_values, titles, display_titles, interp_methods )
             
             temp = objective_values;
             for i = 1 : size( objective_values, 3 )
@@ -359,6 +375,7 @@ classdef (Sealed) UnitSphereResponseData < handle
             end
             objective_values( :, :, end + 1 ) = max( temp, [], 3 );
             titles{ end + 1 } = 'scaled_maximum_over_all';
+            display_titles{ end + 1 } = 'Maximum of Normalized Values';
             interp_methods{ end + 1 } = 'natural';
             
         end
