@@ -12,8 +12,8 @@ classdef (Sealed) Options < dynamicprops
                 Options.update_values( varargin{ 1 }, @obj.assign_properties );
             elseif nargin == 4
                 Options.update_values( varargin{ 1 }, @obj.assign_properties );
-                obj.assign_user( 'input_stl_path', varargin{ 2 } );
-                obj.assign_user( 'output_path', varargin{ 3 } );
+                obj.assign_properties( 'input_stl_path', varargin{ 2 } );
+                obj.assign_properties( 'output_path', varargin{ 3 } );
             else
                 error( 'Incorrect arguments' );
             end
@@ -35,8 +35,10 @@ classdef (Sealed) Options < dynamicprops
         
         function add_property( obj, key )
             
-            P = addprop( obj, key );
-            P.Access = 'public';
+            if ~isprop( obj, key )
+                P = addprop( obj, key );
+                P.Access = 'public';
+            end
             
         end
         
