@@ -54,14 +54,18 @@ space_step_nd = space_step_in_m / max_L;
 ambient_ic = 25; % C
 ambient_nd_ic = ( ambient_ic - min_ic ) / max_ic;
 
-ambient_mold_h = MaterialProperty( 10 ); % W / m ^ 2 * K
-ambient_mold_nd_h = ambient_mold_h.downscale( max( ambient_mold_h.values ), max_ic, min_ic );
+% ambient_mold_h = MaterialProperty( 10 ); % W / m ^ 2 * K
 % ambient_melt_h = MaterialProperty( 10 ); % W / m ^ 2 * K
-% pp.add_ambient_convection( mold_id, ambient_mold_h );
-% pp.add_ambient_convection( melt_id, ambient_mold_h );
-%
 % mold_melt_h = MaterialProperty( 100 ); % W / m ^ 2 * K
-% pp.add_convection( mold_id, melt_id, mold_melt_h );
+% min_h = space_step_in_m * min( [ ambient_mold_h.values ambient_melt_h.values mold_melt_h.values ] );
+% ambient_mold_nd_h = ambient_mold_h.downscale( min_h, max_ic, min_ic );
+% ambient_melt_nd_h = ambient_mold_h.downscale( min_h, max_ic, min_ic );
+% mold_melt_nd_h = ambient_mold_h.downscale( min_h, max_ic, min_ic );
+% cc = Convection();
+% cc.add_convection( ambient_id, mold_id, ambient_mold_nd_h );
+% cc.add_convection( ambient_id, melt_id, ambient_melt_nd_h );
+% cc.add_convection( mold_id, melt_id, mold_melt_nd_h );
+% h_nd = @(x, y, u) cc.lookup( x, y, u );
 
 rho_cp_melt = create_rho_cp( melt_rho, melt_cp, melt_k );
 rho_cp_mold = create_rho_cp( mold_rho, mold_cp, mold_k );
@@ -74,6 +78,9 @@ rho_cp_nd = @(x, u) rho_cp_nds( x ).lookup( u );
 k_nds = [ mold_nd_k melt_nd_k ];
 k_nd = @(x, u) k_nds( x ).lookup( u );
 
+% boundaries = { k_nd h_nd };
+% boundary = @( c, varargin ) boundaries{ c }( varargin{ : } );
+
 u_init = ones( size( mesh ) );
 u_init( mesh == mold_id ) = mold_nd_ic;
 u_init( mesh == melt_id ) = melt_nd_ic;
@@ -81,6 +88,7 @@ u_init( mesh == melt_id ) = melt_nd_ic;
 time_step_in_s = 1;
 time_step_factor = max_rho_cp / min_k * max_L ^ 2;
 time_step_nd = time_step_in_s / time_step_factor;
+
 %% solve
 fh = figure();
 axh = axes( fh );
@@ -102,11 +110,14 @@ plot( axh, [ 1 shape( 1 ) ], [ melt_fe_temp melt_fe_temp ], 'k:' );
 drawnow();
 ph1 = [];
 ph2 = [];
+mg = MatrixGenerator( mesh, rho_cp_nd, k_nd );
+
 for i = 1 : 100
     
     delete( ph1 );
     delete( ph2 );
-    [ m_L, m_R, times ] = crank_nicolson_matrix( mesh, u_prev, rho_cp_nd, k_nd, space_step_nd, time_step_next );
+    [ m_L, m_R ] = mg.generate( u_prev, space_step_nd, time_step_next );
+    times = mg.get_last_times();
     tic;
     [ p, ~, ~, it ] = pcg( m_L, m_R * u_prev( : ), 1e-6, 100, [], [], u_prev( : ) );
     times( end + 1 ) = toc;
