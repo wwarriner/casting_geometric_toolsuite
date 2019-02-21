@@ -114,6 +114,7 @@ drawnow();
 ph1 = [];
 ph2 = [];
 ph3 = [];
+mg = MatrixGenerator( mesh, rho_cp_nd, k_nd, h_nd );
 
 for i = 1 : 1000
     

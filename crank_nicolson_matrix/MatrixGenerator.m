@@ -2,15 +2,17 @@ classdef MatrixGenerator < handle
     
     methods ( Access = public )
         
-        function obj = MatrixGenerator( fdm_mesh, rho_cp_lookup_fn, k_lookup_fn )
+        function obj = MatrixGenerator( fdm_mesh, rho_cp_lookup_fn, k_lookup_fn, h_lookup_fn )
             
             obj.shape = size( fdm_mesh );
             obj.element_count = prod( obj.shape );
             obj.strides = [ 1 obj.shape( 1 ) obj.shape( 1 ) * obj.shape( 2 ) ];
             obj.strips = [ -obj.strides obj.strides ];
+            obj.off_band_count = numel( obj.strips );
             obj.fdm_mesh = fdm_mesh;
             obj.rho_cp_fn = rho_cp_lookup_fn;
             obj.k_fn = k_lookup_fn;
+            obj.h_fn = h_lookup_fn;
             
         end
         
@@ -18,10 +20,8 @@ classdef MatrixGenerator < handle
         function [ m_l, m_r ] = generate( obj, u, space_step, time_step )
             
             obj.times = [];
-            alpha_factor = time_step / ( space_step ^ 2 );
-            rho_cp = obj.property_lookup( u, obj.rho_cp_fn );
-            k = obj.property_lookup( u, obj.k_fn );
-            bands = obj.construct_bands( rho_cp, k, alpha_factor );
+            alpha_factor = time_step / space_step;
+            bands = obj.construct_bands( u, alpha_factor, space_step );
             [ m_l, m_r ] = obj.construct_sparse( bands );
             
         end
@@ -41,7 +41,7 @@ classdef MatrixGenerator < handle
         function values = property_lookup( obj, u, lookup_fn )
             
             tic;
-            values = zeros( obj.shape );
+            values = zeros( obj.element_count, 1 );
             ids = unique( obj.fdm_mesh );
             id_count = numel( ids );
             assert( id_count > 0 );
@@ -56,23 +56,49 @@ classdef MatrixGenerator < handle
         end
         
         
-        function bands = construct_bands( obj, rho_cp, k, alpha_factor )
+        function values = convection_lookup( obj, u, center_ids, neighbor_ids, lookup_fn )
+            
+            tic;
+            values = zeros( obj.element_count, 1 );
+            ids = unique( obj.fdm_mesh );
+            id_count = numel( ids );
+            assert( id_count > 0 );
+            for i = 1 : id_count
+                for j = i + 1 : id_count
+                    
+                    first_id = ids( i );
+                    second_id = ids( j );
+                    values( center_ids == first_id & neighbor_ids == second_id ) = lookup_fn( first_id, second_id, u( center_ids == first_id & neighbor_ids == second_id ) );
+                    values( center_ids == second_id & neighbor_ids == first_id ) = lookup_fn( first_id, second_id, u( center_ids == second_id & neighbor_ids == first_id ) );
+                    
+                end
+            end
+            values = values( center_ids ~= neighbor_ids );
+            
+        end
+        
+        
+        function bands = construct_bands( obj, u, alpha_factor, space_step )
             
             tic;
             
-            % get mesh for bands
-            % index same get convection (h)
-            %  loop over ids
-            % index differs get conduction (k/dx)
-            %  loop over ids
-            % all get rho_cp
-            %  loop over ids
-            
-            rho_cp = rho_cp( : );
-            half_k_inv = 0.5 ./ k( : );
-            bands = cell2mat( arrayfun( @(x)obj.construct_band( rho_cp, half_k_inv, x ), obj.strips, 'uniformoutput', false ) );
+            mesh_ids = arrayfun( @(x)circshift( obj.fdm_mesh( : ), x ), [ obj.strips 0 ], 'uniformoutput', false );
+            rho_cp = obj.property_lookup( u, obj.rho_cp_fn );
+            half_k_inv = 0.5 * space_step ./ obj.property_lookup( u, obj.k_fn );
+            bands = cell2mat( arrayfun( @(x, y)obj.construct_band( u, rho_cp, half_k_inv, mesh_ids{ end }, x{ 1 }, y{ 1 } ), mesh_ids( 1 : end - 1 ), num2cell( obj.strips ), 'uniformoutput', false ) );
             bands = bands .* alpha_factor;
             obj.times( end + 1 ) = toc;
+            
+        end
+        
+        
+        function band = construct_band( obj, u, rho_cp, half_k_inv, center_ids, neighbor_ids, stride )
+            
+            band = zeros( size( rho_cp ) );
+            band( neighbor_ids ~= center_ids ) = 1 ./ obj.convection_lookup( u, center_ids, neighbor_ids, obj.h_fn );
+            k_inv = obj.k_inv_band( half_k_inv, stride );
+            band( neighbor_ids == center_ids ) = k_inv( neighbor_ids == center_ids );
+            band = mean( [ rho_cp circshift( rho_cp, stride ) ], 2 ) .* band;
             
         end
         
@@ -93,10 +119,10 @@ classdef MatrixGenerator < handle
     
     methods ( Access = private, Static )
         
-        function band = construct_band( rho_cp, half_k_inv, stride )
+        
+        function band = k_inv_band( half_k_inv, stride )
             
-            band = mean( [ rho_cp circshift( rho_cp, stride ) ], 2 ) .* ...
-                ( half_k_inv + circshift( half_k_inv, stride ) );
+            band = half_k_inv + circshift( half_k_inv, stride );
             
         end
         
@@ -109,9 +135,11 @@ classdef MatrixGenerator < handle
         shape
         strides
         strips
+        off_band_count
         fdm_mesh
         rho_cp_fn
         k_fn
+        h_fn
         
         times
         
