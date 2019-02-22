@@ -34,7 +34,11 @@ classdef (Sealed) ConvectionProperties < handle
         function has = has( obj, first_mesh_id, second_mesh_id )
             
             ids = obj.prepare_ids( first_mesh_id, second_mesh_id );
-            has = ismember( ids, obj.id_pairs );
+            if isempty( obj.id_pairs )
+                has = false;
+            else
+                has = ismember( ids, obj.id_pairs, 'rows' );
+            end
             
         end
         
@@ -128,7 +132,7 @@ classdef (Sealed) ConvectionProperties < handle
         
         function ids = get_ids( obj, index )
             
-            ids = obj.id_pairs( index, : );
+            ids = obj.id_pairs( index, : ) - 1;
             
         end
         
