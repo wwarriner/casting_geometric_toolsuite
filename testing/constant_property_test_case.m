@@ -29,7 +29,7 @@ st = SolidificationTime( shape );
 
 melt_fe_temp_nd = pp.get_feeding_effectivity_temperature_nd( melt_id );
 
-mg = MatrixGenerator( fdm_mesh, @pp.lookup_rho_cp_nd, @pp.lookup_k_nd_half_space_step_inv, @pp.lookup_h_nd );
+mg = MatrixGenerator( fdm_mesh, ambient_id, @pp.lookup_rho_cp_nd, @pp.lookup_k_nd_half_space_step_inv, @pp.lookup_h_nd );
 
 simulation_time_step_next_nd = pp.nondimensionalize_times( simulation_time_step_in_s );
 simulation_time_growth_factor = .1;
@@ -59,11 +59,8 @@ while( ~finished )
         break;
     end
     
-    %% reset online plot
-    delete( phs );
-    
     %% generate coefficient matrix
-    [ m_L, m_R ] = mg.generate( u_prev_nd, pp.get_space_step_nd(), simulation_time_step_next_nd );
+    [ m_L, m_R, r_L, r_R ] = mg.generate( pp.get_ambient_temperature_nd(), pp.get_space_step_nd(), simulation_time_step_next_nd, u_prev_nd );
     times = mg.get_last_times();
     
     %% update simulation time
@@ -71,7 +68,7 @@ while( ~finished )
     
     %% solve linear system
     tic;
-    [ p, ~, ~, it ] = pcg( m_L, m_R * u_prev_nd( : ), 1e-6, 100, [], [], u_prev_nd( : ) );
+    [ p, ~, ~, it ] = pcg( m_L, m_R * u_prev_nd( : ) + r_R - r_L, 1e-6, 100, [], [], u_prev_nd( : ) );
     times( end + 1 ) = toc;
     
     %% check energy integral here
@@ -83,6 +80,7 @@ while( ~finished )
     times( end + 1 ) = toc;
     
     %% update online plot
+    delete( phs );
     u_next_d = pp.dimensionalize_temperatures( u_next_nd );
     phs = draw_axial_plots_at_indices( axhs, shape, u_next_d, center, 'r' );
     drawnow();
