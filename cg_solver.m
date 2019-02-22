@@ -1,166 +1,120 @@
-%% SETUP
+%% DEFINITIONS
 ambient_id = 0;
 mold_id = 1;
 melt_id = 2;
-element_size_in_mm = 10; % mm
+element_size_in_mm = 100; % mm
+simulation_time_step_in_s = 100; % s
 
-%% MESHING
-k = 2;
+%% TEST MESH GENERATION
 side_length = 50;
-%side_length = 4*k+1;
-shape = [ side_length side_length side_length ];
-mesh = mold_id * ones( shape );
-center = floor( ( shape - 1 ) / 2 ) + 1;
-quarter = floor( ( center - 1 ) / 2 );
-melt_ranges = cellfun( ...
-    @(x,y) ( x - y ) : ( x + y ), ...
-    num2cell( center ), ...
-    num2cell( quarter ), ...
-    'uniformoutput', false ...
-    );
-mesh( melt_ranges{ 1 }, melt_ranges{ 2 }, melt_ranges{ 3 } ) = melt_id;
+shape = [ ...
+    side_length ...
+    2 * side_length ...
+    side_length / 2 ...
+    ];
+[ fdm_mesh, center ] = generate_test_mesh( mold_id, melt_id, shape );
 
-%% PROPERTIES
-C_TO_K = 273.15;
-ambient_ic = 25; % C
-mold_ic = 25; % C
-melt_ic = 700; % C
-min_ic = min( mold_ic, melt_ic ); % K
-max_ic = max( mold_ic, melt_ic ); % K
-ambient_nd_ic = ( ambient_ic - min_ic ) / ( max_ic - min_ic );
-mold_nd_ic = ( mold_ic - min_ic ) / ( max_ic - min_ic );
-melt_nd_ic = ( melt_ic - min_ic ) / ( max_ic - min_ic );
+%% TEST PROPERTY GENERATION
+pp = generate_constant_test_properties( ambient_id, mold_id, melt_id );
+pp.set_space_step( element_size_in_mm / 1000 ) % m
+pp.set_max_length( shape ); % count
+pp.prepare_for_solver();
 
-melt_fs_val = [ 1.0 0.0 ];
-melt_fs_temp = [ 659.9 660.1 ]; % K
-melt_fs = MaterialProperty( melt_fs_temp, melt_fs_val );
-melt_nd_fs = melt_fs.downscale( 1.0, max_ic, min_ic );
-melt_fe = 0.5;
+%% MAIN LOOP SETUP
+u_initial_nd = pp.generate_initial_temperature_field_nd( fdm_mesh );
+u_prev_nd = u_initial_nd;
+u_next_nd = u_initial_nd;
 
-mold_k = MaterialProperty( 50 ); % W / m * K
-melt_k = MaterialProperty( 200 ); % W / m * K
-min_k = min( [ melt_k.values mold_k.values ] );
-mold_nd_k = mold_k.downscale( min_k, max_ic, min_ic );
-melt_nd_k = melt_k.downscale( min_k, max_ic, min_ic );
-k_nds = [ mold_nd_k melt_nd_k ];
-k_nd = @(x, u) k_nds( x ).lookup( u );
+st = SolidificationTime( shape );
 
-ambient_mold_h = MaterialProperty( 100 ); % W / m ^ 2 * K
-ambient_melt_h = MaterialProperty( 100 ); % W / m ^ 2 * K
-mold_melt_h = MaterialProperty( 387 ); % W / m ^ 2 * K
-min_h = min( [ ambient_mold_h.values ambient_melt_h.values mold_melt_h.values ] );
-ambient_mold_nd_h = ambient_mold_h.downscale( min_h, max_ic, min_ic );
-ambient_melt_nd_h = ambient_mold_h.downscale( min_h, max_ic, min_ic );
-mold_melt_nd_h = ambient_mold_h.downscale( min_h, max_ic, min_ic );
-cc = Convection();
-cc.add_convection( ambient_id, mold_id, ambient_mold_nd_h );
-cc.add_convection( ambient_id, melt_id, ambient_melt_nd_h );
-cc.add_convection( mold_id, melt_id, mold_melt_nd_h );
-h_nd = @(x, y, u) cc.lookup( x, y, u );
+melt_fe_temp_nd = pp.get_feeding_effectivity_temperature_nd( melt_id );
 
+mg = MatrixGenerator( fdm_mesh, @pp.lookup_rho_cp_nd, @pp.lookup_k_nd_half_space_step_inv, @pp.lookup_h_nd );
 
-space_step_in_m = element_size_in_mm / 1000; % m
-max_L = space_step_in_m * max( shape( : ) );
-space_step_nd = space_step_in_m / max_L;
-
-mold_rho = MaterialProperty( 7800 ); % kg / m ^ 3
-mold_cp = MaterialProperty( 500 ); % J / kg * K
-melt_rho = MaterialProperty( 2700 ); % kg / m ^ 3
-melt_cp = MaterialProperty( 900 ); % J / kg * K
-rho_cp_melt = create_rho_cp( melt_rho, melt_cp, melt_k );
-rho_cp_mold = create_rho_cp( mold_rho, mold_cp, mold_k );
-max_rho_cp = max( [ rho_cp_melt.values rho_cp_mold.values ] );
-rho_cp_nd_melt = rho_cp_melt.downscale( max_rho_cp, max_ic, min_ic );
-rho_cp_nd_mold = rho_cp_mold.downscale( max_rho_cp, max_ic, min_ic );
-rho_cp_nds = [ rho_cp_nd_mold rho_cp_nd_melt ];
-rho_cp_nd = @(x, u) rho_cp_nds( x ).lookup( u );
-
-time_step_in_s = 1;
-min_transfer = min( [ min_k max_L * min_h ] );
-time_step_factor = max_rho_cp / min_transfer * max_L ^ 2;
-time_step_nd = time_step_in_s / time_step_factor;
-
-u_init = ones( size( mesh ) );
-u_init( mesh == mold_id ) = mold_nd_ic;
-u_init( mesh == melt_id ) = melt_nd_ic;
-
-%% solve
-fh = figure();
-axh1 = subplot( 3, 1, 1 );
-hold( axh1, 'on' );
-axh2 = subplot( 3, 1, 2 );
-hold( axh2, 'on' );
-axh3 = subplot( 3, 1, 3 );
-hold( axh3, 'on' );
-u_prev = u_init;
-u_next = u_init;
-plot( axh1, 1 : shape( 1 ), squeeze( u_init( :, center( 2 ), center( 3 ) ) ) * ( max_ic - min_ic ) + min_ic, 'k' );
-plot( axh2, 1 : shape( 1 ), squeeze( u_init( center( 1 ), :, center( 3 ) ) ) * ( max_ic - min_ic ) + min_ic, 'k' );
-plot( axh3, 1 : shape( 1 ), squeeze( u_init( center( 1 ), center( 2 ), : ) ) * ( max_ic - min_ic ) + min_ic, 'k' );
-time_step_next = time_step_nd;
-time_eps = .1;
-time_count = 0;
-time = 0;
+simulation_time_step_next_nd = pp.nondimensionalize_times( simulation_time_step_in_s );
+simulation_time_growth_factor = .1;
+simulation_time_nd = 0;
+loop_count = 0;
 computation_time = 0;
 
-solidification_time = zeros( size( mesh ) );
+%% TEST PLOT SETUP
+[ axhs, phs ] = test_plot_setup();
 
-melt_fe_temp = melt_fs.reverse_lookup( melt_fe );
-melt_nd_fe_temp = melt_nd_fs.reverse_lookup( melt_fe );
-plot( axh1, [ 1 shape( 1 ) ], [ melt_fe_temp melt_fe_temp ], 'k:' );
-plot( axh2, [ 1 shape( 1 ) ], [ melt_fe_temp melt_fe_temp ], 'k:' );
-plot( axh3, [ 1 shape( 1 ) ], [ melt_fe_temp melt_fe_temp ], 'k:' );
+%% DRAW INITIAL TEMPERATURE FIELD
+u_initial = pp.dimensionalize_temperatures( u_initial_nd );
+draw_axial_plots_at_indices( axhs, shape, u_initial, center, 'k' );
 drawnow();
-ph1 = [];
-ph2 = [];
-ph3 = [];
-mg = MatrixGenerator( mesh, rho_cp_nd, k_nd, h_nd );
 
-for i = 1 : 1000
-    
-    delete( ph1 );
-    delete( ph2 );
-    delete( ph3 );
-    [ m_L, m_R ] = mg.generate( u_prev, space_step_nd, time_step_next );
-    times = mg.get_last_times();
-    tic;
-    [ p, ~, ~, it ] = pcg( m_L, m_R * u_prev( : ), 1e-6, 100, [], [], u_prev( : ) );
-    times( end + 1 ) = toc;
-    tic;
-    u_next = reshape( p, size( mesh ) );
-    prev_time = time;
-    time = time + time_step_next;
-    fs_prev = melt_nd_fs.lookup( u_prev );
-    fs_next = melt_nd_fs.lookup( u_next );
-    sol_times = ( fs_next - melt_fe ) ./ ( fs_next - fs_prev ) .* ( time - prev_time ) + prev_time;
-    updates = mesh == melt_id & fs_next > melt_fe & solidification_time == 0;
-    solidification_time( updates ) = sol_times( updates );
-    time_step_next = ( 1 + time_eps ) * time_step_next;
-    time_count = time_count + 1;
-    u_prev = u_next;
-    times( end + 1 ) = toc;
-    fprintf( '%.2f, ', times ); fprintf( '\n' );
-    computation_time = computation_time + sum( times );
-    hold( axh1, 'on' );
-    ph1 = plot( axh1, 1 : shape( 1 ), squeeze( u_next( :, center( 2 ), center( 3 ) ) ) * ( max_ic - min_ic ) + min_ic, 'r' );
-    hold( axh2, 'on' );
-    ph2 = plot( axh2, 1 : shape( 1 ), squeeze( u_next( center( 1 ), :, center( 3 ) ) ) * ( max_ic - min_ic ) + min_ic, 'r' );
-    hold( axh3, 'on' );
-    ph3 = plot( axh3, 1 : shape( 1 ), squeeze( u_next( center( 1 ), center( 2 ), : ) ) * ( max_ic - min_ic ) + min_ic, 'r' );
-    drawnow();
-    if all( mesh ~= melt_id | solidification_time > 0 )
+%% DRAW FEEDING EFFECTIVITY TEMPERATURE
+melt_fe_temp = pp.dimensionalize_temperatures( melt_fe_temp_nd );
+draw_horizontal_lines( axhs, melt_fe_temp, 'k:' );
+drawnow();
+
+%% MAIN LOOP
+finished = false;
+while( ~finished )
+    %% check stop condition
+    if st.is_finished( fdm_mesh, melt_id )
         fprintf( 'fully solidified\n' );
         break;
     end
     
+    %% reset online plot
+    delete( phs );
+    
+    %% generate coefficient matrix
+    [ m_L, m_R ] = mg.generate( u_prev_nd, pp.get_space_step_nd(), simulation_time_step_next_nd );
+    times = mg.get_last_times();
+    
+    %% update simulation time
+    simulation_time_nd = simulation_time_nd + simulation_time_step_next_nd;
+    
+    %% solve linear system
+    tic;
+    [ p, ~, ~, it ] = pcg( m_L, m_R * u_prev_nd( : ), 1e-6, 100, [], [], u_prev_nd( : ) );
+    times( end + 1 ) = toc;
+    
+    %% check energy integral here
+    
+    %% update results
+    tic;
+    u_next_nd = reshape( p, size( fdm_mesh ) );
+    st.update_nd( fdm_mesh, melt_id, pp, u_prev_nd, u_next_nd, simulation_time_nd, simulation_time_step_next_nd );
+    times( end + 1 ) = toc;
+    
+    %% update online plot
+    u_next_d = pp.dimensionalize_temperatures( u_next_nd );
+    phs = draw_axial_plots_at_indices( axhs, shape, u_next_d, center, 'r' );
+    drawnow();
+    
+    %% update online information
+    fprintf( '%.2f, ', times ); fprintf( '\n' );
+    
+    %% prepare for next iteration
+    simulation_time_step_next_nd = ( 1 + simulation_time_growth_factor ) * simulation_time_step_next_nd;
+    loop_count = loop_count + 1;
+    u_prev_nd = u_next_nd;
+    computation_time = computation_time + sum( times );
+    
 end
-fprintf( 'time steps: %d\n', time_count );
-fprintf( 'computation time: %.2f\n', computation_time );
 
+%% SUMMARIZE COMPUTATION
+simulation_time = pp.dimensionalize_times( simulation_time_nd );
+fprintf( 'time steps: %d\n', loop_count );
+fprintf( 'computation time: %.2f\n', computation_time );
+fprintf( 'simulation time: %.2f\n', simulation_time );
+fprintf( 'biot/nusselt number: %.2f\n', side_length * element_size_in_mm / 1000 * 387 / 200 );
+fprintf( 'bounary layer coefficient mold @ 10000s: %.2f\n', sqrt( pi * 50 / 7800 / 500 * 10000 ) );
+fprintf( 'bounary layer coefficient melt @ 10000s: %.2f\n', sqrt( pi * 200 / 7800 / 900 * 10000 ) );
+
+%% REDIMENSIONALIZE RESULTS
+u_final = pp.dimensionalize_temperatures( u_next_nd );
+st.manipulate( @pp.dimensionalize_times );
+
+%% DRAW RESULTS
 figure();
-axh1 = subplot( 3, 1, 1 );
-axh2 = subplot( 3, 1, 2 );
-axh3 = subplot( 3, 1, 3 );
-plot( axh1, 1 : shape( 1 ), squeeze( solidification_time( :, center( 2 ), center( 3 ) ) ) * time_step_factor );
-plot( axh2, 1 : shape( 1 ), squeeze( solidification_time( center( 1 ), :, center( 3 ) ) ) * time_step_factor );
-plot( axh3, 1 : shape( 1 ), squeeze( solidification_time( center( 1 ), center( 2 ), : ) ) * time_step_factor );
+axhs( 1 ) = subplot( 3, 1, 1 );
+axhs( 2 ) = subplot( 3, 1, 2 );
+axhs( 3 ) = subplot( 3, 1, 3 );
+draw_axial_plots_at_indices( axhs, shape, st.values, center, 'k' );
+
