@@ -36,8 +36,15 @@ classdef MaterialProperty < handle & matlab.mixin.Heterogeneous
             
             assert( numel( t_range ) == 2 );
             t_range = sort( t_range );
-            t = scale_temperatures( obj.temperatures, t_range );
-            v = obj.values ./ v_factor;
+            t = obj.temperatures;
+            v = obj.values;
+            if numel( t ) > 1
+                remove = t < t_range( 1 ) | t_range( 2 ) < t;
+                t( remove ) = [];
+                v( remove ) = [];
+            end
+            t = scale_temperatures( t, t_range );
+            v = v ./ v_factor;
             
         end
         

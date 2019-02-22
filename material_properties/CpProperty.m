@@ -36,7 +36,7 @@ classdef (Sealed) CpProperty < MaterialProperty
         
         function fn = get_extreme_fn( ~ )
             
-            fn = @max;
+            fn = @min;
             
         end
         

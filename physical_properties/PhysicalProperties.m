@@ -356,7 +356,7 @@ classdef (Sealed) PhysicalProperties < handle
             
             k_compare = extremes( Material.K_INDEX ) / obj.space_step;
             h_compare = obj.convection.get_extreme();
-            if k_compare < h_compare
+            if k_compare > h_compare
                 extremes( Material.K_INDEX ) = k_compare * obj.space_step;
             else
                 extremes( Material.K_INDEX ) = h_compare;
