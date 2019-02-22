@@ -82,5 +82,19 @@ classdef (Sealed) MeltMaterial < Material
         
     end
     
+    
+    methods ( Access = protected )
+        
+        function index = get_type_index( obj, material_property )
+            
+            index = obj.get_type_index@Material( material_property );
+            if isa( material_property, 'FsProperty' )
+                index = obj.FS_INDEX;
+            end
+            
+        end
+        
+    end
+    
 end
 

@@ -8,6 +8,7 @@ classdef (Abstract) Material < handle & matlab.mixin.Heterogeneous
         
     properties ( Access = public, Constant )
         
+        NULL_INDEX = 0;
         RHO_INDEX = 1;
         CP_INDEX = 2;
         K_INDEX = 3;
@@ -24,8 +25,10 @@ classdef (Abstract) Material < handle & matlab.mixin.Heterogeneous
     
     methods ( Access = public )
         
-        function set( obj, material_property, index )
+        function set( obj, material_property )
             
+            index = obj.get_type_index( material_property );
+            assert( index ~= obj.NULL_INDEX );
             obj.material_properties( index ) = material_property;
             obj.properties_set( index ) = true;
             
@@ -134,11 +137,25 @@ classdef (Abstract) Material < handle & matlab.mixin.Heterogeneous
         end
         
         
+        function index = get_type_index( obj, material_property )
+            
+            index = obj.NULL_INDEX;
+            if isa( material_property, 'RhoProperty' )
+                index = obj.RHO_INDEX;
+            elseif isa( material_property, 'CpProperty' )
+                index = obj.CP_INDEX;
+            elseif isa( material_property, 'KProperty' )
+                index = obj.K_INDEX;
+            end
+            
+        end
+        
+        
         function nd_material = nondimensionalize_impl( obj, nd_material, extremes, t_range )
             
             for i = 1 : obj.count()
                 
-                nd_material.set( obj.get( i ).nondimensionalize( extremes( i ), t_range ), i );
+                nd_material.set( obj.get( i ).nondimensionalize( extremes( i ), t_range ) );
                 
             end
             nd_material.set_initial_temperature( scale_temperatures( obj.get_initial_temperature(), t_range ) );
