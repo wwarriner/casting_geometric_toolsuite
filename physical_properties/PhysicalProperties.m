@@ -6,16 +6,17 @@ classdef (Sealed) PhysicalProperties < handle
             
             obj.space_step = [];
             obj.max_length = [];
-            obj.ambient_temperature = [];
             
             obj.materials = containers.Map( 'KeyType', 'double', 'ValueType', 'any' );
+            obj.ambient_id = [];
             obj.melt_ids = [];
             
             obj.convection = ConvectionProperties.empty();
             
             obj.space_step_set = false;
             obj.max_length_set = false;
-            obj.ambient_temperature_set = false;
+            obj.ambient_material_set = false;
+            % TODO at least one other material set?
             
             obj.prepared = false;
             
@@ -66,45 +67,46 @@ classdef (Sealed) PhysicalProperties < handle
         end
         
         
-        % units are C
-        function set_ambient_temperature( obj, ambient_temperature )
-            
-            assert( ~obj.prepared );
-            
-            assert( isscalar( ambient_temperature ) );
-            assert( isa( ambient_temperature, 'double' ) );
-            assert( isfinite( ambient_temperature ) );
-            assert( 0 <= ambient_temperature );
-            
-            obj.ambient_temperature = ambient_temperature;
-            obj.ambient_temperature_set = true;
-            
-        end
-        
-        
-        function add_material( obj, material, id )
+        function add_material( obj, material )
             
             assert( ~obj.prepared );
             
             assert( ~isa( material, 'MeltMaterial' ) );
+            assert( ~isa( material, 'AmbientMaterial' ) );
             assert( material.is_ready() );
-            assert( ~obj.materials.isKey( id ) );
+            assert( ~obj.materials.isKey( material.mesh_id ) );
             
-            obj.materials( id ) = material;
+            obj.materials( material.mesh_id ) = material;
             
         end
         
         
-        function add_melt_material( obj, material, id )
+        function add_ambient_material( obj, material )
+            
+            assert( ~obj.prepared );
+            assert( ~obj.ambient_material_set );
+            
+            assert( isa( material, 'AmbientMaterial' ) );
+            assert( material.is_ready() );
+            assert( ~obj.materials.isKey( material.mesh_id ) );
+            
+            obj.materials( material.mesh_id ) = material;
+            obj.ambient_id = material.mesh_id;
+            obj.ambient_material_set = true;
+            
+        end
+        
+        
+        function add_melt_material( obj, material )
             
             assert( ~obj.prepared );
             
             assert( isa( material, 'MeltMaterial' ) );
             assert( material.is_ready() );
-            assert( ~obj.materials.isKey( id ) );
+            assert( ~obj.materials.isKey( material.mesh_id ) );
             
-            obj.melt_ids( end + 1 ) = id;
-            obj.materials( id ) = material;
+            obj.melt_ids( end + 1 ) = material.mesh_id;
+            obj.materials( material.mesh_id ) = material;
             
         end
         
@@ -130,22 +132,22 @@ classdef (Sealed) PhysicalProperties < handle
             assert( ~obj.prepared );
             
             ready = true;
+            ids = cell2mat( obj.materials.keys() );
             for i = 1 : obj.materials.Count
                 
-                ready = ready & obj.materials( i ).is_ready();
+                ready = ready & obj.materials( ids( i ) ).is_ready();
                 
             end
             ready = ready & obj.convection.is_ready( cell2mat( obj.materials.keys() ) );
             ready = ready & obj.space_step_set;
             ready = ready & obj.max_length_set;
-            ready = ready & obj.ambient_temperature_set;
+            ready = ready & obj.ambient_material_set;
             assert( ready );
             
             obj.space_step_nd = obj.space_step / obj.max_length;
             
             obj.extremes = obj.compute_extremes();
             obj.temperature_range = obj.get_temperature_range();
-            ids = cell2mat( obj.materials.keys() );
             for i = 1 : obj.materials.Count
                 
                 id = ids( i );
@@ -170,6 +172,15 @@ classdef (Sealed) PhysicalProperties < handle
                 obj.extremes( Material.K_INDEX );
 
             obj.prepared = true;
+            
+        end
+        
+        
+        function temperature = get_ambient_temperature_nd( obj )
+            
+            assert( obj.prepared );
+            
+            temperature = obj.initial_temperatures_nd( obj.ambient_id );
             
         end
         
@@ -304,16 +315,16 @@ classdef (Sealed) PhysicalProperties < handle
         
         space_step
         max_length
-        ambient_temperature
         
         materials
+        ambient_id
         melt_ids
         
         convection
         
         space_step_set
         max_length_set
-        ambient_temperature_set
+        ambient_material_set
         
         prepared
         
@@ -340,13 +351,14 @@ classdef (Sealed) PhysicalProperties < handle
             material_property_extremes = nan( material_count, Material.count() );
             for i = 1 : material_count
                 
+                if keys( i ) == obj.ambient_id; continue; end
                 material = obj.materials( keys( i ) );
                 material_property_extremes( i, : ) = material.get_extremes();
                 
             end
             
             extreme_fns = obj.materials( keys( 1 ) ).get_extreme_fns();
-            extremes = zeros( Material.count(), 1 );
+            extremes = nan( Material.count(), 1 );
             for i = 1 : Material.count()
                 
                 fn = extreme_fns{ i };
