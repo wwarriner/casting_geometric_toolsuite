@@ -1,4 +1,10 @@
 classdef (Abstract) Material < handle & matlab.mixin.Heterogeneous
+    
+    properties ( Access = public )
+        
+        mesh_id
+        
+    end
         
     properties ( Access = public, Constant )
         
@@ -109,8 +115,6 @@ classdef (Abstract) Material < handle & matlab.mixin.Heterogeneous
         
         properties_set
         initial_temperature_set
-        
-        mesh_id
         
     end
     
