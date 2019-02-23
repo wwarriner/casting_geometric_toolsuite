@@ -28,9 +28,11 @@ Added on 28 Nov 2018 is an orientation plotting tool. The tool plots casting ori
 - [3D Euclidean Distance Transform for Variable Data Aspect Ratio](https://www.mathworks.com/matlabcentral/fileexchange/15455-3d-euclidean-distance-transform-for-variable-data-aspect-ratio) (bwdistsc, BSD)
 - [Mesh voxelization](https://www.mathworks.com/matlabcentral/fileexchange/27390-mesh-voxelisation) (Mesh_voxelization, BSD)
 - [A suite of minimal bounding objects](https://www.mathworks.com/matlabcentral/fileexchange/34767-a-suite-of-minimal-bounding-objects) (MinBoundSuite, BSD)
+- [Perceptually uniform colormaps](https://www.mathworks.com/matlabcentral/fileexchange/51986-perceptually-uniform-colormaps) (perceptually_uniform_colormaps, [custom license](https://github.com/matplotlib/matplotlib/blob/master/LICENSE/LICENSE))
+- [PrettyAxes3DMatlab](https://www.mathworks.com/matlabcentral/fileexchange/69552-prettyaxes3dmatlab) (PrettyAxes3DMatlab, UNLICENSE)
 - [stlwrite - write ASCII or Binary STL files](https://www.mathworks.com/matlabcentral/fileexchange/20922-stlwrite-write-ascii-or-binary-stl-files) (stlwrite, BSD)
-- [vtkwrite : Exports various 2D/3D data to ParaView in VTK file format](https://www.mathworks.com/matlabcentral/fileexchange/47814-vtkwrite-exports-various-2d-3d-data-to-paraview-in-vtk-file-format) (vtkwrite, MIT)
 - [subtightplot](https://www.mathworks.com/matlabcentral/fileexchange/39664-subtightplot) (subtightplot, BSD)
+- [vtkwrite : Exports various 2D/3D data to ParaView in VTK file format](https://www.mathworks.com/matlabcentral/fileexchange/47814-vtkwrite-exports-various-2d-3d-data-to-paraview-in-vtk-file-format) (vtkwrite, MIT)
 
 #### MATLAB Toolboxes
 - [Image Processing Toolbox](https://www.mathworks.com/products/image.html)
