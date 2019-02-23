@@ -8,7 +8,7 @@ classdef ( Sealed ) Mesh < Process
         
         %% outputs
         element
-        scale
+        scale % mm
         
         interior
         surface
@@ -104,6 +104,17 @@ classdef ( Sealed ) Mesh < Process
             obj.desired_element_count = desired_element_count;
             obj.desired_envelope = envelope;
             obj.run();
+            
+        end
+        
+        
+        function fdm_mesh = get_fdm_mesh( obj, padding_in_mm, mold_id, melt_id )
+            
+            fdm_mesh = double( obj.interior );
+            fdm_mesh( obj.interior == 0 ) = mold_id;
+            fdm_mesh( obj.interior == 1 ) = melt_id;
+            pad_count = round( obj.to_mesh_units( padding_in_mm ) );
+            fdm_mesh = padarray( fdm_mesh, pad_count .* ones( 3, 1 ), mold_id, 'both' );
             
         end
         
