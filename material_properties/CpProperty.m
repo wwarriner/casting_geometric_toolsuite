@@ -22,6 +22,13 @@ classdef (Sealed) CpProperty < MaterialProperty
         end
         
         
+        function q = compute_q_property( obj )
+            
+            q = QProperty( obj.values, [ min( obj.temperatures ) max( obj.temperatures ) ] );
+            
+        end
+        
+        
         function nd_material_property = nondimensionalize( obj, v_factor, t_range )
             
             [ t, v ] = obj.nondimensionalize_impl( v_factor, t_range );
