@@ -13,6 +13,22 @@ classdef (Sealed) FsProperty < MaterialProperty
         end
         
         
+        function temperature = get_liquidus( obj )
+            
+            ind = find( obj.values == 1, 1, 'last' );
+            temperature = obj.temperatures( ind );
+            
+        end
+        
+        
+        function temperature = get_solidus( obj )
+            
+            ind = find( obj.values == 0, 1, 'first' );
+            temperature = obj.temperatures( ind );
+            
+        end
+        
+        
         function nd_material_property = nondimensionalize( obj, v_factor, t_range )
             
             [ t, v ] = obj.nondimensionalize_impl( v_factor, t_range );
