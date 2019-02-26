@@ -27,7 +27,9 @@ classdef (Sealed) PhysicalProperties < handle
             obj.space_step_nd = [];
             obj.initial_temperatures_nd = containers.Map( 'KeyType', 'double', 'ValueType', 'any' );
             obj.material_properties_nd = containers.Map( 'KeyType', 'double', 'ValueType', 'any' );
+            obj.liquidus_temperatures_nd = containers.Map( 'KeyType', 'double', 'ValueType', 'any' );
             obj.fe_temperatures_nd = containers.Map( 'KeyType', 'double', 'ValueType', 'double' );
+            obj.solidus_temperatures_nd = containers.Map( 'KeyType', 'double', 'ValueType', 'any' );
             obj.convection_nd = ConvectionProperties.empty();
             
         end
@@ -155,7 +157,9 @@ classdef (Sealed) PhysicalProperties < handle
                 obj.initial_temperatures_nd( id ) = material_nd.get_initial_temperature();
                 obj.material_properties_nd( id ) = obj.prepare_properties( material_nd );
                 if ismember( id, obj.melt_ids )
+                    obj.liquidus_temperatures_nd( id ) = material_nd.get_liquidus_temperature();
                     obj.fe_temperatures_nd( id ) = material_nd.get_feeding_effectivity_temperature();
+                    obj.solidus_temperatures_nd( id ) = material_nd.get_solidus_temperature();
                     mps = obj.material_properties_nd( id );
                     mps( obj.FS_INDEX ) = material_nd.get( MeltMaterial.FS_INDEX );
                     obj.material_properties_nd( id ) = mps;
@@ -218,6 +222,43 @@ classdef (Sealed) PhysicalProperties < handle
             assert( obj.prepared );
 
             times_nd = times / obj.time_factor;
+            
+        end
+        
+        
+        function latent_heat = get_min_latent_heat( obj )
+            
+            assert( obj.prepared );
+            
+            % use min over materials to be conservative
+            latent_heat = inf;
+            for id = 1 : obj.materials.Count
+                
+                if ismember( id, obj.melt_ids )
+                    mp_nd = obj.material_properties_nd( id );
+                    liquidus = mp_nd( obj.FS_INDEX ).get_liquidus();
+                    solidus = mp_nd( obj.FS_INDEX ).get_solidus();
+                    latent_heat = min( latent_heat, max( mp_nd( obj.Q_INDEX ).get_latent_heat( solidus, liquidus ) ) );
+                end
+                
+            end
+            assert( latent_heat ~= inf );
+            
+        end
+        
+        
+        function q = compute_melt_enthalpies_nd( obj, mesh, temperatures )
+            
+            assert( obj.prepared );
+            
+            q = zeros( size( mesh ) );
+            for id = 1 : obj.materials.Count
+                
+                if ismember( id, obj.melt_ids )
+                    q( mesh == id ) = obj.lookup_q_nd( id, temperatures( mesh == id ) );
+                end
+                
+            end
             
         end
         
@@ -292,12 +333,32 @@ classdef (Sealed) PhysicalProperties < handle
         end
         
         
+        function temperature_nd = get_liquidus_temperature_nd( obj, melt_id )
+            
+            assert( obj.prepared );
+            assert( obj.liquidus_temperatures_nd.isKey( melt_id ) );
+            
+            temperature_nd = obj.liquidus_temperatures_nd( melt_id );
+            
+        end
+        
+        
         function temperature_nd = get_feeding_effectivity_temperature_nd( obj, melt_id )
             
             assert( obj.prepared );
             assert( obj.fe_temperatures_nd.isKey( melt_id ) );
             
             temperature_nd = obj.fe_temperatures_nd( melt_id );
+            
+        end
+        
+        
+        function temperature_nd = get_solidus_temperature_nd( obj, melt_id )
+            
+            assert( obj.prepared );
+            assert( obj.solidus_temperatures_nd.isKey( melt_id ) );
+            
+            temperature_nd = obj.solidus_temperatures_nd( melt_id );
             
         end
         
@@ -358,7 +419,9 @@ classdef (Sealed) PhysicalProperties < handle
         time_factor
         space_step_nd
         initial_temperatures_nd
+        liquidus_temperatures_nd
         fe_temperatures_nd
+        solidus_temperatures_nd
         material_properties_nd
         convection_nd
         
