@@ -1,7 +1,5 @@
 function phs = draw_horizontal_lines( axhs, y, color_specs )
 
-assert( numel( axhs ) == 3 );
-
 color_specs = replicate_color_specs( color_specs, 3 );
 assert( numel( color_specs ) == 3 );
 
