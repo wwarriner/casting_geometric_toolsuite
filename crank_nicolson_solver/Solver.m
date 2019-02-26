@@ -68,6 +68,12 @@ classdef Solver < handle
             if obj.live_plotting
                 center = floor( ( shape - 1 ) / 2 ) + 1;
                 [ axhs, phs ] = test_plot_setup();
+                
+                fh = figure();
+                curve_axh = axes( fh );
+                hold( curve_axh, 'on' );
+                horizontal_ph = [];
+                
                 draw_axial_plots_at_indices( axhs, shape, obj.temperature_initial, center, 'k' );
                 melt_fe_temp_nd = obj.pp.get_feeding_effectivity_temperature_nd( primary_melt_id );
                 melt_fe_temp = obj.pp.dimensionalize_temperatures( melt_fe_temp_nd );
@@ -149,7 +155,16 @@ classdef Solver < handle
                 
                 if obj.live_plotting
                     delete( phs );
+                    delete( horizontal_ph );
+                    
+                    sim_time_d = obj.pp.dimensionalize_times( simulation_time_nd );
                     u_next_d = obj.pp.dimensionalize_temperatures( u_next_nd );
+                    
+                    plot( curve_axh, sim_time_d, min( u_next_d( obj.mesh( : ) == primary_melt_id ) ), 'b.' );
+                    plot( curve_axh, sim_time_d, median( u_next_d( obj.mesh( : ) == primary_melt_id ) ), 'g.' );
+                    plot( curve_axh, sim_time_d, max( u_next_d( obj.mesh( : ) == primary_melt_id ) ), 'r.' );
+                    horizontal_ph = draw_horizontal_lines( curve_axh, melt_fe_temp, 'k:' );
+                    
                     phs = draw_axial_plots_at_indices( axhs, shape, u_next_d, center, 'r' );
                     drawnow();
                 end
