@@ -53,13 +53,15 @@ classdef Solver < handle
             u_initial_nd = obj.pp.generate_initial_temperature_field_nd( obj.mesh );
             obj.temperature_initial = obj.pp.dimensionalize_temperatures( u_initial_nd );
             u_prev_nd = u_initial_nd;
+            u_2prev_nd = u_prev_nd;
             u_next_nd = u_prev_nd;
+            
+            q_prev_nd = obj.pp.compute_melt_enthalpies_nd( obj.mesh, u_initial_nd );
             
             shape = size( obj.mesh );
             st = SolidificationTime( shape );
             
             simulation_time_step_next_nd = obj.pp.nondimensionalize_times( starting_time_step_in_s );
-            simulation_time_growth_factor = .1;
             simulation_time_nd = 0;
             loop_count = 1;
             
@@ -74,8 +76,8 @@ classdef Solver < handle
             end
             
             finished = false;
-            while( ~finished )
-                
+            while ~finished 
+                %% END CONDITION
                 if st.is_finished( obj.mesh, primary_melt_id )
                     if obj.printing
                         fprintf( 'Fully Solidified\n' );
@@ -83,31 +85,57 @@ classdef Solver < handle
                     break;
                 end
                 
-                [ m_L, m_R, r_L, r_R ] = obj.mg.generate( ...
-                    obj.pp.get_ambient_temperature_nd(), ...
-                    obj.pp.get_space_step_nd(), ...
-                    simulation_time_step_next_nd, ...
-                    u_prev_nd ...
-                    );
-                computation_times = obj.mg.get_last_times();
+                computation_times = [];
+                
+                %% DETERMINE TIME STEP
+                generation_time = 0;
+                while ~finished
+                
+                    RELAXATION_PARAMETER = 0.9;
+                    [ m_L, m_R, r_L, r_R ] = obj.mg.generate( ...
+                        obj.pp.get_ambient_temperature_nd(), ...
+                        obj.pp.get_space_step_nd(), ...
+                        simulation_time_step_next_nd, ...
+                        u_2prev_nd, ...
+                        u_prev_nd ...
+                        );
+                    
+                    tic;
+                    [ u_candidate_nd, ~, ~, ~, ~ ] = pcg( ...
+                        m_L, ...
+                        m_R * u_prev_nd( : ) + r_R - r_L, ...
+                        obj.pcg_tol, ...
+                        obj.pcg_max_it, ...
+                        [], ...
+                        [], ...
+                        u_prev_nd( : ) ...
+                        );
+                    pcg_time = toc;
+                    
+                    q_candidate_nd = obj.pp.compute_melt_enthalpies_nd( obj.mesh, u_candidate_nd );
+                    [ max_delta_q_nd, ind ] = max( q_prev_nd( : ) - q_candidate_nd( : ) );
+                    %d_u = u_prev_nd( ind ) - u_candidate_nd( ind );
+                    if max_delta_q_nd < obj.pp.get_min_latent_heat() / 2
+                        simulation_time_step_next_nd = simulation_time_step_next_nd ./ RELAXATION_PARAMETER;
+                        break;
+                    else
+                        simulation_time_step_next_nd = simulation_time_step_next_nd .* RELAXATION_PARAMETER;
+                        if simulation_time_step_next_nd < 1e-12
+                            assert( false );
+                        end
+                    end
+                    
+                    generation_time = generation_time + sum( obj.mg.get_last_times() ) + pcg_time;
+                    
+                end
+                q_prev_nd = q_candidate_nd;
+                computation_times( end + 1 ) = generation_time; %#ok<AGROW>
                 
                 simulation_time_nd = simulation_time_nd + simulation_time_step_next_nd;
                 
+                %% UPDATE RESULTS
                 tic;
-                [ p, ~, ~, ~ ] = pcg( ...
-                    m_L, ...
-                    m_R * u_prev_nd( : ) + r_R - r_L, ...
-                    obj.pcg_tol, ...
-                    obj.pcg_max_it, ...
-                    [], ...
-                    [], ...
-                    u_prev_nd( : ) ...
-                    );
-                computation_times( end + 1 ) = toc; %#ok<AGROW>
-                
-                
-                tic;
-                u_next_nd = reshape( p, shape );
+                u_next_nd = reshape( u_candidate_nd, shape );
                 st.update_nd( ...
                     obj.mesh, ...
                     primary_melt_id, ...
@@ -133,8 +161,8 @@ classdef Solver < handle
                     fprintf( '\n' );
                 end
                 
-                simulation_time_step_next_nd = ( 1 + simulation_time_growth_factor ) * simulation_time_step_next_nd;
                 loop_count = loop_count + 1;
+                u_2prev_nd = u_prev_nd;
                 u_prev_nd = u_next_nd;
                 obj.computation_time = obj.computation_time + sum( computation_times );
                 
