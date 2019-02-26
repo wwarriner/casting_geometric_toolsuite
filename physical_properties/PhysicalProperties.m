@@ -222,6 +222,26 @@ classdef (Sealed) PhysicalProperties < handle
         end
         
         
+        function values = lookup_rho_nd( obj, material_id, temperatures )
+            
+            assert( obj.prepared );
+            
+            mps = obj.material_properties_nd( material_id );
+            values = mps( obj.RHO_INDEX ).lookup_values( temperatures );
+            
+        end
+        
+        
+        function values = lookup_q_nd( obj, material_id, temperatures )
+            
+            assert( obj.prepared );
+            
+            mps = obj.material_properties_nd( material_id );
+            values = mps( obj.Q_INDEX ).lookup_values( temperatures );
+            
+        end
+        
+        
         function values = lookup_rho_cp_nd( obj, material_id, temperatures )
             
             assert( obj.prepared );
@@ -305,8 +325,11 @@ classdef (Sealed) PhysicalProperties < handle
     properties ( Access = private, Constant )
         
         RHO_CP_INDEX = 1;
-        K_HALF_INV_INDEX = 2;
-        FS_INDEX = 3;
+        Q_INDEX = 2;
+        RHO_INDEX = 3;
+        CP_INDEX = 4;
+        K_HALF_INV_INDEX = 5;
+        FS_INDEX = 6;
         
     end
     
@@ -396,7 +419,12 @@ classdef (Sealed) PhysicalProperties < handle
         
         function material_properties_nd = prepare_properties( obj, material_nd )
             
+            material_properties_nd( obj.Q_INDEX ) = material_nd.get( Material.CP_INDEX ).compute_q_property( [ 0 1 ] );
+            rho_nd = material_nd.get( Material.RHO_INDEX );
+            material_properties_nd( obj.RHO_INDEX ) = RhoProperty( rho_nd.temperatures, rho_nd.values );
             material_properties_nd( obj.RHO_CP_INDEX ) = RhoCpProperty( material_nd.get( Material.RHO_INDEX ), material_nd.get( Material.CP_INDEX ) );
+            cp_nd = material_nd.get( Material.CP_INDEX );
+            material_properties_nd( obj.CP_INDEX ) = CpProperty( cp_nd.temperatures, cp_nd.values );
             material_properties_nd( obj.K_HALF_INV_INDEX ) = KHalfSpaceStepInvProperty( material_nd.get( Material.K_INDEX ), obj.space_step );
             
         end
