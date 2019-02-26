@@ -22,9 +22,9 @@ classdef (Sealed) CpProperty < MaterialProperty
         end
         
         
-        function q = compute_q_property( obj )
+        function q = compute_q_property( obj, t_range )
             
-            q = QProperty( obj.values, [ min( obj.temperatures ) max( obj.temperatures ) ] );
+            q = QProperty( obj, t_range );
             
         end
         
