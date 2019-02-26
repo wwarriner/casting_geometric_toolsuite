@@ -2,13 +2,15 @@ classdef MatrixGenerator < handle
     
     methods ( Access = public )
         
-        function obj = MatrixGenerator( fdm_mesh, ambient_id, rho_cp_lookup_fn, k_half_space_step_inv_lookup_fn, h_lookup_fn )
+        function obj = MatrixGenerator( fdm_mesh, ambient_id, q_fn, rho_fn, rho_cp_lookup_fn, k_half_space_step_inv_lookup_fn, h_lookup_fn )
             
             obj.ambient_id = ambient_id;
             obj.shape = size( fdm_mesh );
             obj.element_count = prod( obj.shape );
             obj.strides = [ 1 obj.shape( obj.X ) obj.shape( obj.X ) * obj.shape( obj.Y ) ];
             obj.fdm_mesh = fdm_mesh;
+            obj.q_fn = q_fn;
+            obj.rho_fn = rho_fn;
             obj.rho_cp_fn = rho_cp_lookup_fn;
             obj.k_half_space_step_inv_fn = k_half_space_step_inv_lookup_fn;
             obj.h_fn = h_lookup_fn;
@@ -16,16 +18,29 @@ classdef MatrixGenerator < handle
         end
         
         
-        function [ m_l, m_r, r_l, r_r ] = generate( obj, ambient_temperature, space_step, time_step, u )
+        function [ m_l, m_r, r_l, r_r ] = generate( obj, ambient_temperature, space_step, time_step, u_prev, u_next )
             
             obj.times = [];
             
             differential_element_factor = time_step / space_step;
-            rho_cp = obj.property_lookup( u, obj.rho_cp_fn );
+            
+            q_prev = obj.property_lookup( u_prev, obj.q_fn );
+            q_next = obj.property_lookup( u_next, obj.q_fn );
+            rho_prev = obj.property_lookup( u_prev, obj.rho_fn );
+            rho_next = obj.property_lookup( u_next, obj.rho_fn );
+            rho_cp = obj.property_lookup( u_next, obj.rho_cp_fn );
+            
+            TOL = 1e-6;
+            d_u = u_next - u_prev;
+            use_direct = abs( d_u ) < TOL;
+            rho_cp( ~use_direct ) = mean( [ rho_next( ~use_direct ) rho_prev( ~use_direct ) ], 2 ) .* ...
+                ( q_next( ~use_direct ) - q_prev( ~use_direct ) ) ./ d_u( ~use_direct );
+            
+            %rho_cp = obj.property_lookup( u, obj.rho_cp_fn );
             bc_indices = obj.determine_ambient_boundary_indices();
             
-            ambient = obj.determine_ambient_diffusivity_vector( differential_element_factor, rho_cp, bc_indices, u );
-            bands = obj.construct_bands( differential_element_factor, rho_cp, bc_indices, u );
+            ambient = obj.determine_ambient_diffusivity_vector( differential_element_factor, rho_cp, bc_indices, u_next );
+            bands = obj.construct_bands( differential_element_factor, rho_cp, bc_indices, u_next );
             
             [ m_l, m_r ] = obj.construct_sparse( ambient, bands );
             [ r_l, r_r ] = obj.construct_ambient_bc_vectors( ambient_temperature, ambient );
@@ -226,6 +241,8 @@ classdef MatrixGenerator < handle
         shape
         strides
         fdm_mesh
+        q_fn
+        rho_fn
         rho_cp_fn
         k_half_space_step_inv_fn
         h_fn
