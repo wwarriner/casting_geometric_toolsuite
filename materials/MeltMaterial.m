@@ -45,9 +45,23 @@ classdef (Sealed) MeltMaterial < Material
         end
         
         
+        function temperature = get_liquidus_temperature( obj )
+            
+            temperature = obj.get( obj.FS_INDEX ).get_liquidus();
+            
+        end
+        
+        
         function temperature = get_feeding_effectivity_temperature( obj )
             
             temperature = obj.get( obj.FS_INDEX ).lookup_temperatures( obj.feeding_effectivity );
+            
+        end
+        
+        
+        function temperature = get_solidus_temperature( obj )
+            
+            temperature = obj.get( obj.FS_INDEX ).get_solidus();
             
         end
         
