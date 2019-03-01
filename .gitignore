@@ -1,1 +1,6 @@
 *.asv
+*.gz
+*.log
+*.blg
+*.bbl
+*.aux

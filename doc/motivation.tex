@@ -1,0 +1,126 @@
+\documentclass[]{article}
+
+\usepackage{amsmath}
+\usepackage{bm}
+
+\usepackage{siunitx}
+
+\newcommand{\cp}{c_{p}}
+\newcommand{\xd}[4]{%
+	\def\temp{#1}\ifx\temp\empty
+		\frac{#4 #2}{#4 #3}
+	\else
+		\frac{#4^{#1} #2}{#4 #3^{#1}}
+	\fi
+	}
+\newcommand{\pd}[3][]{\xd{#1}{#2}{#3}{\partial}}
+\newcommand{\Dd}[3][]{\xd{#1}{#2}{#3}{\Delta}}
+\newcommand{\D}[2][]{%
+	\def\temp{#1}\ifx\temp\empty
+		\Delta #2
+	\else
+		\Delta^{#1} #2
+	\fi
+	}
+\newcommand{\id}[1]{\:d#1}
+\newcommand{\dq}{\dot{q}}
+\newcommand{\vdq}{\vec{\dq}}
+\newcommand{\cnm}{\bm{M}}
+\newcommand{\cnb}{\vec{b}}
+
+%opening
+\title{A 3D Finite Volume Method Solver for Arbitrary Solidification Boundary-Value Problems}
+\author{William E Warriner}
+
+\begin{document}
+
+\maketitle
+
+\section{The Heat Equation}
+
+Consider a point in Euclidean space and let the temperature of that point be \(u\), its density \(\rho\) and constant-pressure specific heat capacity \(\cp\). Then the heat equation may be formulated as
+\begin{align}
+\rho \cp \pd{u}{t} &= \nabla \cdot \vdq
+\end{align}
+where \(\vdq\) is the heat flux vector across the point. The equation states that the temperature of a point changes proportionally to the net heat flux through it. Both sides of the equation have units of \(\si{W.m^{-3}}\).
+
+There are three types of heat flux: conductive, convective, and radiative. It is assumed that a boundary cannot experience both conductive and convective heat transfer. Conductive heat transfer is reserved for boundaries between elements with the same phase, while convective is for different phases. Radiative heat transfer occurs in both cases and is added to both. The heat flux equations are
+\begin{align}
+\vdq_{k} &= -k \nabla u \\
+\vdq_{h} &= \vec{h} \left( \vec{u}_{\infty} - u \right) \\
+\vdq_{\sigma} &= \sigma \varepsilon \left( \vec{u}^{4}_{\infty} - u^{4} \right)
+\end{align}
+where \(k\) is thermal conductivity, \(h\) is the convective heat transfer coefficient at the boundary, \(u_{\infty}\) is the ambient temperature, \(\sigma\) is the Stefan-Boltzmann constant and \(\varepsilon\) is a constant dependent on emissivity. The temperature \(u\) is implicitly expanded to a vector whose values are identical. All of these have units of \(\si{W.m^{-2}}\). The heat equation in the case of conductivity becomes the more familiar
+\begin{align}
+\rho \cp \pd{u}{t} &= -\nabla \cdot k \nabla u \\
+&= -\nabla k \cdot \nabla u - k \nabla^2 u
+\end{align}
+whereas in the case of convection it becomes
+\begin{align}
+\rho \cp \pd{u}{t} = \nabla \cdot \vec{h} \left( \vec{u}_{\infty} - u \right)
+\end{align}
+and radiation is neglected.
+
+\section{Finite Volume Method}
+
+Suppose, in typical finite volume formulation fashion, that the domain is an axially-aligned rectangular prism---or cell---whose side lengths are \(\Delta x\), \(\Delta y\) and \(\Delta z\) along the \(X\)-, \(Y\)- and \(Z\)-axes, respectively. Then the volume of the cell is \(V = \Delta x \Delta y \Delta z\), and the surface area components are \(S_{yz} = \Delta y \Delta z\), \(S_{zx} = \Delta z \Delta x\), \(S_{xy} = \Delta x \Delta y\) for boundaries normal to the \(X\)-, \(Y\)- and \(Z\)-axes respectively. Each cell has uniform temperature and properties. The convective heat equation then becomes
+\begin{align}
+\rho \cp \Dd{u}{t} &= -\sum_{n} \Dd{k_{n}}{n} \Dd{u}{n} - \sum_{n} k_{n} \Dd[2]{u}{n} \\
+\Dd{u}{t} &= -\sum_{n} \frac{1}{\rho_{n} c_{p,n}} \Dd{k_{n}}{n} \Dd{u}{n} - \sum_{n} \frac{k_{n}}{\rho_{n} c_{p,n}} \Dd[2]{u}{n} \\
+\D{u} &= -\sum_{n} \frac{\D{t}}{\rho_{n} c_{p,n} \D{n}^{2}}\D{k}_{n}\D{u} - \sum_{n} \frac{k_{n} \D{t}}{\rho_{n} c_{p,n} \D{n^{2}}}\D[2]{u} \\
+\D{u} &= -\sum_{n} \frac{\D{t}}{\rho_{n} c_{p,n}\D{n}^{2}} \left( \D{k}_{n}\D{u} + k_{n}\D[2]{u} \right)
+\end{align}
+where \(n \in \left\{ x,y,z \right\}\). The thermal conductivity of the face \(i+1/2\) between cells \(i\) and \(i+1\) is computed as
+\begin{align}
+k_{n,i+1/2} &= \left( \frac{\Delta n_{i}}{\Delta n_{i} + \Delta n_{i+1}} \cdot \frac{1}{k_{i}} + \frac{\Delta n_{i+1}}{\Delta n_{i} + \Delta n_{i+1}} \cdot \frac{1}{k_{i+1}} \right)^{-1} \\
+&= \left(\Delta n_{i} + \Delta n_{i+1}\right) \left( \frac{\Delta n_{i}}{k_{i}} + \frac{\Delta n_{i+1}}{k_{i+1}} \right)^{-1}
+\end{align}
+and is due to each cell contributing half its length to thermal conductivity, and conductivities are added in series using the harmonic mean. Note that the half factors all cancel, and thus are not written. Note that if the cells have uniform thickness, then the weighting becomes half for each contribution, and the result is double the harmonic mean.
+
+Similarly, the value of \(\rho \cp\) for boundary \(i+1/2\) may be determined as the volume-weighted atrithmetic mean of cells \(i\) and \(i+1\) as
+\begin{align}
+\rho_{i+1/2} c_{p,i+1/2} &= \frac{\left( \Delta n_{i} \rho_{i} + \Delta n_{i+1} \rho_{i+1} \right) \left( \Delta n_{i} c_{p,i} + \Delta n_{i+1} c_{p,i+1} \right)}{\Delta n_{i} + \Delta n_{i+1}} 
+\end{align}
+where the areas cancel and the volume-weighting becomes length-weighting. If the cells have uniform thickness then the weighted average becomes a simple arithmetic mean.
+
+The convective heat equation becomes
+\begin{align}
+\rho \cp \Dd{u}{t} &= \sum_{n} h_{n} \Dd{\left( u_{\infty,n} - u \right )}{n} \\
+\D{u} &= \sum_{n} \frac{h_{n}\D{t}}{2 \rho_{n} c_{p,n}\D{n}} \Delta u
+\end{align}
+because the ambient temperature at boundary \(i+1/2\) may be expressed as
+\begin{align}
+u_{\infty,n,i+1/2} &= \frac{u_{i} + u_{i+1}}{2}
+\end{align}
+which is the arithmetic mean of the temperature in cells \(i\) and \(i+1\). The unweighted arithmetic mean is reasonable because it is symmetric, and because it uses the average temperature at the boundary.
+
+\section{Discretization Approach}
+
+Because the conductive heat equation is second order and the governing partial differential equation is parabolic we choose to use the Crank-Nicolson approach. The approach can be thought of as the average of an explicit and implicit second-order central difference. Because the next time step is implicitly dependent on the previous time step, a system of equations must be solved. The overall system may be expressed as
+\begin{align}
+\cnm^{j+1}_{m} u^{j+1} + \cnb^{j+1}_{m} &= \cnm^{j}_{e} u^{j} + \cnb^{j+1}_{e}
+\end{align}
+where \(\cnm\) are the coefficient matrices, \(u^{j}\) is the temperature vector of the \(j\)-th time step, \(\cnb\) are the global boundary conditions and subscripts \(m\) and \(e\) represent implicit and explicit parts of the Crank-Nicolson equations. The solution to the system of equations is given by
+\begin{align}
+u^{j+1} &= \left(\cnm^{j+1}_{m}\right)^{-1} \left( \cnm^{j}_{e} u^{j} + \cnb^{j+1}_{e} - \cnb^{j+1}_{m} \right)
+\end{align}
+provided \(\cnm_{m}^{j+1}\) is invertible.
+
+The matrix \(\cnm_{e}\) has one row per cell in the domain. The matrix is zero everywhere except on the primary diagonal and six off-diagonals. The primary diagonal entries correspond to the cells of the domain, while the off-diagonals correspond to the contributions from each cell's six neighboring cells. The off-diagonal entries in the upper-triangular portion are equal to \(\alpha_{n,i}\) where \(n \in \left\{x,y,z\right\}\) and \(i\) is the \(i\)-th row of the matrix. The values may be computed as
+\begin{align}
+\alpha_{k,n,i} &= \frac{k_{n,i+1/2}\D{t}}{\rho_{n,i+1/2} c_{p,n,i+1/2}\D{n}^2} \\
+\alpha_{h,n,i} &= \frac{h_{n,i+1/2}w_{n,i+1/2}\D{t}}{\rho_{n,i+1/2} c_{p,n,i+1/2}\D{n}}
+\end{align}
+where the subscript \(k\) denotes a conductivity heat flux and \(h\) denotes convection. The sign of the half-index is flipped for the lower-triangular portion. All of the alphas are symmetric with respect to the sign of the half-indiex, so the matrix will be symmetric. Matrix symmetry implies that diffusivity between elements \(i\) and \(i'\) is the same as between \(i'\) and \(i\), which must hold by physical symmetry. Because the matrix is symmetric, the lower-triangular portion may be constructed directly from the upper portion. The diagonal indices of the upper-triangular portion containing non-zero entries are the strides of the underlying discretization of the domain. The stride along the \(X\)-axis is \(1\), along the \(Y\)-axis is the number of elements along the \(X\)-axis, and along the \(Z\)-axis is the product of the number of elements along the \(X\)- and \(Y\)-axes.
+
+Off-diagonal entries which imply the neighboring cell lies outside the domain are set to zero in \(\cnm_{e}\). These entries require application of the global boundary condition. For some elements these values are implicit in the matrix. For other elements they lie in rows or columns outside the choice of matrix. Thus, because of the choice of matrix, the boundary conditions must be exported to a vector \(\cnb_{e}\). The vector is the element-wise product of \(\alpha_{\infty,n,i}\) and \(u_{\infty}\).
+
+The values on the primary diagonal are equal to \(p_{i} = 2 - 2 \sum_{n} \alpha_{n,i} - 2 \alpha_{\infty,n,i}\) where \(\alpha_{n,i}\) is the upper diagonal element associated with axis \(n\) in the \(i\)-th row and \(\alpha_{\infty,n,i}\) is the \(i\)-th ambient diffusivity as used in \(\cnb_{e}\). The doubling of the sum and vector contributions is due to matrix symmetry. The matrix \(\cnm_{m}\) is identical to \(\cnm_{e}\) except off-diagonal entries are \(-\alpha_{n,i}\) and primary diagonal entries are \(p_{i} = 2 + 2 \sum_{n} \alpha_{n,i} + 2 \alpha_{\infty,n,i}\), where the entries of the last term come from \(\cnb_{m}\).
+
+Up to this point only the convection heat flux and second term of the conductive heat flux have been considered. It is believed the value of the first term will be largest at interfaces between materials and between liquid and solid. To ensure accuracy, a product of upwind schemes will be used.
+
+\section{Adaptive Time-stepping}
+
+\section{Non-dimensionalization}
+
+\end{document}
