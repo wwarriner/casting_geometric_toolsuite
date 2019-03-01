@@ -59,25 +59,39 @@ classdef Solver < handle
             q_prev_nd = obj.pp.compute_melt_enthalpies_nd( obj.mesh, u_initial_nd );
             
             shape = size( obj.mesh );
+            element_count = prod( shape );
             st = SolidificationTime( shape );
             
             simulation_time_step_next_nd = obj.pp.nondimensionalize_times( starting_time_step_in_s );
             simulation_time_nd = 0;
             loop_count = 1;
             
+            bounding_box_lengths = shape .* obj.pp.get_space_step();
+            
             if obj.live_plotting
                 center = floor( ( shape - 1 ) / 2 ) + 1;
-                [ axhs, phs ] = test_plot_setup();
+                [ ~, axhs, phs ] = test_plot_setup( ...
+                    obj.pp.get_temperature_range(), ...
+                    bounding_box_lengths, ...
+                    element_count ...
+                    );
                 
-                fh = figure();
-                curve_axh = axes( fh );
-                hold( curve_axh, 'on' );
-                horizontal_ph = [];
-                
-                draw_axial_plots_at_indices( axhs, shape, obj.temperature_initial, center, 'k' );
                 melt_fe_temp_nd = obj.pp.get_feeding_effectivity_temperature_nd( primary_melt_id );
                 melt_fe_temp = obj.pp.dimensionalize_temperatures( melt_fe_temp_nd );
-                draw_horizontal_lines( axhs, melt_fe_temp, 'k:' );
+                
+                sim_time_d = obj.pp.dimensionalize_times( simulation_time_nd );
+                u_next_d = obj.pp.dimensionalize_temperatures( u_next_nd );
+                
+                plot( axhs( 4 ), sim_time_d, min( u_next_d( obj.mesh( : ) == primary_melt_id ) ), 'b.' );
+                plot( axhs( 4 ), sim_time_d, median( u_next_d( obj.mesh( : ) == primary_melt_id ) ), 'g.' );
+                plot( axhs( 4 ), sim_time_d, max( u_next_d( obj.mesh( : ) == primary_melt_id ) ), 'r.' );
+                axhs( 4 ).XLim = [ 0 starting_time_step_in_s ];
+                horizontal_ph = draw_horizontal_lines( axhs( 4 ), melt_fe_temp, 'k', ':' );
+                
+                hist_h = [];
+                
+                draw_axial_plots_at_indices( axhs( 1 : 3 ), shape, bounding_box_lengths, obj.temperature_initial, center, 'k' );
+                draw_horizontal_lines( axhs( 1 : 3 ), melt_fe_temp, 'k', ':' );
                 drawnow();
             end
             
@@ -153,6 +167,7 @@ classdef Solver < handle
                     );
                 computation_times( end + 1 ) = toc; %#ok<AGROW>
                 
+                %% PLOT
                 if obj.live_plotting
                     delete( phs );
                     delete( horizontal_ph );
@@ -160,12 +175,13 @@ classdef Solver < handle
                     sim_time_d = obj.pp.dimensionalize_times( simulation_time_nd );
                     u_next_d = obj.pp.dimensionalize_temperatures( u_next_nd );
                     
-                    plot( curve_axh, sim_time_d, min( u_next_d( obj.mesh( : ) == primary_melt_id ) ), 'b.' );
-                    plot( curve_axh, sim_time_d, median( u_next_d( obj.mesh( : ) == primary_melt_id ) ), 'g.' );
-                    plot( curve_axh, sim_time_d, max( u_next_d( obj.mesh( : ) == primary_melt_id ) ), 'r.' );
-                    horizontal_ph = draw_horizontal_lines( curve_axh, melt_fe_temp, 'k:' );
+                    plot( axhs( 4 ), sim_time_d, min( u_next_d( obj.mesh( : ) == primary_melt_id ) ), 'b.' );
+                    plot( axhs( 4 ), sim_time_d, median( u_next_d( obj.mesh( : ) == primary_melt_id ) ), 'g.' );
+                    plot( axhs( 4 ), sim_time_d, max( u_next_d( obj.mesh( : ) == primary_melt_id ) ), 'r.' );
+                    axhs( 4 ).XLim = [ 0 sim_time_d ];
+                    horizontal_ph = draw_horizontal_lines( axhs( 4 ), melt_fe_temp, 'k', ':' );
                     
-                    phs = draw_axial_plots_at_indices( axhs, shape, u_next_d, center, 'r' );
+                    phs = draw_axial_plots_at_indices( axhs( 1 : 3 ), shape, bounding_box_lengths, u_next_d, center, 'r' );
                     drawnow();
                 end
                 
@@ -193,7 +209,7 @@ classdef Solver < handle
                 axhs( 1 ) = subplot( 3, 1, 1 );
                 axhs( 2 ) = subplot( 3, 1, 2 );
                 axhs( 3 ) = subplot( 3, 1, 3 );
-                draw_axial_plots_at_indices( axhs, shape, obj.solidification_times, center, 'k' );
+                draw_axial_plots_at_indices( axhs( 1 : 3 ), shape, bounding_box_lengths, obj.solidification_times, center, 'k' );
             end
             
             if obj.printing
