@@ -368,6 +368,15 @@ classdef (Sealed) PhysicalProperties < handle
         end
         
         
+        function temperatures = dimensionalize_temperature_diffs( obj, temperature_diff_nd )
+            
+            assert( obj.prepared )
+            
+            temperatures = obj.dimensionalize_temperatures( temperature_diff_nd ) - obj.temperature_range( 1 );
+            
+        end
+        
+        
         function temperatures = dimensionalize_temperatures( obj, temperatures_nd )
             
             assert( obj.prepared );
