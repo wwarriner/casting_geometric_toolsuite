@@ -1,5 +1,16 @@
 classdef (Sealed) PhysicalProperties < handle
     
+    properties ( Access = public, Constant )
+        
+        RHO_INDEX = 1;
+        CP_INDEX = 2;
+        K_INV_INDEX = 3;
+        Q_INDEX = 4;
+        FS_INDEX = 5;
+        
+    end
+    
+    
     methods ( Access = public )
         
         function obj = PhysicalProperties()
@@ -268,10 +279,11 @@ classdef (Sealed) PhysicalProperties < handle
             assert( obj.prepared );
             
             q = zeros( size( mesh ) );
-            for id = 1 : obj.materials.Count
+            for material_id = 1 : obj.materials.Count
                 
-                if ismember( id, obj.melt_ids )
-                    q( mesh == id ) = obj.lookup_q_nd( id, temperatures( mesh == id ) );
+                if ismember( material_id, obj.melt_ids )
+                    q( mesh == material_id ) = ...
+                        obj.lookup_values( material_id, obj.Q_INDEX, temperatures( mesh == material_id ) );
                 end
                 
             end
@@ -279,62 +291,39 @@ classdef (Sealed) PhysicalProperties < handle
         end
         
         
-        function values = lookup_rho_nd( obj, material_id, temperatures )
+        function values = lookup_ambient_values( obj, property_id, temperatures )
             
             assert( obj.prepared );
             
-            mps = obj.material_properties_nd( material_id );
-            values = mps( obj.RHO_INDEX ).lookup_values( temperatures );
+            values = obj.lookup_values( obj.ambient_id, property_id, temperatures );
             
         end
         
         
-        function values = lookup_q_nd( obj, material_id, temperatures )
+        function values = lookup_values( obj, material_id, property_id, temperatures )
             
             assert( obj.prepared );
             
             mps = obj.material_properties_nd( material_id );
-            values = mps( obj.Q_INDEX ).lookup_values( temperatures );
+            values = mps( property_id ).lookup_values( temperatures );
             
         end
         
         
-        function values = lookup_rho_cp_nd( obj, material_id, temperatures )
+        function values = lookup_ambient_h_values( obj, material_id, temperatures )
             
             assert( obj.prepared );
             
-            mps = obj.material_properties_nd( material_id );
-            values = mps( obj.RHO_CP_INDEX ).lookup_values( temperatures );
+            values = obj.lookup_h_values( obj.ambient_id, material_id, temperatures );
             
         end
         
         
-        function values = lookup_k_nd_half_space_step_inv( obj, material_id, temperatures )
-            
-            assert( obj.prepared );
-            
-            mps = obj.material_properties_nd( material_id );
-            values = mps( obj.K_HALF_INV_INDEX ).lookup_values( temperatures );
-            
-        end
-        
-        
-        function values = lookup_h_nd( obj, first_material_id, second_material_id, temperatures )
+        function values = lookup_h_values( obj, first_material_id, second_material_id, temperatures )
             
             assert( obj.prepared );
             
             values = obj.convection_nd.lookup_values( first_material_id, second_material_id, temperatures );
-            
-        end
-        
-        
-        function values = lookup_fs_nd( obj, melt_id, temperatures )
-            
-            assert( obj.prepared );
-            assert( ismember( melt_id, obj.melt_ids ) )
-            
-            mps = obj.material_properties_nd( melt_id );
-            values = mps( obj.FS_INDEX ).lookup_values( temperatures );
             
         end
         
@@ -395,18 +384,6 @@ classdef (Sealed) PhysicalProperties < handle
             times = times_nd * obj.time_factor;
             
         end
-        
-    end
-    
-    
-    properties ( Access = private, Constant )
-        
-        RHO_CP_INDEX = 1;
-        Q_INDEX = 2;
-        RHO_INDEX = 3;
-        CP_INDEX = 4;
-        K_HALF_INV_INDEX = 5;
-        FS_INDEX = 6;
         
     end
     
@@ -501,10 +478,9 @@ classdef (Sealed) PhysicalProperties < handle
             material_properties_nd( obj.Q_INDEX ) = material_nd.get( Material.CP_INDEX ).compute_q_property( [ 0 1 ] );
             rho_nd = material_nd.get( Material.RHO_INDEX );
             material_properties_nd( obj.RHO_INDEX ) = RhoProperty( rho_nd.temperatures, rho_nd.values );
-            material_properties_nd( obj.RHO_CP_INDEX ) = RhoCpProperty( material_nd.get( Material.RHO_INDEX ), material_nd.get( Material.CP_INDEX ) );
             cp_nd = material_nd.get( Material.CP_INDEX );
             material_properties_nd( obj.CP_INDEX ) = CpProperty( cp_nd.temperatures, cp_nd.values );
-            material_properties_nd( obj.K_HALF_INV_INDEX ) = KHalfSpaceStepInvProperty( material_nd.get( Material.K_INDEX ), obj.space_step );
+            material_properties_nd( obj.K_INV_INDEX ) = KHalfSpaceStepInvProperty( material_nd.get( Material.K_INDEX ), obj.space_step );
             
         end
         

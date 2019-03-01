@@ -18,8 +18,8 @@ classdef SolidificationTime < handle
         
         function update_nd( obj, fdm_mesh, melt_id, pp, u_prev, u_next, simulation_time, simulation_time_step )
             
-            fs_prev = pp.lookup_fs_nd( melt_id, u_prev );
-            fs_next = pp.lookup_fs_nd( melt_id, u_next );
+            fs_prev = pp.lookup_values( melt_id, pp.FS_INDEX, u_prev );
+            fs_next = pp.lookup_values( melt_id, pp.FS_INDEX, u_next );
             melt_fe = pp.get_feeding_effectivity( melt_id );
             prev_time = simulation_time - simulation_time_step;
             
