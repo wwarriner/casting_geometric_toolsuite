@@ -46,6 +46,13 @@ classdef SolidificationTime < handle
             
         end
         
+        
+        function time = get_final_time( obj )
+            
+            time = max( obj.values( : ) );
+            
+        end
+        
     end
     
 end
