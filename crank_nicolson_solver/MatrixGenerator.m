@@ -121,8 +121,6 @@ classdef MatrixGenerator < handle
         
         function cp = compute_cp( obj, u_prev, u_next )
             
-            % lookup cp and enthalpy
-            
             % direct calculation of cp
             cp_direct = mean( [ ...
                 obj.property_lookup( obj.pp.CP_INDEX, u_prev ) ...
