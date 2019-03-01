@@ -68,7 +68,7 @@ classdef (Sealed) QProperty < MaterialProperty
             if ~isnan( cp.temperatures )
                 t = unique( [ t_range( : ); cp.temperatures ] );
             else
-                assert( isscalar( cp.temperatures );
+                assert( isscalar( cp.temperatures ) );
                 t = t_range;
             end
             q_v = cp.lookup_values( t );
