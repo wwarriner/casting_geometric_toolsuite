@@ -51,6 +51,13 @@ classdef (Sealed) PhysicalProperties < handle
         end
         
         
+        function space_step = get_space_step( obj )
+            
+            space_step = obj.space_step;
+            
+        end
+        
+        
         function set_max_length( obj, shape )
             
             assert( ~obj.prepared );
@@ -149,7 +156,7 @@ classdef (Sealed) PhysicalProperties < handle
             obj.space_step_nd = obj.space_step / obj.max_length;
             
             obj.extremes = obj.compute_extremes();
-            obj.temperature_range = obj.get_temperature_range();
+            obj.temperature_range = obj.compute_temperature_range();
             for i = 1 : obj.materials.Count
                 
                 id = ids( i );
@@ -176,6 +183,15 @@ classdef (Sealed) PhysicalProperties < handle
                 obj.extremes( Material.K_INDEX );
 
             obj.prepared = true;
+            
+        end
+        
+        
+        function temperature_range = get_temperature_range( obj )
+            
+            assert( obj.prepared );
+            
+            temperature_range = obj.temperature_range;
             
         end
         
@@ -465,7 +481,7 @@ classdef (Sealed) PhysicalProperties < handle
         end
         
         
-        function temperature_range = get_temperature_range( obj )
+        function temperature_range = compute_temperature_range( obj )
             
             material_count = obj.materials.Count;
             keys = cell2mat( obj.materials.keys() );
