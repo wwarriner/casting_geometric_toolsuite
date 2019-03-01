@@ -3,12 +3,20 @@ classdef Solver < handle
     properties ( GetAccess = public, SetAccess = private )
         
         iteration_count
-        computation_time
+        computation_times
         simulation_time
         
         temperature_initial
         temperature_final
         solidification_times
+        
+        max_dkdu;
+        max_melt_dkdu;
+        max_liquid_melt_dkdu;
+        
+        min_dkdu;
+        min_melt_dkdu;
+        min_liquid_melt_dkdu;
         
     end
     
@@ -28,8 +36,16 @@ classdef Solver < handle
             obj.pcg_tol = 1e-6;
             obj.pcg_max_it = 100;
             
-            obj.iteration_count = [];
-            obj.computation_time = [];
+            obj.iteration_count = 0;
+            obj.computation_times = zeros( 1, obj.mg.TIME_COUNT + 2 );
+            
+            obj.max_dkdu = -inf;
+            obj.max_melt_dkdu = -inf;
+            obj.max_liquid_melt_dkdu = -inf;
+            
+            obj.min_dkdu = inf;
+            obj.min_melt_dkdu = inf;
+            obj.min_liquid_melt_dkdu = inf;
             
         end
         
@@ -64,7 +80,7 @@ classdef Solver < handle
             
             simulation_time_step_next_nd = obj.pp.nondimensionalize_times( starting_time_step_in_s );
             simulation_time_nd = 0;
-            loop_count = 1;
+            loop_count = 0;
             
             bounding_box_lengths = shape .* obj.pp.get_space_step();
             
@@ -96,7 +112,7 @@ classdef Solver < handle
             end
             
             finished = false;
-            while ~finished 
+            while ~finished
                 %% END CONDITION
                 if st.is_finished( obj.mesh, primary_melt_id )
                     if obj.printing
@@ -105,12 +121,13 @@ classdef Solver < handle
                     break;
                 end
                 
-                computation_times = [];
+                %% PRE UPDATE
+                loop_count = loop_count + 1;
                 
                 %% DETERMINE TIME STEP
-                generation_time = 0;
+                iteration_times = zeros( 1, obj.mg.TIME_COUNT + 2 );
                 while ~finished
-                
+                    
                     RELAXATION_PARAMETER = 0.9;
                     [ m_L, m_R, r_L, r_R, dkdu ] = obj.mg.generate( ...
                         obj.pp.get_ambient_temperature_nd(), ...
@@ -140,24 +157,42 @@ classdef Solver < handle
                         );
                     pcg_time = toc;
                     
+                    tic;
+                    % TODO need a way to compute initial time step reasonably
+                    % Need a way to make this more robust
                     q_candidate_nd = obj.pp.compute_melt_enthalpies_nd( obj.mesh, u_candidate_nd );
-                    [ max_delta_q_nd, ind ] = max( q_prev_nd( : ) - q_candidate_nd( : ) );
-                    %d_u = u_prev_nd( ind ) - u_candidate_nd( ind );
-                    if max_delta_q_nd < obj.pp.get_min_latent_heat() / 2
+                    max_delta_q_nd = max( q_prev_nd( : ) - q_candidate_nd( : ) );
+                    ratio = max_delta_q_nd / ( obj.pp.get_min_latent_heat() / 2 );
+                    index = 1 - ratio; % positive means increase time step
+                    TOL = 0.1;
+                    if 0 < index
                         simulation_time_step_next_nd = simulation_time_step_next_nd ./ RELAXATION_PARAMETER;
-                        break;
                     else
                         simulation_time_step_next_nd = simulation_time_step_next_nd .* RELAXATION_PARAMETER;
                         if simulation_time_step_next_nd < 1e-12
                             assert( false );
                         end
                     end
+                    enthalpy_time = toc;
                     
-                    generation_time = generation_time + sum( obj.mg.get_last_times() ) + pcg_time;
+                    iteration_times( 1 : obj.mg.TIME_COUNT ) = iteration_times( 1 : obj.mg.TIME_COUNT ) + obj.mg.get_last_times();
+                    iteration_times( obj.mg.TIME_COUNT + 1 ) = iteration_times( obj.mg.TIME_COUNT + 1 ) + pcg_time;
+                    iteration_times( obj.mg.TIME_COUNT + 2 ) = iteration_times( obj.mg.TIME_COUNT + 2 ) + enthalpy_time;
+                    
+                    if abs( index ) < TOL
+                        break;
+                    end
                     
                 end
                 q_prev_nd = q_candidate_nd;
-                computation_times( end + 1 ) = generation_time; %#ok<AGROW>
+                
+                obj.max_dkdu = max( max( dkdu ), obj.max_dkdu );
+                obj.max_melt_dkdu = max( max( dkdu( obj.mesh == primary_melt_id ) ), obj.max_melt_dkdu );
+                obj.max_liquid_melt_dkdu = max( max( dkdu( obj.mesh == primary_melt_id & u_prev_nd > melt_fe_temp_nd ) ), obj.max_liquid_melt_dkdu );
+                
+                obj.min_dkdu = min( min( dkdu ), obj.min_dkdu );
+                obj.min_melt_dkdu = min( min( dkdu( obj.mesh == primary_melt_id ) ), obj.min_melt_dkdu );
+                obj.min_liquid_melt_dkdu = min( min( dkdu( obj.mesh == primary_melt_id & u_prev_nd > melt_fe_temp_nd ) ), obj.min_liquid_melt_dkdu );
                 
                 simulation_time_nd = simulation_time_nd + simulation_time_step_next_nd;
                 
@@ -173,7 +208,6 @@ classdef Solver < handle
                     simulation_time_nd, ...
                     simulation_time_step_next_nd ...
                     );
-                computation_times( end + 1 ) = toc; %#ok<AGROW>
                 
                 %% PLOT
                 if obj.live_plotting
@@ -193,17 +227,18 @@ classdef Solver < handle
                     drawnow();
                 end
                 
+                %% PRINT
                 if obj.printing
                     fprintf( 'Iteration %i: ', loop_count );
                     fprintf( '%.2fs, ', obj.pp.dimensionalize_times( simulation_time_nd ) );
-                    fprintf( '%.2fs, ', computation_times );
-                    fprintf( '\n' );
+                    fprintf( '%.2fs, ', iteration_times );
+                    fprintf( '%.2fs\n', sum( iteration_times ) );
                 end
                 
-                loop_count = loop_count + 1;
+                %% POST UPDATE
                 u_2prev_nd = u_prev_nd;
                 u_prev_nd = u_next_nd;
-                obj.computation_time = obj.computation_time + sum( computation_times );
+                obj.computation_times = obj.computation_times + iteration_times;
                 
             end
             
@@ -222,8 +257,16 @@ classdef Solver < handle
             
             if obj.printing
                 fprintf( 'Iteration Count: %d\n', obj.iteration_count );
-                fprintf( 'Approximate Computation Time: %.2f\n', obj.computation_time );
-                fprintf( 'Simulation Time: %.2f\n', obj.simulation_time );
+                fprintf( 'Approximate Computation Times: ' );
+                fprintf( '%.2fs, ', obj.computation_times );
+                fprintf( 'Total Computation Time: %.2fs\n', sum( obj.computation_times ) );
+                fprintf( 'Simulation Time: %.2fs\n', obj.simulation_time );
+                fprintf( 'Max DKDU: %.2ek\n', obj.pp.dimensionalize_temperature_diffs( obj.max_dkdu ) );
+                fprintf( 'Max Melt DKDU: %.2ek\n', obj.pp.dimensionalize_temperature_diffs( obj.max_melt_dkdu ) );
+                fprintf( 'Max Liquid Melt DKDU: %.2ek\n', obj.pp.dimensionalize_temperature_diffs( obj.max_liquid_melt_dkdu ) );
+                fprintf( 'Min DKDU: %.2ek\n', obj.pp.dimensionalize_temperature_diffs( obj.min_dkdu ) );
+                fprintf( 'Min Melt DKDU: %.2ek\n', obj.pp.dimensionalize_temperature_diffs( obj.min_melt_dkdu ) );
+                fprintf( 'Min Liquid Melt DKDU: %.2ek\n', obj.pp.dimensionalize_temperature_diffs( obj.min_liquid_melt_dkdu ) );
             end
             
         end
