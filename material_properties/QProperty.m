@@ -65,7 +65,12 @@ classdef (Sealed) QProperty < MaterialProperty
         function [ t, v ] = compute( cp, t_range )
 
             t_range = sort( t_range( : ) );
-            t = unique( [ t_range( : ); cp.temperatures ] );
+            if ~isnan( cp.temperatures )
+                t = unique( [ t_range( : ); cp.temperatures ] );
+            else
+                assert( isscalar( cp.temperatures );
+                t = t_range;
+            end
             q_v = cp.lookup_values( t );
             v = cumtrapz( t, q_v );
             

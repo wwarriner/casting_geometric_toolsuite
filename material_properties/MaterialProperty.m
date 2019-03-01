@@ -79,7 +79,7 @@ classdef MaterialProperty < handle & matlab.mixin.Heterogeneous
         function temperature = lookup_temperatures( obj, value )
             
             if numel( obj.temperatures ) == 1
-                temperature = obj.temperatures .* ones( size( value ) );
+                assert( false );
             else
                 temperature = interp1( ...
                     obj.values, ...
@@ -97,7 +97,7 @@ classdef MaterialProperty < handle & matlab.mixin.Heterogeneous
     
     properties ( Access = protected, Constant )
         
-        DEFAULT_TEMPERATURE = realmax();
+        DEFAULT_TEMPERATURE = nan;
         
     end
     
@@ -111,11 +111,15 @@ classdef MaterialProperty < handle & matlab.mixin.Heterogeneous
         function obj = MaterialProperty( temperatures, values )
             
             if ~isempty( temperatures )
-                assert( isvector( temperatures ) );
                 assert( isa( temperatures, 'double' ) );
-                assert( all( isfinite( temperatures ) ) );
-                assert( all( 0 <= temperatures ) );
-                assert( all( 0 < diff( temperatures ) ) );
+                if isscalar( temperatures )
+                    assert( isnan( temperatures ) );
+                else
+                        assert( isvector( temperatures ) );
+                    assert( all( isfinite( temperatures ) ) );
+                    assert( all( 0 <= temperatures ) );
+                    assert( all( 0 < diff( temperatures ) ) );
+                end
             end
             
             if ~isempty( values )
