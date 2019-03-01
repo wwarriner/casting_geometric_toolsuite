@@ -25,7 +25,7 @@ pp.prepare_for_solver();
 %% SOLVER
 mg = MatrixGenerator( fdm_mesh, pp );
 solver = Solver( fdm_mesh, pp, mg );
-solver.turn_printing_on();
+solver.turn_printing_on( @fprintf );
 solver.turn_live_plotting_on();
 solver.solve( simulation_time_step_in_s, melt_id );
 
