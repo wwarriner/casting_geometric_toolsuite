@@ -27,7 +27,21 @@ classdef MatrixGenerator < handle
             
             obj.pp = physical_properties;
             
+            % default Crank-Nicolson
+            obj.implicitness = 1.0;
+            
             obj.times = [];
+            
+        end
+        
+        
+        function set_implicitness_factor( obj, implicitness )
+            
+            assert( isscalar( implicitness ) );
+            assert( isa( implicitness, 'double' ) );
+            assert( 0 <= implicitness && implicitness <= 1 );
+            
+            obj.implicitness = implicitness;
             
         end
         
@@ -277,9 +291,13 @@ classdef MatrixGenerator < handle
             
             % this arrangement is 33% faster than bringing m_u into construction of m_r and m_l
             m_u = spdiags2( diff_bands, obj.strides, obj.element_count, obj.element_count );
-            diffs = obj.sum_diffusivities( diff_bands ) + ambient_diff;
-            m_r = spdiags2( 2 - diffs, 0, obj.element_count, obj.element_count ) + m_u + m_u.';
-            m_l = spdiags2( 2 + diffs, 0, obj.element_count, obj.element_count ) - m_u - m_u.';
+            m_u = m_u + m_u.';
+            diffusivities = full( sum( m_u, 2 ) ) + ambient_diff;
+            explicitness = 1 - obj.implicitness;
+            m_r = spdiags2( 2 - explicitness .* diffusivities, 0, obj.element_count, obj.element_count ) + ...
+                explicitness .* m_u;
+            m_l = spdiags2( 2 + obj.implicitness .* diffusivities, 0, obj.element_count, obj.element_count ) + ...
+                obj.implicitness .* ( -m_u );
             
         end
         
@@ -523,6 +541,8 @@ classdef MatrixGenerator < handle
         strides
         
         pp
+        
+        implicitness
         
         times
         
