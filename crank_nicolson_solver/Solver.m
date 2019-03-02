@@ -27,6 +27,22 @@ classdef Solver < handle
             obj.pcg_tol = 1e-6;
             obj.pcg_max_it = 100;
             
+            obj.relaxation_parameter = 0.9;
+            obj.latent_heat_fraction_target = 0.5;
+            
+        end
+        
+        
+        function set_relaxation_parameter( obj, parameter )
+            
+            obj.relaxation_parameter = parameter;
+            
+        end
+        
+        
+        function set_latent_heat_fraction_target( obj, target )
+            
+            obj.latent_heat_fraction_target = target;
             
         end
         
@@ -72,6 +88,8 @@ classdef Solver < handle
         pcg_tol
         pcg_max_it
         
+        relaxation_parameter
+        latent_heat_fraction_target
         
         % PRIMARY MELT ID
         primary_melt_id
@@ -293,9 +311,23 @@ classdef Solver < handle
         function [ quality_ratio, q_candidate_nd ] = determine_solution_quality_ratio( obj, q_candidate_nd )
             
             max_delta_q_nd = max( obj.q_prev_nd( : ) - q_candidate_nd( : ) );
-            LATENT_HEAT_FRACTION = 0.25;
-            desired_q_nd = obj.pp.get_min_latent_heat() * LATENT_HEAT_FRACTION;
+            desired_q_nd = obj.pp.get_min_latent_heat() * obj.latent_heat_fraction_target;
             quality_ratio = ( max_delta_q_nd - desired_q_nd ) / desired_q_nd;
+            
+        end
+        
+        
+        function time_step_range = choose_next_time_step_range( obj, quality_ratio, time_step_range )
+            
+            % todo find way to choose relaxation parameter based on gradient?
+            if 0 < quality_ratio
+                time_step_range( 3 ) = time_step_range( 2 );
+                interval = range( time_step_range );
+                time_step_range( 2 ) = ( interval * obj.relaxation_parameter ) + time_step_range( 1 );
+            else
+                time_step_range( 1 ) = time_step_range( 2 );
+                time_step_range( 2 ) = time_step_range( 2 ) / obj.relaxation_parameter;
+            end
             
         end
         
@@ -461,7 +493,9 @@ classdef Solver < handle
                 
                 fh = figure();
                 axh = axes( fh );
-                barh( axh, obj.computation_times ./ sum( obj.computation_times ) );
+                nb = nan( size( obj.computation_times( : ).' ) );
+                bb = [ obj.computation_times( : ).' ./ sum( obj.computation_times ); nb ];
+                barh( bb, 'stacked' );
             end
             
         end
@@ -526,22 +560,6 @@ classdef Solver < handle
             
             TOL = 0.01;
             sufficient = abs( quality_ratio ) < TOL;
-            
-        end
-        
-        
-        function time_step_range = choose_next_time_step_range( quality_ratio, time_step_range )
-            
-            % todo find way to choose relaxation parameter based on gradient?
-            RELAXATION_PARAMETER = 0.5;
-            if 0 < quality_ratio
-                time_step_range( 3 ) = time_step_range( 2 );
-                interval = range( time_step_range );
-                time_step_range( 2 ) = ( interval * RELAXATION_PARAMETER ) + time_step_range( 1 );
-            else
-                time_step_range( 1 ) = time_step_range( 2 );
-                time_step_range( 2 ) = time_step_range( 2 ) / RELAXATION_PARAMETER;
-            end
             
         end
         
