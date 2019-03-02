@@ -27,7 +27,6 @@ classdef Solver < handle
             obj.pcg_tol = 1e-6;
             obj.pcg_max_it = 100;
             
-            obj.max_iteration_count = 1000;
             
         end
         
@@ -73,7 +72,6 @@ classdef Solver < handle
         pcg_tol
         pcg_max_it
         
-        max_iteration_count
         
         % PRIMARY MELT ID
         primary_melt_id
@@ -165,11 +163,6 @@ classdef Solver < handle
             % COMPLETELY SOLIDIFIED
             if obj.solidification_times.is_finished( obj.mesh, obj.primary_melt_id )
                 obj.print( 'Fully Solidified\n' );
-                finished = true;
-            end
-            
-            % TOO MANY ITERATIONS
-            if obj.iteration_count > obj.max_iteration_count
                 finished = true;
             end
             
