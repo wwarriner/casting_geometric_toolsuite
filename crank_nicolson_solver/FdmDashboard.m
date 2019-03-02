@@ -7,7 +7,7 @@ classdef FdmDashboard < handle
                 feeding_effectivity_temperature ...
                 )
             
-            assert( numel( obj.SUBPLOT_HISTOGRAMS ) == obj.HISTOGRAM_COUNT );
+            obj.compute_subplot_locations();
             
             obj.temperature_range = temperature_range;
             obj.feeding_effectivity_temperature = feeding_effectivity_temperature;
@@ -124,6 +124,40 @@ classdef FdmDashboard < handle
         end
         
         
+        function setup_labels( obj, labels, formatspecs, initial_values )
+            
+            assert( numel( labels ) == numel( initial_values ) );
+            
+            obj.label_count = numel( labels );
+            obj.labels = labels;
+            obj.label_formatspecs = formatspecs;
+            obj.label_hs = gobjects( obj.label_count, 1 );
+            
+            WIDTH = obj.fh.Position( 3 ) ./ obj.SUBPLOT_WIDTH;
+            X_BUFFER = 10;
+            X = obj.fh.Position( 3 ) - WIDTH + X_BUFFER;
+            HEIGHT = 30;
+            Y_BUFFER = 50;
+            Y_SPACING = 10;
+            Y_START = obj.fh.Position( 4 ) - Y_BUFFER;
+            for i = 1 : obj.label_count
+                
+                Y = Y_START - i * ( HEIGHT + Y_SPACING );
+                obj.label_hs( i ) = uicontrol( ...
+                    obj.fh, ...
+                    'style', 'text', ...
+                    'string', '', ...
+                    'horizontalalignment', 'left', ...
+                    'fontsize', 20, ...
+                    'position', [ X Y WIDTH HEIGHT ] ...
+                    );
+                
+            end
+            obj.update_labels( initial_values );
+            
+        end
+        
+        
         function update_temperature_profiles( obj, temperatures )
             
             for i = 1 : obj.PROFILE_COUNT
@@ -193,6 +227,22 @@ classdef FdmDashboard < handle
             
         end
         
+        
+        function update_labels( obj, values )
+            
+            assert( numel( values ) == obj.label_count );
+            for i = 1 : obj.label_count
+                
+                obj.label_hs( i ).String = sprintf( ...
+                    [ '%s: ' obj.label_formatspecs{ i } ], ...
+                    obj.labels{ i }, ...
+                    values( i ) ...
+                    );
+                
+            end
+            
+        end
+        
     end
     
     
@@ -220,19 +270,22 @@ classdef FdmDashboard < handle
         histogram_extremes
         histogram_phs
         
+        label_count
+        labels
+        label_formatspecs
+        label_hs
+        
+        SUBPLOT_PROFILES
+        SUBPLOT_CURVES
+        SUBPLOT_HISTOGRAMS
+        
     end
     
     
     properties ( Access = private, Constant )
         
-        SUBPLOT_WIDTH = 2
+        SUBPLOT_WIDTH = 3
         SUBPLOT_HEIGHT = 6
-        SUBPLOT_PROFILES = [ 1 3 5 ];
-        SUBPLOT_CURVES = [ 2 4 6 ];
-        SUBPLOT_HISTOGRAMS = { ...
-            [ 7 9 11 ] ...
-            [ 8 10 12 ] ...
-            };
         
         PROFILE_COUNT = 3;
         
@@ -243,6 +296,19 @@ classdef FdmDashboard < handle
     
     
     methods ( Access = private )
+        
+        function compute_subplot_locations( obj )
+            
+            obj.SUBPLOT_PROFILES = ( 0 : 2 ) .* obj.SUBPLOT_WIDTH + 1;
+            obj.SUBPLOT_CURVES = obj.SUBPLOT_PROFILES + 1;
+            obj.SUBPLOT_HISTOGRAMS = { ...
+                obj.SUBPLOT_PROFILES + obj.SUBPLOT_HEIGHT + obj.SUBPLOT_WIDTH, ...
+                obj.SUBPLOT_PROFILES + obj.SUBPLOT_HEIGHT + obj.SUBPLOT_WIDTH + 1 ...
+                };
+            assert( numel( obj.SUBPLOT_HISTOGRAMS ) == obj.HISTOGRAM_COUNT );
+            
+        end
+        
         
         function set_histogram_axh( obj, id, h )
             
