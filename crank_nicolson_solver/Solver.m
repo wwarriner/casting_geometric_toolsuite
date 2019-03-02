@@ -334,6 +334,7 @@ classdef Solver < handle
                     );
                 obj.dashboard.setup_histogram( obj.DELTAU_HISTOGRAM, obj.element_count );
                 obj.dashboard.setup_histogram( obj.DKDU_HISTOGRAM, obj.element_count );
+                obj.dashboard.setup_labels( obj.get_labels(), obj.get_label_formatspecs(), obj.get_label_values() );
             end
             
         end
@@ -380,6 +381,7 @@ classdef Solver < handle
                     obj.get_temperature_field_statistics( u_curr_d, obj.primary_melt_id ) ...
                     );
                 obj.update_dashboard_histograms();
+                obj.dashboard.update_labels( obj.get_label_values() );
             end
             
         end
@@ -463,6 +465,10 @@ classdef Solver < handle
             if obj.live_plotting
                 volumeViewer( obj.temperature_final );
                 volumeViewer( obj.solidification_times.values );
+                
+                fh = figure();
+                axh = axes( fh );
+                barh( axh, obj.computation_times ./ sum( obj.computation_times ) );
             end
             
         end
