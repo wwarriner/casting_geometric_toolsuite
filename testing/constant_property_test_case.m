@@ -22,9 +22,14 @@ pp.set_space_step( element_size_in_mm / 1000 ) % m
 pp.set_max_length( shape ); % count
 pp.prepare_for_solver();
 
-%% SOLVER
+%% MATRIX GENERATOR
 mg = MatrixGenerator( fdm_mesh, pp );
+mg.set_implicitness_factor( 1 );
+
+%% SOLVER
 solver = Solver( fdm_mesh, pp, mg );
+solver.set_relaxation_parameter( 0.9 );
+solver.set_latent_heat_fraction_target( 0.5 );
 solver.turn_printing_on( @fprintf );
 solver.turn_live_plotting_on();
 solver.solve( simulation_time_step_in_s, melt_id );
