@@ -79,24 +79,6 @@ classdef FdmDashboard < handle
         end
         
         
-        function update_temperature_profiles( obj, temperatures )
-            
-            for i = 1 : obj.PROFILE_COUNT
-                
-                set( ...
-                    obj.profile_phs( i ), ...
-                    'XData', ...
-                    obj.profile_xs{ i }, ...
-                    'YData', ...
-                    squeeze( temperatures( obj.profile_indices{ i }{ : } ) ) ...
-                    );
-                
-            end
-            drawnow();
-            
-        end
-        
-        
         function setup_time_temperature_curves( ...
                 obj, ...
                 first_time_step, ...
@@ -120,6 +102,41 @@ classdef FdmDashboard < handle
                     obj.feeding_effectivity_temperature, ...
                     'k', ':' ...
                     );
+            drawnow();
+            
+        end
+        
+        
+        function setup_histogram( obj, histogram_id, element_count )
+            
+            assert( histogram_id <= obj.HISTOGRAM_COUNT );
+            h = subplot( ...
+                obj.SUBPLOT_HEIGHT, ...
+                obj.SUBPLOT_WIDTH, ...
+                obj.SUBPLOT_HISTOGRAMS{ histogram_id } ...
+                );
+            obj.set_histogram_axh( histogram_id, h );
+            obj.element_count = element_count;
+            obj.histogram_extremes( histogram_id ) = eps;
+            obj.histogram_phs( histogram_id ) = obj.null_plot( h );
+            obj.histogram_phs( histogram_id ).Color = 'k';
+            
+        end
+        
+        
+        function update_temperature_profiles( obj, temperatures )
+            
+            for i = 1 : obj.PROFILE_COUNT
+                
+                set( ...
+                    obj.profile_phs( i ), ...
+                    'XData', ...
+                    obj.profile_xs{ i }, ...
+                    'YData', ...
+                    squeeze( temperatures( obj.profile_indices{ i }{ : } ) ) ...
+                    );
+                
+            end
             drawnow();
             
         end
@@ -152,23 +169,6 @@ classdef FdmDashboard < handle
         end
         
         
-        function setup_histogram( obj, histogram_id, element_count )
-            
-            assert( histogram_id <= obj.HISTOGRAM_COUNT );
-            h = subplot( ...
-                obj.SUBPLOT_HEIGHT, ...
-                obj.SUBPLOT_WIDTH, ...
-                obj.SUBPLOT_HISTOGRAMS{ histogram_id } ...
-                );
-            obj.set_histogram_axh( histogram_id, h );
-            obj.element_count = element_count;
-            obj.histogram_extremes( histogram_id ) = eps;
-            obj.histogram_phs( histogram_id ) = obj.null_plot( h );
-            obj.histogram_phs( histogram_id ).Color = 'k';
-            
-        end
-        
-        
         function update_histogram( obj, histogram_id, values )
             
             assert( histogram_id <= obj.HISTOGRAM_COUNT );
@@ -186,16 +186,6 @@ classdef FdmDashboard < handle
                 h.XLim = [ -eps eps ];
             end
             edges = linspace( h.XLim( 1 ), h.XLim( 2 ), obj.HISTOGRAM_EDGE_COUNT );
-%             pd = fitdist( values( : ), 'Kernel' );
-%             y = pdf( pd, x );
-%             
-%             set( ...
-%                 obj.histogram_phs( histogram_id ), ...
-%                 'xdata', ...
-%                 edges, ...
-%                 'ydata', ...
-%                 y ...
-%                 );
             histogram( h, values( : ), edges );
             h.YScale = 'log';
             h.YLim = [ 0.9 obj.element_count ];
