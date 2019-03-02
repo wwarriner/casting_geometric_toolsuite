@@ -10,14 +10,6 @@ classdef Solver < handle
         temperature_final
         solidification_times
         
-        max_dkdu;
-        max_melt_dkdu;
-        max_liquid_melt_dkdu;
-        
-        min_dkdu;
-        min_melt_dkdu;
-        min_liquid_melt_dkdu;
-        
     end
     
     methods ( Access = public )
@@ -151,14 +143,6 @@ classdef Solver < handle
             obj.temperature_initial = obj.pp.dimensionalize_temperatures( u_initial_nd );
             obj.u_prev_nd = u_initial_nd;
             obj.u_curr_nd = obj.u_prev_nd;
-            
-            obj.max_dkdu = -inf;
-            obj.max_melt_dkdu = -inf;
-            obj.max_liquid_melt_dkdu = -inf;
-            
-            obj.min_dkdu = inf;
-            obj.min_melt_dkdu = inf;
-            obj.min_liquid_melt_dkdu = inf;
             
             obj.melt_fe_temp_nd = obj.pp.get_feeding_effectivity_temperature_nd( primary_melt_id );
             
@@ -359,7 +343,6 @@ classdef Solver < handle
             
             obj.u_prev_nd = obj.u_curr_nd;
             obj.u_curr_nd = reshape( u_candidate_nd, obj.shape );
-            obj.update_dkdu_statistics();
             
         end
         
@@ -367,19 +350,6 @@ classdef Solver < handle
         function update_enthalpy_field( obj, q_candidate_nd )
             
             obj.q_prev_nd = q_candidate_nd;
-            
-        end
-        
-        
-        function update_dkdu_statistics( obj )
-            
-            obj.max_dkdu = max( max( obj.dkdu ), obj.max_dkdu );
-            obj.max_melt_dkdu = max( max( obj.dkdu( obj.mesh == obj.primary_melt_id ) ), obj.max_melt_dkdu );
-            obj.max_liquid_melt_dkdu = max( max( obj.dkdu( obj.mesh == obj.primary_melt_id & obj.u_prev_nd > obj.melt_fe_temp_nd ) ), obj.max_liquid_melt_dkdu );
-            
-            obj.min_dkdu = min( min( obj.dkdu ), obj.min_dkdu );
-            obj.min_melt_dkdu = min( min( obj.dkdu( obj.mesh == obj.primary_melt_id ) ), obj.min_melt_dkdu );
-            obj.min_liquid_melt_dkdu = min( min( obj.dkdu( obj.mesh == obj.primary_melt_id & obj.u_prev_nd > obj.melt_fe_temp_nd ) ), obj.min_liquid_melt_dkdu );
             
         end
         
@@ -467,12 +437,6 @@ classdef Solver < handle
             obj.print( 'Total Computation Time: %.2fs\n', sum( obj.computation_times ) );
             obj.print( 'Simulation Time: %.2fs\n', obj.simulation_time );
             obj.print( 'Solidification Time: %.2fs\n', obj.solidification_times.get_final_time() );
-            obj.print( 'Max DKDU: %.2ek\n', obj.pp.dimensionalize_temperature_diffs( obj.max_dkdu ) );
-            obj.print( 'Max Melt DKDU: %.2ek\n', obj.pp.dimensionalize_temperature_diffs( obj.max_melt_dkdu ) );
-            obj.print( 'Max Liquid Melt DKDU: %.2ek\n', obj.pp.dimensionalize_temperature_diffs( obj.max_liquid_melt_dkdu ) );
-            obj.print( 'Min DKDU: %.2ek\n', obj.pp.dimensionalize_temperature_diffs( obj.min_dkdu ) );
-            obj.print( 'Min Melt DKDU: %.2ek\n', obj.pp.dimensionalize_temperature_diffs( obj.min_melt_dkdu ) );
-            obj.print( 'Min Liquid Melt DKDU: %.2ek\n', obj.pp.dimensionalize_temperature_diffs( obj.min_liquid_melt_dkdu ) );
             
         end
         
