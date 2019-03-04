@@ -253,7 +253,7 @@ classdef (Sealed) PhysicalProperties < handle
         end
         
         
-        function [ latent_heat, sensible_heat ] = get_min_latent_heat( obj )
+        function [ latent_heat, sensible_heat ] = get_min_latent_heat_nd( obj )
             
             assert( obj.prepared );
             

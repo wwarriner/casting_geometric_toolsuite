@@ -3,6 +3,7 @@ classdef Solver < handle
     properties ( GetAccess = public, SetAccess = private )
         
         iteration_count
+        solver_count
         computation_times
         simulation_time
         
@@ -14,21 +15,15 @@ classdef Solver < handle
     
     methods ( Access = public )
         
-        function obj = Solver( fdm_mesh, physical_properties, matrix_generator )
+        function obj = Solver( fdm_mesh, physical_properties, linear_system_solver )
             % INPUT ASSIGNMENT
             obj.mesh = fdm_mesh;
             obj.pp = physical_properties;
-            obj.mg = matrix_generator;
+            obj.lss = linear_system_solver;
             
             % CONFIGURATION DEFAULTS
             obj.printing = false;
             obj.live_plotting = false;
-            
-            obj.pcg_tol = 1e-6;
-            obj.pcg_max_it = 100;
-            
-            obj.relaxation_parameter = 0.9;
-            obj.latent_heat_fraction_target = 0.5;
             
         end
         
@@ -79,17 +74,11 @@ classdef Solver < handle
         % INPUT
         mesh
         pp
-        mg
+        lss
         
         % CONFIGURATION
         printing
         live_plotting
-        
-        pcg_tol
-        pcg_max_it
-        
-        relaxation_parameter
-        latent_heat_fraction_target
         
         % PRIMARY MELT ID
         primary_melt_id
@@ -147,7 +136,8 @@ classdef Solver < handle
             
             % COMPUTATION TIME
             obj.iteration_count = 0;
-            obj.computation_times = zeros( 1, obj.mg.TIME_COUNT + 2 );
+            obj.solver_count = 0;
+            obj.computation_times = containers.Map( 'keytype', 'char', 'valuetype', 'double' );
             
             % SIMULATION TIME
             obj.simulation_time_nd = 0;
@@ -189,11 +179,11 @@ classdef Solver < handle
         
         function iterate( obj )
             
-            [ u_candidate_nd, q_candidate_nd, step_nd, iteration_times ] = ...
+            [ u_candidate_nd, q_candidate_nd, step_nd ] = ...
                 obj.compute_next_temperature_field();
-            obj.update_times( step_nd, iteration_times );
+            obj.update_times( step_nd );
             obj.update_fields( u_candidate_nd, q_candidate_nd );
-            obj.update_results( iteration_times );
+            obj.update_results();
             
         end
         
@@ -207,48 +197,29 @@ classdef Solver < handle
         end
         
         
-        function [ u_candidate_nd, q_candidate_nd, step_nd, iteration_times ] = ...
+        function [ u_candidate_nd, q_candidate_nd, step_nd ] = ...
                 compute_next_temperature_field( obj )
             
-            time_step_range = [ 0 obj.time_step_nd inf ];
-            iteration_times = zeros( 1, obj.mg.TIME_COUNT + 2 );
-            while true
-                
-                [ lhs, rhs ] = obj.setup_system_of_equations( time_step_range( 2 ) );
-                iteration_times( 1 : obj.mg.TIME_COUNT ) = ...
-                    iteration_times( 1 : obj.mg.TIME_COUNT ) + ...
-                    obj.mg.get_last_times();
-                obj.update_dashboard_histograms();
-                
-                tic;
-                u_candidate_nd = obj.solve_system_of_equations( lhs, rhs );
-                iteration_times( obj.mg.TIME_COUNT + 1 ) = ...
-                    iteration_times( obj.mg.TIME_COUNT + 1 ) + ...
-                    toc;
-                
-                tic;
-                q_candidate_nd = obj.pp.compute_melt_enthalpies_nd( obj.mesh, u_candidate_nd );
-                quality_ratio = obj.determine_solution_quality_ratio( q_candidate_nd );
-                iteration_times( obj.mg.TIME_COUNT + 2 ) = ...
-                    iteration_times( obj.mg.TIME_COUNT + 2 ) + ...
-                    toc;
-                
-                if obj.is_sufficient( quality_ratio )
-                    step_nd = time_step_range( 2 );
-                    break;
-                end
-                time_step_range = obj.choose_next_time_step_range( quality_ratio, time_step_range );
-                
-            end
+            [ u_candidate_nd, q_candidate_nd, step_nd, obj.dkdu ] = obj.lss.solve( ...
+                obj.mesh, ...
+                obj.q_prev_nd, ...
+                obj.u_prev_nd, ...
+                obj.u_curr_nd, ...
+                obj.time_step_nd ...
+                );
             
         end
         
         
-        function update_times( obj, step_nd, iteration_times )
+        function update_times( obj, step_nd )
             
             obj.update_iteration_count();
+            obj.update_solver_count();
             obj.update_simulation_time( step_nd );
-            obj.update_computation_times( iteration_times );
+            obj.computation_times = obj.update_times_map( ...
+                obj.lss.get_last_times_map(), ...
+                obj.computation_times ...
+                );
             
         end
         
@@ -261,7 +232,7 @@ classdef Solver < handle
         end
         
         
-        function update_results( obj, iteration_times )
+        function update_results( obj )
             
             obj.solidification_times.update_nd( ...
                 obj.mesh, ...
@@ -273,62 +244,7 @@ classdef Solver < handle
                 obj.time_step_nd ...
                 );
             obj.update_dashboard();
-            obj.print_update( iteration_times );
-            
-        end
-        
-        
-        function [ lhs, rhs ] = setup_system_of_equations( obj, candidate_step_nd )
-            
-            [ m_L, m_R, r_L, r_R, obj.dkdu ] = obj.mg.generate( ...
-                obj.pp.get_ambient_temperature_nd(), ...
-                obj.pp.get_space_step_nd(), ...
-                candidate_step_nd, ...
-                obj.u_prev_nd, ...
-                obj.u_curr_nd ...
-                );
-            lhs = m_L;
-            rhs = m_R * obj.u_curr_nd( : ) + r_R - r_L + obj.dkdu; 
-            
-        end
-        
-        
-        function u_candidate_nd = solve_system_of_equations( obj, lhs, rhs )
-            
-            [ u_candidate_nd, ~, ~, ~, ~ ] = pcg( ...
-                lhs, ...
-                rhs, ...
-                obj.pcg_tol, ...
-                obj.pcg_max_it, ...
-                [], ...
-                [], ...
-                obj.u_curr_nd( : ) ...
-                );
-            
-        end
-        
-        
-        function [ quality_ratio, q_candidate_nd ] = determine_solution_quality_ratio( obj, q_candidate_nd )
-            
-            max_delta_q_nd = max( obj.q_prev_nd( : ) - q_candidate_nd( : ) );
-            [ latent_heat, sensible_heat ] = obj.pp.get_min_latent_heat();
-            desired_q_nd = ( latent_heat + sensible_heat ) * obj.latent_heat_fraction_target;
-            quality_ratio = ( max_delta_q_nd - desired_q_nd ) / desired_q_nd;
-            
-        end
-        
-        
-        function time_step_range = choose_next_time_step_range( obj, quality_ratio, time_step_range )
-            
-            % todo find way to choose relaxation parameter based on gradient?
-            if 0 < quality_ratio
-                time_step_range( 3 ) = time_step_range( 2 );
-                interval = range( time_step_range );
-                time_step_range( 2 ) = ( interval * obj.relaxation_parameter ) + time_step_range( 1 );
-            else
-                time_step_range( 1 ) = time_step_range( 2 );
-                time_step_range( 2 ) = time_step_range( 2 ) / obj.relaxation_parameter;
-            end
+            obj.print_update();
             
         end
         
@@ -336,6 +252,13 @@ classdef Solver < handle
         function update_iteration_count( obj )
             
             obj.iteration_count = obj.iteration_count + 1;
+            
+        end
+        
+        
+        function update_solver_count( obj )
+            
+            obj.solver_count = obj.solver_count + obj.lss.get_last_solver_count();
             
         end
         
@@ -390,13 +313,6 @@ classdef Solver < handle
         end
         
         
-        function update_computation_times( obj, iteration_times )
-            
-            obj.computation_times = obj.computation_times + iteration_times;
-            
-        end
-        
-        
         function update_dashboard( obj )
             
             if obj.live_plotting
@@ -447,11 +363,13 @@ classdef Solver < handle
             if nargin > 1 && strcmpi( ret, 'label' )
                 values = { ...
                     'Iteration count', ...
+                    'Solver count', ...
                     'Simulation time (s)', ...
                     'Computation time (s)', ...
                     };
             elseif nargin > 1 && strcmpi( ret, 'formatspec' )
                 values = { ...
+                    '%i', ...
                     '%i', ...
                     '%.2f', ...
                     '%.2f' ...
@@ -459,20 +377,22 @@ classdef Solver < handle
             else
                 values = [ ...
                     obj.iteration_count ...
+                    obj.solver_count ...
                     obj.simulation_time ...
-                    sum( obj.computation_times ) ...
+                    sum( cell2mat( obj.computation_times.values() ) ) ...
                     ];
             end
             
         end
         
         
-        function print_update( obj, iteration_times )
+        function print_update( obj )
             
             obj.print( 'Iteration %i: ', obj.iteration_count );
+            obj.print( 'Solver count %i ', obj.lss.get_last_solver_count() );
             obj.print( '%.2fs, ', obj.simulation_time );
-            obj.print( '%.2fs, ', iteration_times );
-            obj.print( '%.2fs\n', sum( iteration_times ) );
+            obj.print( '%.2fs, ', obj.lss.get_last_times() );
+            obj.print( '%.2fs\n', obj.lss.get_last_total_time() );
             
         end
         
@@ -493,10 +413,28 @@ classdef Solver < handle
                 volumeViewer( obj.solidification_times.values );
                 
                 fh = figure();
+                fh.Position = [ 50 50 200 800 ];
                 axh = axes( fh );
-                nb = nan( size( obj.computation_times( : ).' ) );
-                bb = [ obj.computation_times( : ).' ./ sum( obj.computation_times ); nb ];
-                barh( bb, 'stacked' );
+                values = cell2mat( obj.computation_times.values() );
+                values = values( : ).' ./ sum( values( : ) ) .* 100;
+                nb = nan( size( values( : ).' ) );
+                bb = [ values; nb ];
+                bar( bb, 'stacked' );
+                axh.XLim = [ 0.5 1.5 ];
+                ytickformat( axh, '%g%%' );
+                labels = obj.computation_times.keys();
+                base_positions = cumsum( values );
+                label_positions = base_positions - values ./ 2;
+                for i = 1 : length( values )
+                    
+                    text( ...
+                        axh.XTick( 1 ), label_positions( i ), ...
+                        sprintf( '%s: %.2f%%', labels{ i }, values( i ) ), ...
+                        'horizontalalignment', 'center', ...
+                        'verticalalignment', 'middle' ...
+                        );
+                    
+                end
             end
             
         end
@@ -505,11 +443,27 @@ classdef Solver < handle
         function print_summary( obj )
             
             obj.print( 'Iteration Count: %d\n', obj.iteration_count );
+            obj.print( 'Solver Count: %d\n', obj.solver_count );
             obj.print( 'Approximate Computation Times: ' );
-            obj.print( '%.2fs, ', obj.computation_times );
-            obj.print( 'Total Computation Time: %.2fs\n', sum( obj.computation_times ) );
+            obj.print( '%.2fs, ', obj.get_computation_times() );
+            obj.print( '\n' );
+            obj.print( 'Total Computation Time: %.2fs\n', obj.get_total_computation_time() );
             obj.print( 'Simulation Time: %.2fs\n', obj.simulation_time );
             obj.print( 'Solidification Time: %.2fs\n', obj.solidification_times.get_final_time() );
+            
+        end
+        
+        
+        function time = get_total_computation_time( obj )
+            
+            time = sum( obj.get_computation_times() );
+            
+        end
+        
+        
+        function times = get_computation_times( obj )
+            
+            times = cell2mat( obj.computation_times.values() );
             
         end
         
@@ -557,10 +511,19 @@ classdef Solver < handle
     
     methods ( Access = private, Static )
         
-        function sufficient = is_sufficient( quality_ratio )
+        function dest = update_times_map( source, dest )
             
-            TOL = 0.01;
-            sufficient = abs( quality_ratio ) < TOL;
+            if isempty( dest )
+                dest = containers.Map( source.keys(), source.values() );
+            else
+                keys = source.keys();
+                for i = 1 : source.Count()
+                    
+                    key = keys{ i };
+                    dest( key ) = dest( key ) + source( key );
+                    
+                end
+            end
             
         end
         

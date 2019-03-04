@@ -23,13 +23,15 @@ pp.set_max_length( shape ); % count
 pp.prepare_for_solver();
 
 %% MATRIX GENERATOR
-mg = MatrixGenerator( fdm_mesh, pp );
-mg.set_implicitness_factor( 1 );
+lss = LinearSystemSolver( fdm_mesh, pp );
+lss.set_implicitness_factor( 1 );
+lss.set_solver_tolerance( 1e-6 );
+lss.set_solver_max_iteration_count( 100 );
+lss.set_adaptive_time_step_relaxation_parameter( 0.5 );
+lss.set_latent_heat_target_fraction( 0.5 );
 
 %% SOLVER
-solver = Solver( fdm_mesh, pp, mg );
-solver.set_relaxation_parameter( 0.9 );
-solver.set_latent_heat_fraction_target( 0.5 );
+solver = Solver( fdm_mesh, pp, lss );
 solver.turn_printing_on( @fprintf );
 solver.turn_live_plotting_on();
 solver.solve( simulation_time_step_in_s, melt_id );
