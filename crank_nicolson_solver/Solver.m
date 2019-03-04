@@ -389,9 +389,9 @@ classdef Solver < handle
         function print_update( obj )
             
             obj.print( 'Iteration %i: ', obj.iteration_count );
-            obj.print( 'Solver count %i ', obj.lss.get_last_solver_count() );
-            obj.print( '%.2fs, ', obj.simulation_time );
-            obj.print( '%.2fs, ', obj.lss.get_last_times() );
+            obj.print( '%i solver steps, ', obj.lss.get_last_solver_count() );
+            obj.print( '%.2fs sim time, ', obj.simulation_time );
+            obj.print( 'comp times: %.2fs, ', obj.lss.get_last_times() );
             obj.print( '%.2fs\n', obj.lss.get_last_total_time() );
             
         end
