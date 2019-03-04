@@ -240,6 +240,7 @@ classdef FdmDashboard < handle
                     );
                 
             end
+            drawnow();
             
         end
         
