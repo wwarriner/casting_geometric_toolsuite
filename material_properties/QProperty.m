@@ -9,6 +9,8 @@ classdef (Sealed) QProperty < MaterialProperty
             [ t, v ] = QProperty.compute( cp, t_range );
             obj = obj@MaterialProperty( t, v );
             
+            obj.cp = cp;
+            
             assert( all( 0 < obj.values( end ) ) );
             
         end
@@ -16,8 +18,16 @@ classdef (Sealed) QProperty < MaterialProperty
         
         function latent_heat = get_latent_heat( obj, liquidus, solidus )
             
-            % todo improve, this includes the non-latent heat as well
-            latent_heat = obj.lookup_values( liquidus ) - obj.lookup_values( solidus );
+            total_heat = obj.lookup_values( liquidus ) - obj.lookup_values( solidus );
+            latent_heat = total_heat - obj.get_sensible_heat( liquidus, solidus );
+            
+        end
+        
+        
+        function sensible_heat = get_sensible_heat( obj, liquidus, solidus )
+            
+            d_u = liquidus - solidus;
+            sensible_heat = ( obj.cp.lookup_values( liquidus ) + obj.cp.lookup_values( solidus ) ) .* d_u;
             
         end
         
@@ -56,6 +66,13 @@ classdef (Sealed) QProperty < MaterialProperty
             fn = @min;
             
         end
+        
+    end
+    
+    
+    properties ( Access = private )
+        
+        cp
         
     end
     

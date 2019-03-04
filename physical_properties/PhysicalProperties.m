@@ -253,23 +253,29 @@ classdef (Sealed) PhysicalProperties < handle
         end
         
         
-        function latent_heat = get_min_latent_heat( obj )
+        function [ latent_heat, sensible_heat ] = get_min_latent_heat( obj )
             
             assert( obj.prepared );
             
             % use min over materials to be conservative
             latent_heat = inf;
+            sensible_heat = nan;
             for id = 1 : obj.materials.Count
                 
                 if ismember( id, obj.melt_ids )
                     mp_nd = obj.material_properties_nd( id );
                     liquidus = mp_nd( obj.FS_INDEX ).get_liquidus();
                     solidus = mp_nd( obj.FS_INDEX ).get_solidus();
-                    latent_heat = min( latent_heat, max( mp_nd( obj.Q_INDEX ).get_latent_heat( solidus, liquidus ) ) );
+                    current = max( mp_nd( obj.Q_INDEX ).get_latent_heat( liquidus, solidus ) );
+                    if current < latent_heat
+                        latent_heat = current;
+                        sensible_heat = mp_nd( obj.Q_INDEX ).get_sensible_heat( liquidus, solidus );
+                    end
                 end
                 
             end
             assert( latent_heat ~= inf );
+            assert( ~isnan( sensible_heat ) );
             
         end
         

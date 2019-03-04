@@ -311,7 +311,8 @@ classdef Solver < handle
         function [ quality_ratio, q_candidate_nd ] = determine_solution_quality_ratio( obj, q_candidate_nd )
             
             max_delta_q_nd = max( obj.q_prev_nd( : ) - q_candidate_nd( : ) );
-            desired_q_nd = obj.pp.get_min_latent_heat() * obj.latent_heat_fraction_target;
+            [ latent_heat, sensible_heat ] = obj.pp.get_min_latent_heat();
+            desired_q_nd = ( latent_heat + sensible_heat ) * obj.latent_heat_fraction_target;
             quality_ratio = ( max_delta_q_nd - desired_q_nd ) / desired_q_nd;
             
         end

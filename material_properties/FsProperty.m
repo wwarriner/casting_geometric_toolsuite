@@ -15,7 +15,7 @@ classdef (Sealed) FsProperty < MaterialProperty
         
         function temperature = get_liquidus( obj )
             
-            ind = find( obj.values == 1, 1, 'last' );
+            ind = find( obj.values == 0, 1, 'first' );
             temperature = obj.temperatures( ind );
             
         end
@@ -23,7 +23,7 @@ classdef (Sealed) FsProperty < MaterialProperty
         
         function temperature = get_solidus( obj )
             
-            ind = find( obj.values == 0, 1, 'first' );
+            ind = find( obj.values == 1, 1, 'last' );
             temperature = obj.temperatures( ind );
             
         end
