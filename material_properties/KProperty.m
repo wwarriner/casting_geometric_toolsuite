@@ -22,6 +22,13 @@ classdef (Sealed) KProperty < MaterialProperty
         end
         
         
+        function k_inv = compute_k_half_space_step_inverse_property( obj, space_step )
+            
+            k_inv = KHalfSpaceStepInvProperty( obj, space_step );
+            
+        end
+        
+        
         function nd_material_property = nondimensionalize( obj, v_factor, t_range )
             
             [ t, v ] = obj.nondimensionalize_impl( v_factor, t_range );

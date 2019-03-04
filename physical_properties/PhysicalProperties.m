@@ -495,7 +495,7 @@ classdef (Sealed) PhysicalProperties < handle
             material_properties_nd( obj.RHO_INDEX ) = RhoProperty( rho_nd.temperatures, rho_nd.values );
             cp_nd = material_nd.get( Material.CP_INDEX );
             material_properties_nd( obj.CP_INDEX ) = CpProperty( cp_nd.temperatures, cp_nd.values );
-            material_properties_nd( obj.K_INV_INDEX ) = KHalfSpaceStepInvProperty( material_nd.get( Material.K_INDEX ), obj.space_step );
+            material_properties_nd( obj.K_INV_INDEX ) = material_nd.get( Material.K_INDEX ).compute_k_half_space_step_inverse_property( obj.space_step );
             
         end
         
