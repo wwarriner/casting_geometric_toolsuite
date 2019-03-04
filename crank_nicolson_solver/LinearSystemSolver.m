@@ -118,6 +118,8 @@ classdef LinearSystemSolver < handle
             obj.count = 0;
             while true
                 
+                obj.count = obj.count + 1;
+                
                 tic;
                 [ lhs, rhs, dkdu ] = obj.setup_system_of_equations_with_time_step( ...
                     time_step_range_nd( TIME_STEP_INDEX ), ...
@@ -142,8 +144,6 @@ classdef LinearSystemSolver < handle
                     quality_ratio, ...
                     time_step_range_nd ...
                     );
-                
-                obj.count = obj.count + 1;
                 
             end
             obj.times( obj.SOLVE_TIME ) = solve_time;
