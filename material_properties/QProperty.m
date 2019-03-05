@@ -21,6 +21,8 @@ classdef (Sealed) QProperty < MaterialProperty
             total_heat = obj.lookup_values( liquidus ) - obj.lookup_values( solidus );
             latent_heat = total_heat - obj.get_sensible_heat( liquidus, solidus );
             
+            assert( latent_heat >= 0 );
+            
         end
         
         
@@ -28,6 +30,8 @@ classdef (Sealed) QProperty < MaterialProperty
             
             d_u = liquidus - solidus;
             sensible_heat = ( obj.cp.lookup_values( liquidus ) + obj.cp.lookup_values( solidus ) ) .* d_u;
+            
+            assert( sensible_heat > 0 );
             
         end
         
