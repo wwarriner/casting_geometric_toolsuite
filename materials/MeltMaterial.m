@@ -66,6 +66,17 @@ classdef (Sealed) MeltMaterial < Material
         end
         
         
+        function [ latent_heat, sensible_heat ] = get_latent_heat( obj, temperature_range )
+            
+            liquidus = obj.material_properties( obj.FS_INDEX ).get_liquidus();
+            solidus = obj.material_properties( obj.FS_INDEX ).get_solidus();
+            q = obj.material_properties( obj.CP_INDEX ).compute_q_property( temperature_range );
+            latent_heat = q.get_latent_heat( liquidus, solidus );
+            sensible_heat = q.get_sensible_heat( liquidus, solidus );
+            
+        end
+        
+        
         function nd_material = nondimensionalize( obj, extremes, t_range )
             
             nd_material = MeltMaterial( obj.get_mesh_id() );
