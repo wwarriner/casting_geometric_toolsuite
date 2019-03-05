@@ -34,6 +34,7 @@ classdef LinearSystemSolver < handle
             obj.pcg_max_it = 100;
             obj.relaxation_parameter = 0.5;
             obj.latent_heat_target_fraction = 0.5;
+            obj.quality_ratio_tolerance = 0.01;
             
             obj.times = containers.Map();
             
@@ -95,6 +96,17 @@ classdef LinearSystemSolver < handle
         end
         
         
+        function set_quality_ratio_tolerance( obj, tol )
+            
+            assert( isscalar( tol ) );
+            assert( isa( tol, 'double' ) );
+            assert( 0 < tol );
+            
+            obj.quality_ratio_tolerance = tol;
+            
+        end
+        
+        
         function [ u_nd, q_nd, step_nd, dkdu ] = solve( ...
                 obj, ...
                 mesh, ...
@@ -104,25 +116,46 @@ classdef LinearSystemSolver < handle
                 prev_step_nd ...
                 )
             
-            TIME_STEP_INDEX = 2;
-            time_step_range_nd = [ 0 prev_step_nd inf ];
+            initial_time_steps = [ ...
+                obj.relaxation_parameter ...
+                1 ...
+                2 - obj.relaxation_parameter ...
+                ] .* prev_step_nd;
             
+            % precalculate bulk of effort
             [ m_diffusivities_nts, amb_diff_nts, dkdu_nts ] = obj.generate_no_time_step( ...
                 obj.pp.get_space_step_nd(), ...
                 u_prev_nd, ...
                 u_curr_nd ...
                 );
             
+            time_steps = [];
+            quality_ratios = [];
+            
             solve_time = 0;
             check_time = 0;
             obj.count = 0;
+            %fh = figure();
+            %axh = axes( fh );
+            %hold( axh, 'on' );
+            % SECANT METHOD
             while true
                 
                 obj.count = obj.count + 1;
                 
+                if numel( time_steps ) < 3
+                    next_step = initial_time_steps( 1 );
+                    initial_time_steps( 1 ) = [];
+                else
+                    next_step = time_steps( 1 ) - quality_ratios( 1 ) * ...
+                        ( time_steps( 1 ) - time_steps( 2 ) ) ./ ( quality_ratios( 1 ) - quality_ratios( 2 ) );
+                end
+                next_step = max( next_step, 0 );
+                time_steps = [ next_step time_steps ];
+                
                 tic;
                 [ lhs, rhs, dkdu ] = obj.setup_system_of_equations_with_time_step( ...
-                    time_step_range_nd( TIME_STEP_INDEX ), ...
+                    time_steps( 1 ), ...
                     m_diffusivities_nts, ...
                     amb_diff_nts, ...
                     dkdu_nts, ...
@@ -133,17 +166,16 @@ classdef LinearSystemSolver < handle
 
                 tic;
                 q_nd = obj.pp.compute_melt_enthalpies_nd( mesh, u_nd );
-                quality_ratio = obj.determine_solution_quality_ratio( q_prev_nd, q_nd );
+                quality_ratios = [ obj.determine_solution_quality_ratio( q_prev_nd, q_nd ) quality_ratios ];
+                
+                %plot( axh, time_steps( 1 ), quality_ratios( 1 ), 'marker', '.', 'linestyle', 'none' );
+                drawnow();
                 check_time = check_time + toc;
                 
-                if obj.is_quality_ratio_sufficient( quality_ratio )
-                    step_nd = time_step_range_nd( TIME_STEP_INDEX );
+                if obj.is_quality_ratio_sufficient( quality_ratios( 1 ) )
+                    step_nd = time_steps( 1 );
                     break;
                 end
-                time_step_range_nd = obj.choose_next_time_step_range( ...
-                    quality_ratio, ...
-                    time_step_range_nd ...
-                    );
                 
             end
             obj.times( obj.SOLVE_TIME ) = solve_time;
@@ -203,6 +235,7 @@ classdef LinearSystemSolver < handle
         pcg_max_it
         relaxation_parameter
         latent_heat_target_fraction
+        quality_ratio_tolerance
         
         times
         count
@@ -287,6 +320,7 @@ classdef LinearSystemSolver < handle
             LOWER_BOUND = 1;
             TIME_STEP = 2;
             UPPER_BOUND = 3;
+            
             % todo find way to choose relaxation parameter based on gradient?
             if 0 < quality_ratio
                 time_step_range( UPPER_BOUND ) = time_step_range( TIME_STEP );
@@ -747,6 +781,13 @@ classdef LinearSystemSolver < handle
             
         end
         
+        
+        function sufficient = is_quality_ratio_sufficient( obj, quality_ratio )
+            
+            sufficient = abs( quality_ratio ) < obj.quality_ratio_tolerance;
+            
+        end
+        
     end
     
     
@@ -796,14 +837,6 @@ classdef LinearSystemSolver < handle
         function u_band = compute_u_band( u, stride )
             
             u_band = circshift( u( : ), stride );
-            
-        end
-        
-        
-        function sufficient = is_quality_ratio_sufficient( quality_ratio )
-            
-            TOL = 0.01;
-            sufficient = abs( quality_ratio ) < TOL;
             
         end
         
