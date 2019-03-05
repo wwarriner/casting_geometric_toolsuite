@@ -115,12 +115,14 @@ classdef LinearSystemSolver < handle
                 u_curr_nd, ...
                 prev_step_nd ...
                 )
+            TIME_STEP_INDEX = 2;
+            time_step_range_nd = [ 0 prev_step_nd inf ];
             
-            initial_time_steps = [ ...
-                obj.relaxation_parameter ...
-                1 ...
-                2 - obj.relaxation_parameter ...
-                ] .* prev_step_nd;
+%             initial_time_steps = [ ...
+%                 obj.relaxation_parameter ...
+%                 1 ...
+%                 2 - obj.relaxation_parameter ...
+%                 ] .* prev_step_nd;
             
             % precalculate bulk of effort
             [ m_diffusivities_nts, amb_diff_nts, dkdu_nts ] = obj.generate_no_time_step( ...
@@ -135,25 +137,33 @@ classdef LinearSystemSolver < handle
             solve_time = 0;
             check_time = 0;
             obj.count = 0;
-            %fh = figure();
-            %axh = axes( fh );
-            %hold( axh, 'on' );
+            obj.pcg_count = 0;
+%             fh = figure();
+%             axh = axes( fh );
+%             hold( axh, 'on' );
             % SECANT METHOD
+            u_pcg_start_nd = u_curr_nd;
+            best_qr = inf;
             while true
                 
                 obj.count = obj.count + 1;
                 
-                if numel( time_steps ) < 3
-                    next_step = initial_time_steps( 1 );
-                    initial_time_steps( 1 ) = [];
-                else
-                    next_step = time_steps( 1 ) - quality_ratios( 1 ) * ...
-                        ( time_steps( 1 ) - time_steps( 2 ) ) ./ ( quality_ratios( 1 ) - quality_ratios( 2 ) );
-                end
-                next_step = max( next_step, 0 );
-                time_steps = [ next_step time_steps ];
+%                 if numel( time_steps ) < 3
+%                     next_step = initial_time_steps( 1 );
+%                     initial_time_steps( 1 ) = [];
+%                 else
+%                     next_step = time_steps( 1 ) - quality_ratios( 1 ) * ...
+%                         ( time_steps( 1 ) - time_steps( 2 ) ) ./ ( quality_ratios( 1 ) - quality_ratios( 2 ) );
+%                 end
+%                 if isinf( next_step )
+%                     a = 0;
+%                 end
+                    
+%                 next_step = max( next_step, 0 );
+%                 time_steps = [ next_step time_steps ];
                 
                 tic;
+                time_steps = [ time_step_range_nd( TIME_STEP_INDEX ) time_steps ];
                 [ lhs, rhs, dkdu ] = obj.setup_system_of_equations_with_time_step( ...
                     time_steps( 1 ), ...
                     m_diffusivities_nts, ...
@@ -161,21 +171,30 @@ classdef LinearSystemSolver < handle
                     dkdu_nts, ...
                     u_curr_nd ...
                     );
-                u_nd = obj.solve_system_of_equations( lhs, rhs, u_curr_nd );
+                [ u_nd, pcg_it ] = obj.solve_system_of_equations( lhs, rhs, u_pcg_start_nd );
+                obj.pcg_count = obj.pcg_count + pcg_it;
                 solve_time = solve_time + toc;
 
                 tic;
                 q_nd = obj.pp.compute_melt_enthalpies_nd( mesh, u_nd );
                 quality_ratios = [ obj.determine_solution_quality_ratio( q_prev_nd, q_nd ) quality_ratios ];
+                if abs( quality_ratios( 1 ) ) < best_qr
+                    u_pcg_start_nd = u_nd;
+                end
+                    
                 
                 %plot( axh, time_steps( 1 ), quality_ratios( 1 ), 'marker', '.', 'linestyle', 'none' );
-                drawnow();
+                %drawnow();
                 check_time = check_time + toc;
                 
                 if obj.is_quality_ratio_sufficient( quality_ratios( 1 ) )
                     step_nd = time_steps( 1 );
                     break;
                 end
+                time_step_range_nd = obj.choose_next_time_step_range( ...
+                    quality_ratios( 1 ), ...
+                    time_step_range_nd ...
+                    );
                 
             end
             obj.times( obj.SOLVE_TIME ) = solve_time;
@@ -218,6 +237,13 @@ classdef LinearSystemSolver < handle
             
         end
         
+        
+        function count = get_last_pcg_count( obj )
+            
+            count = obj.pcg_count;
+            
+        end
+        
     end
     
     
@@ -239,6 +265,7 @@ classdef LinearSystemSolver < handle
         
         times
         count
+        pcg_count
         
     end
     
@@ -255,6 +282,8 @@ classdef LinearSystemSolver < handle
     
     methods ( Access = private )
         
+        % rhs contains dkdu
+        % third output arg is for record keeping only
         function [ ...
                 lhs_wts, ...
                 rhs_wts, ...
@@ -282,9 +311,9 @@ classdef LinearSystemSolver < handle
         end
         
         
-        function u_nd = solve_system_of_equations( obj, lhs, rhs, start_point )
+        function [ u_nd, pcg_it ] = solve_system_of_equations( obj, lhs, rhs, start_point )
             
-            [ u_nd, ~, ~, ~, ~ ] = pcg( ...
+            [ u_nd, ~, ~, pcg_it, ~ ] = pcg( ...
                 lhs, ...
                 rhs, ...
                 obj.pcg_tol, ...
