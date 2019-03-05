@@ -16,6 +16,7 @@ classdef Solver < handle
     methods ( Access = public )
         
         function obj = Solver( fdm_mesh, physical_properties, linear_system_solver )
+            
             % INPUT ASSIGNMENT
             obj.mesh = fdm_mesh;
             obj.pp = physical_properties;
@@ -57,9 +58,9 @@ classdef Solver < handle
         end
         
         
-        function solve( obj, starting_time_step_in_s, primary_melt_id )
+        function solve( obj, primary_melt_id )
             
-            obj.setup_problem( starting_time_step_in_s, primary_melt_id );
+            obj.setup_problem( primary_melt_id );
             while ~obj.is_finished()
                 obj.iterate();
             end
@@ -124,7 +125,7 @@ classdef Solver < handle
     
     methods ( Access = private )
         
-        function setup_problem( obj, starting_time_step_in_s, primary_melt_id )
+        function setup_problem( obj, primary_melt_id )
             % PRIMARY MELT ID
             obj.primary_melt_id = primary_melt_id;
             
@@ -142,7 +143,7 @@ classdef Solver < handle
             % SIMULATION TIME
             obj.simulation_time_nd = 0;
             obj.update_simulation_time( 0 );
-            obj.time_step_nd = obj.pp.nondimensionalize_times( starting_time_step_in_s );
+            obj.time_step_nd = obj.pp.compute_initial_time_step_nd( primary_melt_id );
             
             % TEMPERATURE
             u_initial_nd = obj.pp.generate_initial_temperature_field_nd( obj.mesh );
@@ -391,8 +392,7 @@ classdef Solver < handle
             obj.print( 'Iteration %i: ', obj.iteration_count );
             obj.print( '%i solver steps, ', obj.lss.get_last_solver_count() );
             obj.print( '%.2fs sim time, ', obj.simulation_time );
-            obj.print( 'comp times: %.2fs, ', obj.lss.get_last_times() );
-            obj.print( '%.2fs\n', obj.lss.get_last_total_time() );
+            obj.print( '%.2fs comp time\n', obj.lss.get_last_total_time() );
             
         end
         
@@ -413,7 +413,7 @@ classdef Solver < handle
                 volumeViewer( obj.solidification_times.values );
                 
                 fh = figure();
-                fh.Position = [ 50 50 200 800 ];
+                fh.Position = [ 50 50 300 800 ];
                 axh = axes( fh );
                 values = cell2mat( obj.computation_times.values() );
                 values = values( : ).' ./ sum( values( : ) ) .* 100;
@@ -421,6 +421,7 @@ classdef Solver < handle
                 bb = [ values; nb ];
                 bar( bb, 'stacked' );
                 axh.XLim = [ 0.5 1.5 ];
+                axh.YLim = [ 0 100 ];
                 ytickformat( axh, '%g%%' );
                 labels = obj.computation_times.keys();
                 base_positions = cumsum( values );

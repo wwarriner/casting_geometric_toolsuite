@@ -198,6 +198,19 @@ classdef (Sealed) PhysicalProperties < handle
         end
         
         
+        function initial_time_step_nd = compute_initial_time_step_nd( obj, primary_melt_id )
+            
+            numerator = 2 * ...
+                obj.extremes( obj.RHO_INDEX ) * ...
+                obj.get_min_latent_heat_nd() * ...
+                obj.get_space_step_nd() ^ 2;
+            denominator = obj.extremes( Material.K_INDEX ) * ...
+                obj.get_feeding_effectivity_temperature_nd( primary_melt_id );
+            initial_time_step_nd = numerator / denominator;
+            
+        end
+        
+        
         function temperature_range = get_temperature_range( obj )
             
             assert( obj.prepared );
@@ -283,6 +296,8 @@ classdef (Sealed) PhysicalProperties < handle
         function q = compute_melt_enthalpies_nd( obj, mesh, temperatures )
             
             assert( obj.prepared );
+            
+            assert( numel( mesh ) == numel( temperatures ) );
             
             q = zeros( size( mesh ) );
             for material_id = 1 : obj.materials.Count
