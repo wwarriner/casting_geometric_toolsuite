@@ -4,8 +4,10 @@ classdef Solver < handle
         
         iteration_count
         solver_count
+        pcg_count
         computation_times
         simulation_time
+        solidification_time
         
         temperature_initial
         temperature_final
@@ -65,6 +67,58 @@ classdef Solver < handle
                 obj.iterate();
             end
             obj.postprocess();
+            
+        end
+        
+        
+        function display_results( obj )
+            
+            volumeViewer( obj.temperature_final );
+            volumeViewer( obj.solidification_times.values );
+            
+        end
+        
+        
+        function display_computation_time_summary( obj )
+            
+            fh = figure();
+            fh.Position = [ 50 50 300 800 ];
+            axh = axes( fh );
+            values = cell2mat( obj.computation_times.values() );
+            values = values( : ).' ./ sum( values( : ) ) .* 100;
+            nb = nan( size( values( : ).' ) );
+            bb = [ values; nb ];
+            bar( bb, 'stacked' );
+            axh.XLim = [ 0.5 1.5 ];
+            axh.YLim = [ 0 100 ];
+            ytickformat( axh, '%g%%' );
+            labels = obj.computation_times.keys();
+            base_positions = cumsum( values );
+            label_positions = base_positions - values ./ 2;
+            for i = 1 : length( values )
+                
+                text( ...
+                    axh.XTick( 1 ), label_positions( i ), ...
+                    sprintf( '%s: %.2f%%', labels{ i }, values( i ) ), ...
+                    'horizontalalignment', 'center', ...
+                    'verticalalignment', 'middle' ...
+                    );
+                
+            end
+            
+        end
+        
+        
+        function print_summary( obj )
+            
+            obj.print( 'Iteration Count: %d\n', obj.iteration_count );
+            obj.print( 'Solver Count: %d\n', obj.solver_count );
+            obj.print( 'Approximate Computation Times: ' );
+            obj.print( '%.2fs, ', obj.get_computation_times() );
+            obj.print( '\n' );
+            obj.print( 'Total Computation Time: %.2fs\n', obj.get_total_computation_time() );
+            obj.print( 'Simulation Time: %.2fs\n', obj.simulation_time );
+            obj.print( 'Solidification Time: %.2fs\n', obj.solidification_times.get_final_time() );
             
         end
         
@@ -138,7 +192,10 @@ classdef Solver < handle
             % COMPUTATION TIME
             obj.iteration_count = 0;
             obj.solver_count = 0;
+            obj.pcg_count = 0;
             obj.computation_times = containers.Map( 'keytype', 'char', 'valuetype', 'double' );
+            obj.simulation_time = 0;
+            obj.solidification_time = 0;
             
             % SIMULATION TIME
             obj.simulation_time_nd = 0;
@@ -192,7 +249,7 @@ classdef Solver < handle
         function postprocess( obj )
             
             obj.prepare_results();
-            obj.display_results();
+            obj.update_dashboard();
             obj.print_summary();
             
         end
@@ -216,11 +273,12 @@ classdef Solver < handle
             
             obj.update_iteration_count();
             obj.update_solver_count();
-            obj.update_simulation_time( step_nd );
+            obj.update_pcg_count();
             obj.computation_times = obj.update_times_map( ...
                 obj.lss.get_last_times_map(), ...
                 obj.computation_times ...
                 );
+            obj.update_simulation_time( step_nd );
             
         end
         
@@ -264,6 +322,22 @@ classdef Solver < handle
         end
         
         
+        function update_pcg_count( obj )
+            
+            obj.pcg_count = obj.pcg_count + obj.lss.get_last_pcg_count();
+            
+        end
+        
+        
+        function update_simulation_time( obj, step_nd )
+            
+            obj.time_step_nd = step_nd;
+            obj.simulation_time_nd = obj.simulation_time_nd + obj.time_step_nd;
+            obj.simulation_time = obj.pp.dimensionalize_times( obj.simulation_time_nd );
+            
+        end
+        
+        
         function setup_dashboard( obj )
             
             if obj.live_plotting
@@ -301,15 +375,6 @@ classdef Solver < handle
         function update_enthalpy_field( obj, q_candidate_nd )
             
             obj.q_prev_nd = q_candidate_nd;
-            
-        end
-        
-        
-        function update_simulation_time( obj, step_nd )
-            
-            obj.time_step_nd = step_nd;
-            obj.simulation_time_nd = obj.simulation_time_nd + obj.time_step_nd;
-            obj.simulation_time = obj.pp.dimensionalize_times( obj.simulation_time_nd );
             
         end
         
@@ -359,19 +424,23 @@ classdef Solver < handle
         end
         
         
-        function values = get_label_values( obj, ret )
+        function values = get_label_values( obj, return_indicator )
             
-            if nargin > 1 && strcmpi( ret, 'label' )
+            if nargin > 1 && strcmpi( return_indicator, 'label' )
                 values = { ...
                     'Iteration count', ...
                     'Solver count', ...
-                    'Simulation time (s)', ...
+                    'PCG count', ...
                     'Computation time (s)', ...
+                    'Simulation time (s)', ...
+                    'Solidification time (s)' ...
                     };
-            elseif nargin > 1 && strcmpi( ret, 'formatspec' )
+            elseif nargin > 1 && strcmpi( return_indicator, 'formatspec' )
                 values = { ...
                     '%i', ...
                     '%i', ...
+                    '%i', ...
+                    '%.2f', ...
                     '%.2f', ...
                     '%.2f' ...
                     };
@@ -379,8 +448,10 @@ classdef Solver < handle
                 values = [ ...
                     obj.iteration_count ...
                     obj.solver_count ...
-                    obj.simulation_time ...
+                    obj.pcg_count ...
                     sum( cell2mat( obj.computation_times.values() ) ) ...
+                    obj.simulation_time, ...
+                    obj.solidification_time ...
                     ];
             end
             
@@ -402,55 +473,7 @@ classdef Solver < handle
             obj.temperature_final = obj.pp.dimensionalize_temperatures( obj.u_curr_nd );
             pp_temp = obj.pp;
             obj.solidification_times.manipulate( @pp_temp.dimensionalize_times );
-            
-        end
-        
-        
-        function display_results( obj )
-            
-            if obj.live_plotting
-                volumeViewer( obj.temperature_final );
-                volumeViewer( obj.solidification_times.values );
-                
-                fh = figure();
-                fh.Position = [ 50 50 300 800 ];
-                axh = axes( fh );
-                values = cell2mat( obj.computation_times.values() );
-                values = values( : ).' ./ sum( values( : ) ) .* 100;
-                nb = nan( size( values( : ).' ) );
-                bb = [ values; nb ];
-                bar( bb, 'stacked' );
-                axh.XLim = [ 0.5 1.5 ];
-                axh.YLim = [ 0 100 ];
-                ytickformat( axh, '%g%%' );
-                labels = obj.computation_times.keys();
-                base_positions = cumsum( values );
-                label_positions = base_positions - values ./ 2;
-                for i = 1 : length( values )
-                    
-                    text( ...
-                        axh.XTick( 1 ), label_positions( i ), ...
-                        sprintf( '%s: %.2f%%', labels{ i }, values( i ) ), ...
-                        'horizontalalignment', 'center', ...
-                        'verticalalignment', 'middle' ...
-                        );
-                    
-                end
-            end
-            
-        end
-        
-        
-        function print_summary( obj )
-            
-            obj.print( 'Iteration Count: %d\n', obj.iteration_count );
-            obj.print( 'Solver Count: %d\n', obj.solver_count );
-            obj.print( 'Approximate Computation Times: ' );
-            obj.print( '%.2fs, ', obj.get_computation_times() );
-            obj.print( '\n' );
-            obj.print( 'Total Computation Time: %.2fs\n', obj.get_total_computation_time() );
-            obj.print( 'Simulation Time: %.2fs\n', obj.simulation_time );
-            obj.print( 'Solidification Time: %.2fs\n', obj.solidification_times.get_final_time() );
+            obj.solidification_time = obj.solidification_times.get_final_time();
             
         end
         
