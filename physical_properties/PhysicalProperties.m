@@ -171,7 +171,7 @@ classdef (Sealed) PhysicalProperties < handle
             for i = 1 : obj.materials.Count
                 
                 id = ids( i );
-                material_nd = obj.materials( id ).nondimensionalize( obj.extremes, obj.temperature_range );
+                material_nd = obj.materials( id );%.nondimensionalize( obj.extremes, obj.temperature_range );
                 obj.initial_temperatures_nd( id ) = material_nd.get_initial_temperature();
                 obj.material_properties_nd( id ) = obj.prepare_properties( material_nd );
                 if ismember( id, obj.melt_ids )
@@ -185,13 +185,13 @@ classdef (Sealed) PhysicalProperties < handle
                 
             end
             
-            convection_extreme = obj.extremes( Material.K_INDEX );
-            obj.convection_nd = obj.convection.nondimensionalize( convection_extreme, obj.temperature_range );
+            convection_extreme = obj.extremes( Material.K_INDEX );%obj.convection.get_extreme();
+            obj.convection_nd = obj.convection%;.nondimensionalize( convection_extreme, obj.temperature_range );
             
-            obj.time_factor = obj.extremes( Material.RHO_INDEX ) * ...
-                obj.extremes( Material.CP_INDEX ) * ...
-                obj.max_length ^ 2 / ...
-                obj.extremes( Material.K_INDEX );
+            obj.time_factor = 1;%obj.extremes( Material.RHO_INDEX ) * ...
+                %obj.extremes( Material.CP_INDEX ) * ...
+                %obj.max_length ^ 2 / ...
+                %obj.extremes( Material.K_INDEX );
 
             obj.prepared = true;
             
@@ -430,11 +430,11 @@ classdef (Sealed) PhysicalProperties < handle
         end
         
         
-        function temperatures = dimensionalize_temperature_diffs( obj, temperature_diff_nd )
+        function temperature_diffs = dimensionalize_temperature_diffs( obj, temperature_diffs_nd )
             
             assert( obj.prepared )
             
-            temperatures = obj.dimensionalize_temperatures( temperature_diff_nd ) - obj.temperature_range( 1 );
+            temperature_diffs = temperature_diffs_nd;%obj.dimensionalize_temperatures( temperature_diffs_nd ) - obj.temperature_range( 1 );
             
         end
         
@@ -443,7 +443,7 @@ classdef (Sealed) PhysicalProperties < handle
             
             assert( obj.prepared );
             
-            temperatures = scale_temperatures( temperatures_nd, [ 0 1 ], obj.temperature_range );
+            temperatures = temperatures_nd;%scale_temperatures( temperatures_nd, [ 0 1 ], obj.temperature_range );
             
         end
         
@@ -516,14 +516,14 @@ classdef (Sealed) PhysicalProperties < handle
                 
             end
             
-            k_compare = extremes( Material.K_INDEX ) / obj.space_step;
-            h_compare = obj.convection.get_extreme();
-            if k_compare > h_compare
-                extremes( Material.K_INDEX ) = k_compare * obj.space_step;
-            else
-                extremes( Material.K_INDEX ) = h_compare;
-            end
-            
+%             k_compare = extremes( Material.K_INDEX );
+%             h_compare = obj.convection.get_extreme() * obj.space_step;
+%             if k_compare > h_compare
+%                 extremes( Material.K_INDEX ) = k_compare;
+%             else
+%                 extremes( Material.K_INDEX ) = h_compare;
+%             end
+%             
             assert( ~any( isnan( extremes ) ) );
             
         end
