@@ -17,7 +17,7 @@ shape = [ ...
 melt_fp = which( 'AlSi9.txt' );
 pp = generate_variable_test_properties( ambient_id, mold_id, melt_id, melt_fp );
 % pp = generate_constant_test_properties( ambient_id, mold_id, melt_id );
-pp.set_space_step( element_size_in_mm / 1000 ) % m
+pp.set_space_step( element_size_in_mm / 1000 ); % m
 pp.set_max_length( shape ); % count
 pp.prepare_for_solver();
 
