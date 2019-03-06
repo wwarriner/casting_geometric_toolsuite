@@ -200,13 +200,21 @@ classdef (Sealed) PhysicalProperties < handle
         
         function initial_time_step_nd = compute_initial_time_step_nd( obj, primary_melt_id )
             
-            numerator = 2 * ...
-                obj.extremes( obj.RHO_INDEX ) * ...
-                obj.get_min_latent_heat_nd() * ...
-                obj.get_space_step_nd() ^ 2;
-            denominator = obj.extremes( Material.K_INDEX ) * ...
-                obj.get_feeding_effectivity_temperature_nd( primary_melt_id );
-            initial_time_step_nd = numerator / denominator;
+            % based on p421 of Ozisik _Heat Conduction_ 2e, originally from
+            % Gupta and Kumar ref 79
+            % Int J Heat Mass Transfer, 24, 251-259, 1981
+            % see if there are improvements since?
+            rho = obj.extremes( obj.RHO_INDEX );
+            L = obj.get_min_latent_heat();
+            dx = obj.get_space_step();
+            h = obj.convection.get_extreme();
+            k = obj.extremes( Material.K_INDEX );
+            Tm = obj.get_feeding_effectivity_temperature( primary_melt_id );
+            Tinf = obj.temperature_range( 1 );
+            H = h / k;
+            numerator = rho * L * dx * ( 1 + H * dx );
+            denominator = h * ( Tm - Tinf );
+            initial_time_step_nd = obj.nondimensionalize_times( numerator / denominator );
             
         end
         
@@ -262,6 +270,30 @@ classdef (Sealed) PhysicalProperties < handle
             assert( obj.prepared );
 
             times_nd = times / obj.time_factor;
+            
+        end
+        
+        
+        function [ latent_heat, sensible_heat ] = get_min_latent_heat( obj )
+            
+            assert( obj.prepared );
+            
+            % use min over materials to be conservative
+            latent_heat = inf;
+            sensible_heat = nan;
+            for id = 1 : obj.materials.Count
+                
+                if ismember( id, obj.melt_ids )
+                    [ current_lh, current_sh ] = obj.materials( id ).get_latent_heat( obj.get_temperature_range() );
+                    if current_lh < latent_heat
+                        latent_heat = current_lh;
+                        sensible_heat = current_sh;
+                    end
+                end
+                
+            end
+            assert( latent_heat ~= inf );
+            assert( ~isnan( sensible_heat ) );
             
         end
         
@@ -365,6 +397,15 @@ classdef (Sealed) PhysicalProperties < handle
             assert( obj.liquidus_temperatures_nd.isKey( melt_id ) );
             
             temperature_nd = obj.liquidus_temperatures_nd( melt_id );
+            
+        end
+        
+        
+        function temperature = get_feeding_effectivity_temperature( obj, melt_id )
+                        
+            temperature = obj.dimensionalize_temperatures( ...
+                obj.get_feeding_effectivity_temperature_nd( melt_id ) ...
+                );
             
         end
         
