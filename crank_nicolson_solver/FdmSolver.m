@@ -1,4 +1,4 @@
-classdef Solver < handle
+classdef FdmSolver < handle
     
     properties ( GetAccess = public, SetAccess = private )
         
@@ -17,7 +17,7 @@ classdef Solver < handle
     
     methods ( Access = public )
         
-        function obj = Solver( fdm_mesh, physical_properties, linear_system_solver )
+        function obj = FdmSolver( fdm_mesh, physical_properties, linear_system_solver )
             
             % INPUT ASSIGNMENT
             obj.mesh = fdm_mesh;
