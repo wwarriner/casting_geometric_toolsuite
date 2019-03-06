@@ -31,20 +31,6 @@ classdef Solver < handle
         end
         
         
-        function set_relaxation_parameter( obj, parameter )
-            
-            obj.relaxation_parameter = parameter;
-            
-        end
-        
-        
-        function set_latent_heat_fraction_target( obj, target )
-            
-            obj.latent_heat_fraction_target = target;
-            
-        end
-        
-        
         function turn_printing_on( obj, printer )
             
             obj.printing = true;

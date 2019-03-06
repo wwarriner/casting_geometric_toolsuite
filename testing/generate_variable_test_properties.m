@@ -2,7 +2,6 @@ function physical_properties = generate_variable_test_properties( ambient_id, mo
 
 physical_properties = generate_constant_non_melt( ambient_id, mold_id, melt_id );
 
-[ path, name, ext ] = fileparts( melt_filepath );
 data = readtable( melt_filepath );
 melt = MeltMaterial( melt_id );
 melt.set( RhoProperty( data.rho_t, data.rho ) );
