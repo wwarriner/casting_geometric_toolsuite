@@ -30,11 +30,11 @@ classdef LinearSystemSolver < handle
             
             % DEFAULTS
             obj.implicitness = 1.0;
-            obj.pcg_tol = 1e-6;
+            obj.pcg_tol = 1e-3;
             obj.pcg_max_it = 100;
             obj.relaxation_parameter = 0.5;
-            obj.latent_heat_target_fraction = 0.5;
-            obj.quality_ratio_tolerance = 0.01;
+            obj.latent_heat_target_fraction = 0.25;
+            obj.quality_ratio_tolerance = 0.1;
             
             obj.times = containers.Map();
             obj.count = 0;
@@ -336,10 +336,17 @@ classdef LinearSystemSolver < handle
             if 0 < quality_ratio
                 time_step_range( UPPER_BOUND ) = time_step_range( TIME_STEP );
                 interval = range( time_step_range );
-                time_step_range( TIME_STEP ) = ( interval * obj.relaxation_parameter ) + time_step_range( 1 );
+                time_step_range( TIME_STEP ) = ...
+                    ( interval * obj.relaxation_parameter ) + time_step_range( LOWER_BOUND );
             else
                 time_step_range( LOWER_BOUND ) = time_step_range( TIME_STEP );
-                time_step_range( TIME_STEP ) = time_step_range( TIME_STEP ) / obj.relaxation_parameter;
+                if isinf( time_step_range( UPPER_BOUND ) )
+                    time_step_range( TIME_STEP ) = time_step_range( TIME_STEP ) / obj.relaxation_parameter;
+                else
+                    interval = range( time_step_range );
+                    time_step_range( TIME_STEP ) = ...
+                        ( interval * obj.relaxation_parameter ) + time_step_range( LOWER_BOUND );
+                end
             end
             
         end
