@@ -186,7 +186,7 @@ classdef (Sealed) PhysicalProperties < handle
             end
             
             convection_extreme = obj.extremes( Material.K_INDEX );%obj.convection.get_extreme();
-            obj.convection_nd = obj.convection%;.nondimensionalize( convection_extreme, obj.temperature_range );
+            obj.convection_nd = obj.convection;%;.nondimensionalize( convection_extreme, obj.temperature_range );
             
             obj.time_factor = 1;%obj.extremes( Material.RHO_INDEX ) * ...
                 %obj.extremes( Material.CP_INDEX ) * ...
