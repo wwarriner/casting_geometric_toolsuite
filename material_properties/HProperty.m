@@ -21,25 +21,6 @@ classdef (Sealed) HProperty < MaterialProperty
             
         end
         
-        
-        function nd_material_property = nondimensionalize( obj, v_factor, t_range )
-            
-            [ t, v ] = obj.nondimensionalize_impl( v_factor, t_range );
-            nd_material_property = HProperty( t, v );
-            
-        end
-        
-    end
-    
-    
-    methods ( Access = public, Static )
-        
-        function fn = get_extreme_fn( ~ )
-            
-            fn = @max;
-            
-        end
-        
     end
     
 end

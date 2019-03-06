@@ -36,14 +36,6 @@ classdef (Sealed) QProperty < MaterialProperty
         end
         
         
-        function nd_material_property = nondimensionalize( obj, v_factor, t_range )
-            
-            [ t, v ] = obj.nondimensionalize_impl( v_factor, t_range );
-            nd_material_property = QProperty( t, v );
-            
-        end
-        
-        
         function values = lookup_values( obj, temperatures )
             
             if numel( obj.temperatures ) == 1
@@ -57,17 +49,6 @@ classdef (Sealed) QProperty < MaterialProperty
                     'extrap' ...
                     );
             end
-            
-        end
-        
-    end
-    
-    
-    methods ( Access = public, Static )
-        
-        function fn = get_extreme_fn( ~ )
-            
-            fn = @min;
             
         end
         

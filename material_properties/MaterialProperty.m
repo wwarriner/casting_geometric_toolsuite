@@ -1,4 +1,4 @@
-classdef MaterialProperty < handle & matlab.mixin.Heterogeneous
+classdef MaterialProperty < handle
     
     properties ( GetAccess = public, SetAccess = private )
         
@@ -8,46 +8,7 @@ classdef MaterialProperty < handle & matlab.mixin.Heterogeneous
     end
     
     
-    methods ( Access = public, Abstract )
-        
-        nd_material_property = nondimensionalize( obj, v_factor, t_range );
-        
-    end
-    
-    
-    methods ( Access = public, Static, Abstract )
-        
-        fn = get_extreme_fn( obj );
-        
-    end
-    
-    
     methods ( Access = public )
-        
-        function extreme = get_extreme( obj )
-            
-            fn = obj.get_extreme_fn();
-            extreme = fn( obj.values );
-            
-        end
-        
-        
-        function [ t, v ] = nondimensionalize_impl( obj, v_factor, t_range )
-            
-            assert( numel( t_range ) == 2 );
-            t_range = sort( t_range );
-            t = obj.temperatures;
-            v = obj.values;
-            if numel( t ) > 1
-                remove = t < t_range( 1 ) | t_range( 2 ) < t;
-                t( remove ) = [];
-                v( remove ) = [];
-            end
-            t = scale_temperatures( t, t_range );
-            v = v ./ v_factor;
-            
-        end
-        
         
         function values = lookup_values( obj, temperatures )
             
@@ -133,17 +94,6 @@ classdef MaterialProperty < handle & matlab.mixin.Heterogeneous
             
             obj.temperatures = temperatures( : );
             obj.values = values( : );
-            
-        end
-        
-    end
-    
-    
-    methods ( Access = protected, Static, Sealed )
-        
-        function default = getDefaultScalarElement()
-            
-            default = NullProperty();
             
         end
         

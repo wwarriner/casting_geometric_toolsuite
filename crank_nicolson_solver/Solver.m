@@ -131,19 +131,18 @@ classdef Solver < handle
         bounding_box_lengths
         
         % TIMES
-        simulation_time_nd
-        time_step_nd
+        time_step
         
         % TEMPERATURE
-        u_prev_nd
-        u_curr_nd
+        u_prev
+        u_curr
         
         dkdu
         
-        melt_fe_temp_nd
+        melt_fe_temp
         
         % ENTHALPY
-        q_prev_nd
+        q_prev
         
         % RESULTS
         st
@@ -184,20 +183,20 @@ classdef Solver < handle
             obj.solidification_time = 0;
             
             % SIMULATION TIME
-            obj.simulation_time_nd = 0;
+            obj.simulation_time = 0;
             obj.update_simulation_time( 0 );
-            obj.time_step_nd = obj.pp.compute_initial_time_step_nd( primary_melt_id );
+            obj.time_step = obj.pp.compute_initial_time_step( primary_melt_id );
             
             % TEMPERATURE
-            u_initial_nd = obj.pp.generate_initial_temperature_field_nd( obj.mesh );
-            obj.temperature_initial = obj.pp.dimensionalize_temperatures( u_initial_nd );
-            obj.u_prev_nd = u_initial_nd;
-            obj.u_curr_nd = obj.u_prev_nd;
+            u_init = obj.pp.generate_initial_temperature_field( obj.mesh );
+            obj.temperature_initial = u_init;
+            obj.u_prev = u_init;
+            obj.u_curr = obj.u_prev;
             
-            obj.melt_fe_temp_nd = obj.pp.get_feeding_effectivity_temperature_nd( primary_melt_id );
+            obj.melt_fe_temp = obj.pp.get_feeding_effectivity_temperature( primary_melt_id );
             
             % ENTHALPY FIELD
-            obj.q_prev_nd = obj.pp.compute_melt_enthalpies_nd( obj.mesh, u_initial_nd );
+            obj.q_prev = obj.pp.compute_melt_enthalpies( obj.mesh, u_init );
             
             % RESULTS
             obj.solidification_times = SolidificationTime( obj.shape );
@@ -223,10 +222,10 @@ classdef Solver < handle
         
         function iterate( obj )
             
-            [ u_candidate_nd, q_candidate_nd, step_nd ] = ...
+            [ u_candidate, q_candidate, time_step_candidate ] = ...
                 obj.compute_next_temperature_field();
-            obj.update_times( step_nd );
-            obj.update_fields( u_candidate_nd, q_candidate_nd );
+            obj.update_times( time_step_candidate );
+            obj.update_fields( u_candidate, q_candidate );
             obj.update_results();
             
         end
@@ -241,21 +240,21 @@ classdef Solver < handle
         end
         
         
-        function [ u_candidate_nd, q_candidate_nd, step_nd ] = ...
+        function [ u_candidate, q_candidate, time_step ] = ...
                 compute_next_temperature_field( obj )
             
-            [ u_candidate_nd, q_candidate_nd, step_nd, obj.dkdu ] = obj.lss.solve( ...
+            [ u_candidate, q_candidate, time_step, obj.dkdu ] = obj.lss.solve( ...
                 obj.mesh, ...
-                obj.q_prev_nd, ...
-                obj.u_prev_nd, ...
-                obj.u_curr_nd, ...
-                obj.time_step_nd ...
+                obj.q_prev, ...
+                obj.u_prev, ...
+                obj.u_curr, ...
+                obj.time_step ...
                 );
             
         end
         
         
-        function update_times( obj, step_nd )
+        function update_times( obj, time_step )
             
             obj.update_iteration_count();
             obj.update_solver_count();
@@ -264,29 +263,29 @@ classdef Solver < handle
                 obj.lss.get_last_times_map(), ...
                 obj.computation_times ...
                 );
-            obj.update_simulation_time( step_nd );
+            obj.update_simulation_time( time_step );
             
         end
         
         
-        function update_fields( obj, u_candidate_nd, q_candidate_nd )
+        function update_fields( obj, u_candidate, q_candidate )
             
-            obj.update_temperature_fields( u_candidate_nd );
-            obj.update_enthalpy_field( q_candidate_nd );
+            obj.update_temperature_fields( u_candidate );
+            obj.update_enthalpy_field( q_candidate );
             
         end
         
         
         function update_results( obj )
             
-            obj.solidification_times.update_nd( ...
+            obj.solidification_times.update( ...
                 obj.mesh, ...
                 obj.primary_melt_id, ...
                 obj.pp, ...
-                obj.u_prev_nd, ...
-                obj.u_curr_nd, ...
-                obj.simulation_time_nd, ...
-                obj.time_step_nd ...
+                obj.u_prev, ...
+                obj.u_curr, ...
+                obj.simulation_time, ...
+                obj.time_step ...
                 );
             obj.update_dashboard();
             obj.print_update();
@@ -315,11 +314,10 @@ classdef Solver < handle
         end
         
         
-        function update_simulation_time( obj, step_nd )
+        function update_simulation_time( obj, step )
             
-            obj.time_step_nd = step_nd;
-            obj.simulation_time_nd = obj.simulation_time_nd + obj.time_step_nd;
-            obj.simulation_time = obj.pp.dimensionalize_times( obj.simulation_time_nd );
+            obj.time_step = step;
+            obj.simulation_time = obj.simulation_time + obj.time_step;
             
         end
         
@@ -329,7 +327,7 @@ classdef Solver < handle
             if obj.live_plotting
                 obj.dashboard = FdmDashboard( ...
                     obj.pp.get_temperature_range(), ...
-                    obj.pp.dimensionalize_temperatures( obj.melt_fe_temp_nd ) ...
+                    obj.melt_fe_temp ...
                     );
                 obj.dashboard.setup_temperature_profiles( ...
                     obj.bounding_box_lengths, ...
@@ -338,7 +336,7 @@ classdef Solver < handle
                     obj.temperature_initial ...
                     );
                 obj.dashboard.setup_time_temperature_curves( ...
-                    obj.pp.dimensionalize_times( obj.time_step_nd ), ...
+                    obj.time_step, ...
                     obj.get_temperature_field_statistics( obj.temperature_initial, obj.primary_melt_id ), ...
                     obj.get_time_temperature_colors() ...
                     );
@@ -350,17 +348,17 @@ classdef Solver < handle
         end
         
         
-        function update_temperature_fields( obj, u_candidate_nd )
+        function update_temperature_fields( obj, u_candidate )
             
-            obj.u_prev_nd = obj.u_curr_nd;
-            obj.u_curr_nd = reshape( u_candidate_nd, obj.shape );
+            obj.u_prev = obj.u_curr;
+            obj.u_curr = reshape( u_candidate, obj.shape );
             
         end
         
         
-        function update_enthalpy_field( obj, q_candidate_nd )
+        function update_enthalpy_field( obj, q_candidate )
             
-            obj.q_prev_nd = q_candidate_nd;
+            obj.q_prev = q_candidate;
             
         end
         
@@ -368,11 +366,10 @@ classdef Solver < handle
         function update_dashboard( obj )
             
             if obj.live_plotting
-                u_curr_d = obj.pp.dimensionalize_temperatures( obj.u_curr_nd );
-                obj.dashboard.update_temperature_profiles( u_curr_d );
+                obj.dashboard.update_temperature_profiles( obj.u_curr );
                 obj.dashboard.update_time_temperature_curves( ...
                     obj.simulation_time, ...
-                    obj.get_temperature_field_statistics( u_curr_d, obj.primary_melt_id ) ...
+                    obj.get_temperature_field_statistics( obj.u_curr, obj.primary_melt_id ) ...
                     );
                 obj.update_dashboard_histograms();
                 obj.dashboard.update_labels( obj.get_label_values() );
@@ -383,10 +380,10 @@ classdef Solver < handle
         
         function update_dashboard_histograms( obj )
             
-            delta_u = obj.pp.dimensionalize_temperature_diffs( obj.u_curr_nd - obj.u_prev_nd );
+            delta_u = obj.u_curr - obj.u_prev;
             obj.dashboard.update_histogram( ...
                 obj.DKDU_HISTOGRAM, ...
-                obj.pp.dimensionalize_temperature_diffs( obj.dkdu ) ./ delta_u( : ) ...
+                obj.dkdu ./ delta_u( : ) ...
                 );
             obj.dashboard.update_histogram( ...
                 obj.DELTAU_HISTOGRAM, ...
@@ -456,9 +453,7 @@ classdef Solver < handle
         
         function prepare_results( obj )
             
-            obj.temperature_final = obj.pp.dimensionalize_temperatures( obj.u_curr_nd );
-            pp_temp = obj.pp;
-            obj.solidification_times.manipulate( @pp_temp.dimensionalize_times );
+            obj.temperature_final = obj.u_curr;
             obj.solidification_time = obj.solidification_times.get_final_time();
             
         end

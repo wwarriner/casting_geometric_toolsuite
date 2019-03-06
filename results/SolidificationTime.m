@@ -16,10 +16,10 @@ classdef SolidificationTime < handle
         end
         
         
-        function update_nd( obj, fdm_mesh, melt_id, pp, u_prev, u_next, simulation_time, simulation_time_step )
+        function update( obj, fdm_mesh, melt_id, pp, u_prev, u_next, simulation_time, simulation_time_step )
             
-            fs_prev = pp.lookup_values( melt_id, pp.FS_INDEX, u_prev );
-            fs_next = pp.lookup_values( melt_id, pp.FS_INDEX, u_next );
+            fs_prev = pp.lookup_values( melt_id, Material.FS, u_prev );
+            fs_next = pp.lookup_values( melt_id, Material.FS, u_next );
             melt_fe = pp.get_feeding_effectivity( melt_id );
             prev_time = simulation_time - simulation_time_step;
             
@@ -36,13 +36,6 @@ classdef SolidificationTime < handle
         function finished = is_finished( obj, fdm_mesh, melt_id )
             
             finished = all( fdm_mesh ~= melt_id | obj.values > 0 );
-            
-        end
-        
-        
-        function manipulate( obj, fn )
-            
-            obj.values = fn( obj.values );
             
         end
         

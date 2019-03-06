@@ -5,30 +5,29 @@ classdef (Abstract) Material < handle & matlab.mixin.Heterogeneous
         mesh_id
         
     end
-        
+    
     properties ( Access = public, Constant )
         
-        NULL_INDEX = 0;
-        RHO_INDEX = 1;
-        CP_INDEX = 2;
-        K_INDEX = 3;
+        NULL = 'null';
+        RHO = 'rho';
+        CP = 'cp';
+        K = 'k';
+        FS = 'fs';
+        K_INV = 'k_inv'; % DO NOT SET DIRECTLY
+        Q = 'q'; % DO NOT SET DIRECTLY
         
     end
     
     
     methods ( Access = public )
         
-        nd_material = nondimensionalize( obj, extremes, t_range );
-        
-    end
-    
-    
-    methods ( Access = public )
-        
+        % DO NOT SET K_INV OR Q DIRECTLY
         function set( obj, material_property )
             
+            assert( ~obj.prepared );
+            
             index = obj.get_type_index( material_property );
-            assert( index ~= obj.NULL_INDEX );
+            assert( ~strcmpi( index, obj.NULL ) );
             obj.material_properties( index ) = material_property;
             obj.properties_set( index ) = true;
             
@@ -37,31 +36,49 @@ classdef (Abstract) Material < handle & matlab.mixin.Heterogeneous
         
         function set_initial_temperature( obj, initial_temperature )
             
+            assert( ~obj.prepared );
+            
             obj.initial_temperature = initial_temperature;
             obj.initial_temperature_set = true;
             
         end
         
         
+        function initial_temperature = get_initial_temperature( obj )
+            
+            initial_temperature = obj.initial_temperature;
+            
+        end
+        
+        
         function ready = is_ready( obj )
             
-            ready = obj.initial_temperature_set & all( obj.properties_set );
+            ready = obj.initial_temperature_set;
+            ready = ready & obj.properties_set.isKey( obj.RHO );
+            ready = ready & obj.properties_set.isKey( obj.CP );
+            ready = ready & obj.properties_set.isKey( obj.K );
+            
+        end
+        
+        
+        function prepare_for_solver( obj, space_step, temperature_range )
+            
+            assert( obj.is_ready() );
+            
+            obj.material_properties( obj.K_INV ) = ...
+                obj.material_properties( obj.K ).compute_k_half_space_step_inverse_property( space_step );
+            obj.material_properties( obj.Q ) = ...
+                obj.material_properties( obj.CP ).compute_q_property( temperature_range );
+            
+            obj.prepared = true;
             
         end
         
         
         function material_property = get( obj, index )
             
-            assert( obj.is_ready() );
+            assert( obj.prepared );
             material_property = obj.material_properties( index );
-            
-        end
-        
-        
-        function initial_temperature = get_initial_temperature( obj )
-            
-            assert( obj.is_ready() );
-            initial_temperature = obj.initial_temperature;
             
         end
         
@@ -72,52 +89,18 @@ classdef (Abstract) Material < handle & matlab.mixin.Heterogeneous
             
         end
         
-        
-        function extremes = get_extremes( obj )
-            
-            assert( obj.is_ready() );
-            extremes = zeros( Material.count(), 1 );
-            for i = 1 : Material.count()
-                
-                extremes( i ) = obj.get( i ).get_extreme();
-                
-            end
-            
-        end
-        
-        
-        function fns = get_extreme_fns( obj )
-            
-            fns = cell( Material.count(), 1 );
-            for i = 1 : Material.count()
-                
-                fns{ i } = obj.get( i ).get_extreme_fn();
-                
-            end
-            
-        end
-        
-    end
-    
-    
-    methods ( Access = public, Static )
-        
-        function count = count()
-            
-            count = Material.K_INDEX;
-            
-        end
-        
     end
     
     
     properties ( Access = protected )
-        
+                
         material_properties
         initial_temperature
         
         properties_set
         initial_temperature_set
+        
+        prepared
         
     end
     
@@ -126,39 +109,29 @@ classdef (Abstract) Material < handle & matlab.mixin.Heterogeneous
         
         function obj = Material( mesh_id )
             
-            obj.material_properties = MaterialProperty.empty();
+            obj.mesh_id = mesh_id;
+            
+            obj.material_properties = containers.Map();
             obj.initial_temperature = [];
             
-            obj.properties_set = false( obj.count(), 1 );
+            obj.properties_set = containers.Map();
             obj.initial_temperature_set = false;
             
-            obj.mesh_id = mesh_id;
+            obj.prepared = false;
             
         end
         
         
         function index = get_type_index( obj, material_property )
             
-            index = obj.NULL_INDEX;
+            index = obj.NULL;
             if isa( material_property, 'RhoProperty' )
-                index = obj.RHO_INDEX;
+                index = obj.RHO;
             elseif isa( material_property, 'CpProperty' )
-                index = obj.CP_INDEX;
+                index = obj.CP;
             elseif isa( material_property, 'KProperty' )
-                index = obj.K_INDEX;
+                index = obj.K;
             end
-            
-        end
-        
-        
-        function nd_material = nondimensionalize_impl( obj, nd_material, extremes, t_range )
-            
-            for i = 1 : obj.count()
-                
-                nd_material.set( obj.get( i ).nondimensionalize( extremes( i ), t_range ) );
-                
-            end
-            nd_material.set_initial_temperature( scale_temperatures( obj.get_initial_temperature(), t_range ) );
             
         end
         

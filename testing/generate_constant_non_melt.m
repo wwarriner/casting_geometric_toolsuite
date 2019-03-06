@@ -1,4 +1,9 @@
-function physical_properties = generate_constant_non_melt( ambient_id, mold_id, melt_id )
+function physical_properties = generate_constant_non_melt( ...
+    ambient_id, ...
+    mold_id, ...
+    melt_id, ...
+    space_step_in_m ...
+    )
 
 ambient = AmbientMaterial( ambient_id );
 ambient.set( RhoProperty( 1.225 ) ); % kg / m ^ 3
@@ -17,7 +22,7 @@ convection.set_ambient( mold_id, HProperty( 100 ) ); % W / m ^ 2 * K
 convection.set_ambient( melt_id, HProperty( 100 ) ); % W / m ^ 2 * K
 convection.set( mold_id, melt_id, HProperty( 387 ) ); % W / m ^ 2 * K
 
-physical_properties = PhysicalProperties();
+physical_properties = PhysicalProperties( space_step_in_m );
 physical_properties.add_ambient_material( ambient );
 physical_properties.add_material( mold );
 physical_properties.set_convection( convection );
