@@ -786,8 +786,9 @@ classdef LinearSystemSolver < handle
                 ambient_diffusivity_sum_wts ...
                 )
             
-            bc_rhs_wts = ambient_diffusivity_sum_wts .* obj.pp.get_ambient_temperature();
-            bc_lhs_wts = -bc_rhs_wts;
+            base_vector = ambient_diffusivity_sum_wts .* obj.pp.get_ambient_temperature();
+            bc_lhs_wts = -obj.implicitness .* base_vector;
+            bc_rhs_wts = ( 1 - obj.implicitness ) .* base_vector;
             
         end
         
