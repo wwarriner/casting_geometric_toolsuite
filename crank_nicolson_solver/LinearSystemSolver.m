@@ -137,8 +137,14 @@ classdef LinearSystemSolver < handle
             best_qr = inf;
             TIME_STEP_INDEX = 2;
             time_step_range = [ 0 time_step_prev inf ];
-            while true
+            
+            MAX_IT = 20;
+            it = 0;
+            TOL = 1e-2;
+            time_step_change_ratio = inf;
+            while it < MAX_IT && TOL < time_step_change_ratio
                 
+                it = it + 1;
                 obj.count = obj.count + 1;
                 
                 tic;
@@ -163,15 +169,15 @@ classdef LinearSystemSolver < handle
                 check_time = check_time + toc;
                 
                 if obj.is_quality_ratio_sufficient( quality_ratio )
-                    time_step = time_step_range( TIME_STEP_INDEX );
                     break;
                 end
-                time_step_range = obj.update_time_step_range( ...
+                [ time_step_range, time_step_change_ratio ] = obj.update_time_step_range( ...
                     quality_ratio, ...
                     time_step_range ...
                     );
                 
             end
+            time_step = time_step_range( TIME_STEP_INDEX );
             obj.times( obj.SOLVE_TIME ) = solve_time;
             obj.times( obj.CHECK_TIME ) = check_time;
             
@@ -322,7 +328,7 @@ classdef LinearSystemSolver < handle
         end
         
         
-        function time_step_range = update_time_step_range( ...
+        function [ time_step_range, change_ratio ] = update_time_step_range( ...
                 obj, ...
                 quality_ratio, ...
                 time_step_range ...
@@ -331,6 +337,8 @@ classdef LinearSystemSolver < handle
             LOWER_BOUND = 1;
             TIME_STEP = 2;
             UPPER_BOUND = 3;
+            
+            old_time_step = time_step_range( TIME_STEP );
             
             % todo find way to choose relaxation parameter based on gradient?
             if 0 < quality_ratio
@@ -348,6 +356,8 @@ classdef LinearSystemSolver < handle
                         ( interval * obj.relaxation_parameter ) + time_step_range( LOWER_BOUND );
                 end
             end
+            
+            change_ratio = abs( old_time_step - time_step_range( TIME_STEP ) ) ./ old_time_step;
             
         end
         
