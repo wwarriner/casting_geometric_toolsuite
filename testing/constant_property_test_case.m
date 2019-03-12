@@ -15,15 +15,21 @@ shape = [ ...
 [ fdm_mesh, center ] = generate_test_mesh( mold_id, melt_id, shape );
 
 %% TEST PROPERTY GENERATION
-melt_fp = which( 'AlSi9.txt' );
-pp = generate_variable_test_properties( ...
-    ambient_id, ...
-    mold_id, ...
-    melt_id, ...
-    melt_fp, ...
-    space_step_in_m ...
-    );
-% pp = generate_constant_test_properties( ambient_id, mold_id, melt_id, space_step_in_m );
+ambient = generate_air_properties( ambient_id );
+pp = PhysicalProperties( space_step_in_m );
+pp.add_ambient_material( generate_air_properties( ambient_id ) );
+pp.add_material( read_mold_material( mold_id, which( 'silica_dry.txt' ) ) );
+melt = read_melt_material( melt_id, which( 'cf3mn.txt' ) );
+melt.set_initial_temperature( 1600 );
+melt.set_feeding_effectivity( 0.3 );
+pp.add_melt_material( melt );
+
+conv = ConvectionProperties( ambient_id );
+conv.set_ambient( mold_id, generate_air_convection() );
+conv.set_ambient( melt_id, generate_air_convection() );
+conv.set( mold_id, melt_id, read_convection( which( 'steel_sand_htc.txt' ) ) );
+pp.set_convection( conv );
+
 pp.prepare_for_solver();
 
 %% MATRIX GENERATOR
