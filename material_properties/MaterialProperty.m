@@ -1,6 +1,6 @@
 classdef MaterialProperty < handle
     
-    properties ( GetAccess = public, SetAccess = private )
+    properties ( GetAccess = public, SetAccess = protected )
         
         temperatures
         values
@@ -76,9 +76,8 @@ classdef MaterialProperty < handle
                 if isscalar( temperatures )
                     assert( isnan( temperatures ) );
                 else
-                        assert( isvector( temperatures ) );
+                    assert( isvector( temperatures ) );
                     assert( all( isfinite( temperatures ) ) );
-                    assert( all( 0 <= temperatures ) );
                     assert( all( 0 < diff( temperatures ) ) );
                 end
             end
