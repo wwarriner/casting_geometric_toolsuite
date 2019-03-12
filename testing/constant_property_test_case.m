@@ -12,7 +12,11 @@ shape = [ ...
     side_length ...
     side_length ...
     ];
-[ fdm_mesh, center ] = generate_test_mesh( mold_id, melt_id, shape );
+meltwall = 30;
+mold = 25;
+total = ( meltwall + mold * 2 );
+melt_ratio = meltwall ./ total;
+fdm_mesh = generate_test_mesh( mold_id, melt_id, shape, melt_ratio );
 
 %% TEST PROPERTY GENERATION
 ambient = generate_air_properties( ambient_id );
