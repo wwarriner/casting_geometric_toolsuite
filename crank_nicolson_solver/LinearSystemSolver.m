@@ -578,7 +578,7 @@ classdef LinearSystemSolver < handle
             cp_band = obj.compute_u_band( cp, stride );
             rho_cp_band = obj.compute_rho_cp_band( rho, cp, stride );
             k_band = obj.compute_k_band( k_inv, center_ids, neighbor_ids, stride );
-            h_band = obj.compute_h_band( u, center_ids, neighbor_ids );
+            h_band = obj.compute_h_band( u, u_band, center_ids, neighbor_ids );
             heat_transfer_band = nan( size( k_band ) );
             heat_transfer_band( center_ids == neighbor_ids ) = k_band( center_ids == neighbor_ids );
             heat_transfer_band( center_ids ~= neighbor_ids ) = h_band( center_ids ~= neighbor_ids );
@@ -721,29 +721,31 @@ classdef LinearSystemSolver < handle
         function h_band = compute_h_band( ...
                 obj, ...
                 u, ...
+                u_band, ...
                 center_ids, ...
                 neighbor_ids ...
                 )
             
-            h_band = obj.convection_lookup( u, center_ids, neighbor_ids );
+            h_band = obj.convection_lookup( u, u_band, center_ids, neighbor_ids );
             h_band( center_ids == neighbor_ids ) = nan;
             
         end
         
         
-        function values = convection_lookup( obj, u, center_ids, neighbor_ids )
+        function values = convection_lookup( obj, u, u_band, center_ids, neighbor_ids )
             
             values = zeros( obj.element_count, 1 );
             ids = unique( obj.fdm_mesh );
             id_count = numel( ids );
             assert( id_count > 0 );
+            mean_u = mean( [ u( : ) u_band ], 2 );
             for i = 1 : id_count
                 for j = i + 1 : id_count
                     
                     first_id = ids( i );
                     second_id = ids( j );
-                    values( center_ids == first_id & neighbor_ids == second_id ) = obj.pp.lookup_h_values( first_id, second_id, u( center_ids == first_id & neighbor_ids == second_id ) );
-                    values( center_ids == second_id & neighbor_ids == first_id ) = obj.pp.lookup_h_values( first_id, second_id, u( center_ids == second_id & neighbor_ids == first_id ) );
+                    values( center_ids == first_id & neighbor_ids == second_id ) = obj.pp.lookup_h_values( first_id, second_id, mean_u( center_ids == first_id & neighbor_ids == second_id ) );
+                    values( center_ids == second_id & neighbor_ids == first_id ) = obj.pp.lookup_h_values( first_id, second_id, mean_u( center_ids == second_id & neighbor_ids == first_id ) );
                     
                 end
             end
