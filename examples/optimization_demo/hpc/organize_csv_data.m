@@ -55,6 +55,12 @@ results.Properties.UserData.ObjectiveVariablesPath = objectives_path;
 stl_path = get_path( [ stl_name '.stl' ], results_dir, job_ids );
 results.Properties.UserData.StlPath = stl_path;
 
+%% append feeder stl paths TODO
+% this will avoid repeated computation on startup
+% todo
+% any way to get this from one of the runs?
+% maybe have the runs write their feeder stls, then just pick out the 0,0 one
+
 %% append oo_options.json path
 options_path = get_path( 'oo_options.json', results_dir, job_ids );
 results.Properties.UserData.OptionsPath = options_path;

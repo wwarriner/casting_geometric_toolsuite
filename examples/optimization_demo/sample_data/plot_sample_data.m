@@ -11,6 +11,8 @@ data.Properties.UserData.ObjectiveVariablesPath = which( data.Properties.UserDat
 data.Properties.UserData.StlPath = which( data.Properties.UserData.StlPath );
 data.Properties.UserData.OptionsPath = which( data.Properties.UserData.OptionsPath );
 
+%data.draft_metric( data.draft_metric > 0 ) = - ( 1 ./ log10( data.draft_metric( data.draft_metric > 0 ) ) );
+
 figure_resolution_px = 600;
 color_map = interp1( [ 0; 1 ], repmat( [ 0.3; 0.9 ], [ 1 3 ] ), linspace( 0, 1, 256 ) );
 grid_color = [ 0 0 0 ];
