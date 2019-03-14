@@ -38,23 +38,29 @@ classdef ThermalProfile < Process
                 obj.simulation_time_step_in_s = obj.options.simulation_time_step_in_s;
             end
             
+            % TODO REMOVE
+            ambient_id = 0;
+            mold_id = 1;
+            melt_id = 2;
+            obj.physical_properties = generate_variable_test_properties( ...
+                ambient_id, ...
+                mold_id, ...
+                melt_id, ...
+                which( 'AlSi9.txt' ), ...
+                obj.mesh.scale / 1000 ...
+                );
+            
             assert( ~isempty( obj.mesh ) );
             assert( ~isempty( obj.physical_properties ) );
             
             obj.printf( 'Computing thermal profile...\n' );
             
-            ambient_id = 0;
-            mold_id = 1;
-            melt_id = 2;
             padding_in_mm = 25;
             fdm_mesh = obj.mesh.get_fdm_mesh( padding_in_mm, mold_id, melt_id );
             
-            obj.physical_properties.set_space_step( obj.mesh.scale ./ 1000 ) % m
-            obj.physical_properties.set_max_length( obj.mesh.shape  ); % count
             obj.physical_properties.prepare_for_solver();
-            pp = obj.physical_properties;
-            lss = LinearSystemSolver( fdm_mesh, pp );
-            solver = Solver( fdm_mesh, obj.physical_properties, lss );
+            lss = LinearSystemSolver( fdm_mesh, obj.physical_properties );
+            solver = FdmSolver( fdm_mesh, obj.physical_properties, lss );
             solver.turn_printing_on( @obj.printf );
             solver.turn_live_plotting_on();
             solver.solve( melt_id );
@@ -63,10 +69,10 @@ classdef ThermalProfile < Process
         end
         
         
-        function legacy_run( obj, mesh, physical_properties )
+        function legacy_run( obj, mesh )
             
             obj.mesh = mesh;
-            obj.physical_properties = physical_properties;
+            % add inputs for material spec files TBD
             obj.run();
             
         end
