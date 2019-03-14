@@ -375,9 +375,15 @@ classdef (Sealed) UnitSphereResponseData < handle
                 append_scaled_maximum_objective( objective_values, titles, display_titles, interp_methods )
             
             temp = objective_values;
+%             removes = [];
             for i = 1 : size( objective_values, 3 )
+%                 if strcmpi( titles{ i }, 'draft_metric' ) || strcmpi( titles{ i }, 'fd_inaccessibility_max' )
+%                     removes = [ removes i ];
+%                     continue;
+%                 end % debug only
                 temp( :, :, i ) = rescale( temp( :, :, i ) );
             end
+            temp( :, :, removes ) = [];
             objective_values( :, :, end + 1 ) = max( temp, [], 3 );
             titles{ end + 1 } = 'scaled_maximum_over_all';
             display_titles{ end + 1 } = 'Maximum of Normalized Values';
