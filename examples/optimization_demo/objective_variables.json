@@ -31,7 +31,7 @@
 		"display": "Draft Metric",
 		"type": "continuous",
 		"process": "Component",
-		"property": "draft_metric",
+		"property": "reduced_draft_metric",
 		"metric": "property",
 		"notes": "volume of material added by required draft ideally minimized"
 	},

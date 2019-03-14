@@ -14,6 +14,7 @@ classdef (Sealed) Component < Process & matlab.mixin.Copyable
         envelope
         draft_angles
         draft_metric
+        reduced_draft_metric
         convex_hull_fv
         
         %% affected by scaling transformations
@@ -196,6 +197,7 @@ classdef (Sealed) Component < Process & matlab.mixin.Copyable
             
             obj.draft_angles = Component.compute_draft_angles( obj.normals );
             obj.draft_metric = obj.compute_draft_metric();
+            obj.reduced_draft_metric = obj.compute_reduced_draft_metric( obj.draft_metric );
             obj.update_all_transformation_values();
             
         end
@@ -363,6 +365,15 @@ classdef (Sealed) Component < Process & matlab.mixin.Copyable
         function solidity = compute_solidity( volume, convex_hull_volume )
             
             solidity = volume ./ convex_hull_volume;
+            
+        end
+        
+        
+        function reduced_draft_metric = compute_reduced_draft_metric( draft_metric )
+            
+            reduced_draft_metric = draft_metric;
+            reduced_draft_metric( draft_metric > 0 ) = ...
+                1 ./ ( -log10( reduced_draft_metric( draft_metric > 0 ) ) );
             
         end
         
