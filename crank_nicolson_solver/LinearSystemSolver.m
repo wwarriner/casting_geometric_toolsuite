@@ -39,6 +39,8 @@ classdef LinearSystemSolver < handle
             obj.times = containers.Map();
             obj.count = 0;
             obj.pcg_count = 0;
+            obj.q_diff = 0;
+            obj.qm_diff = 0;
             
         end
         
@@ -181,6 +183,22 @@ classdef LinearSystemSolver < handle
             obj.times( obj.SOLVE_TIME ) = solve_time;
             obj.times( obj.CHECK_TIME ) = check_time;
             
+            rho = obj.pp.lookup_values( 2, Material.RHO, u( : ) );
+            rho_prev = obj.pp.lookup_values( 2, Material.RHO, u_prev( : ) );
+            rho = mean( [ rho rho_prev ], 2 );
+            
+            obj.q_diff = ( q( : ) - q_prev( : ) ) .* rho .* ( obj.pp.get_space_step() .^ 3 );
+            
+            qm = obj.pp.lookup_values( 1, Material.Q, u( : ) );
+            qm_prev = obj.pp.lookup_values( 1, Material.Q, u_prev( : ) );
+            
+            rhom = obj.pp.lookup_values( 1, Material.RHO, u( : ) );
+            rhom_prev = obj.pp.lookup_values( 1, Material.RHO, u_prev( : ) );
+            rhom = mean( [ rhom rhom_prev ], 2 );
+            
+            obj.qm_diff = ( qm - qm_prev ) .* rhom .* ( obj.pp.get_space_step() .^ 3 );
+            obj.qm_diff( obj.fdm_mesh ~= 1 ) = 0;
+            
         end
         
         
@@ -225,6 +243,14 @@ classdef LinearSystemSolver < handle
             
         end
         
+        
+        function [ q_diff, qm_diff ] = get_last_q_diff( obj )
+            
+            q_diff = obj.q_diff;
+            qm_diff = obj.qm_diff;
+            
+        end
+        
     end
     
     
@@ -247,6 +273,8 @@ classdef LinearSystemSolver < handle
         times
         count
         pcg_count
+        q_diff
+        qm_diff
         
     end
     
