@@ -322,7 +322,7 @@ classdef LinearSystemSolver < handle
             
             max_delta_q = max( q_prev( : ) - q( : ) );
             [ latent_heat, sensible_heat ] = obj.pp.get_min_latent_heat();
-            desired_q = ( latent_heat + sensible_heat ) * obj.latent_heat_target_fraction;
+            desired_q = latent_heat * obj.latent_heat_target_fraction;
             quality_ratio = ( max_delta_q - desired_q ) / desired_q;
             
         end
