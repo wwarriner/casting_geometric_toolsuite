@@ -30,6 +30,9 @@ classdef FdmSolver < handle
             obj.printing = false;
             obj.live_plotting = false;
             
+            % temp!
+            obj.solidification_stop_fraction = 1.0;
+            
             obj.q_extracted = axes( figure() );
             hold( obj.q_extracted, 'on' );
             
@@ -125,6 +128,8 @@ classdef FdmSolver < handle
         % CONFIGURATION
         printing
         live_plotting
+        
+        solidification_stop_fraction
         
         % PRIMARY MELT ID
         primary_melt_id
@@ -294,6 +299,7 @@ classdef FdmSolver < handle
                 obj.pp, ...
                 obj.u_prev, ...
                 obj.u_curr, ...
+                obj.solidification_stop_fraction, ...
                 obj.simulation_time, ...
                 obj.time_step ...
                 );
