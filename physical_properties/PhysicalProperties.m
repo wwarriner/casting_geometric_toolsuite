@@ -188,6 +188,44 @@ classdef (Sealed) PhysicalProperties < handle
         end
         
         
+        function freezing_range = get_freezing_range( obj, melt_id )
+            
+            assert( obj.prepared );
+            
+            assert( ismember( melt_id, obj.melt_ids ) );
+            
+            freezing_range = [ ...
+                obj.get_liquidus_temperature( melt_id ) ...
+                obj.get_solidus_temperature( melt_id ) ...
+                ];
+            
+        end
+        
+        
+        function temperature = get_liquidus_temperature( obj, melt_id )
+            
+            assert( obj.prepared );
+            
+            assert( ismember( melt_id, obj.melt_ids ) );
+            
+            m = obj.materials( melt_id );
+            temperature = m.get_liquidus_temperature();
+            
+        end
+        
+        
+        function temperature = get_solidus_temperature( obj, melt_id )
+            
+            assert( obj.prepared );
+            
+            assert( ismember( melt_id, obj.melt_ids ) );
+            
+            m = obj.materials( melt_id );
+            temperature = m.get_solidus_temperature();
+            
+        end
+        
+        
         function [ latent_heat, sensible_heat ] = get_min_latent_heat( obj )
             
             assert( obj.prepared );
@@ -244,6 +282,15 @@ classdef (Sealed) PhysicalProperties < handle
             assert( obj.prepared );
             
             values = obj.convection.lookup_values( first_material_id, second_material_id, temperatures );
+            
+        end
+        
+        
+        function temperatures = lookup_temperatures( obj, material_id, property_id, values )
+            
+            assert( obj.prepared );
+            
+            temperatures = obj.materials( material_id ).get( property_id ).lookup_temperatures( values );
             
         end
         
