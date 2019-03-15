@@ -285,10 +285,10 @@ classdef LinearSystemSolver < handle
                 )
             
             ambient_diff_wts = ambient_diff_nts .* time_step;
+            m_diff_wts = m_diff_nts .* time_step;
             [ lhs_wts, m_rhs_wts ] = obj.construct_kddu( ...
-                m_diff_nts, ...
-                ambient_diff_wts, ...
-                time_step ...
+                m_diff_wts, ...
+                ambient_diff_wts ...
                 );
             [ bc_lhs_wts, bc_rhs_wts ] = ...
                 obj.construct_ambient_bc_vectors( ambient_diff_wts );
@@ -612,9 +612,8 @@ classdef LinearSystemSolver < handle
         end
         
         
-        function [ m_l, m_r ] = construct_kddu( obj, m_diffusivities_nts, ambient_diff_wts, time_step )
+        function [ m_l, m_r ] = construct_kddu( obj, m_diffusivities_wts, ambient_diff_wts )
             
-            m_diffusivities_wts = m_diffusivities_nts .* time_step;
             diffusivities_wts = full( sum( m_diffusivities_wts, 2 ) ) + ambient_diff_wts;
             
             explicitness = 1 - obj.implicitness;
