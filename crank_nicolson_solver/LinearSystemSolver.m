@@ -555,6 +555,7 @@ classdef LinearSystemSolver < handle
                     obj.pp.lookup_ambient_h_values( material_id, u( center_ids == material_id ) );
                 
             end
+            values = values ./ 2;
             
         end
         
@@ -797,6 +798,7 @@ classdef LinearSystemSolver < handle
                     
                 end
             end
+            values = values ./ 2;
             
         end
         
