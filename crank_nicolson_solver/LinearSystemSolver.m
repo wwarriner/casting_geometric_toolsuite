@@ -41,8 +41,8 @@ classdef LinearSystemSolver < handle
         end
         
         
-        function set_implicitness_factor( obj, implicitness )
-            % todo rename, remove _factor
+        function set_implicitness( obj, implicitness )
+            
             assert( isscalar( implicitness ) );
             assert( isa( implicitness, 'double' ) );
             assert( 0 <= implicitness && implicitness <= 1 );

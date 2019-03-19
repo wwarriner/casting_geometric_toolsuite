@@ -38,8 +38,8 @@ pp.prepare_for_solver();
 
 %% MATRIX GENERATOR
 lss = LinearSystemSolver( fdm_mesh, pp );
-lss.set_implicitness_factor( 1 );
 lss.set_solver_tolerance( 1e-3 );
+lss.set_implicitness( 1 );
 lss.set_solver_max_iteration_count( 100 );
 lss.set_latent_heat_target_fraction( 0.25 );
 lss.set_quality_ratio_tolerance( 0.1 );
