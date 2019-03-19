@@ -13,8 +13,6 @@ classdef FdmSolver < handle
         temperature_final
         solidification_times
         
-        q_extracted
-        
     end
     
     methods ( Access = public )
@@ -32,9 +30,6 @@ classdef FdmSolver < handle
             
             % temp!
             obj.solidification_stop_fraction = 1.0;
-            
-            obj.q_extracted = axes( figure() );
-            hold( obj.q_extracted, 'on' );
             
         end
         
@@ -237,11 +232,6 @@ classdef FdmSolver < handle
             obj.update_times( time_step_candidate );
             obj.update_fields( u_candidate, q_candidate );
             obj.update_results();
-            
-            [ q_diff, qm_diff ] = obj.lss.get_last_q_diff();
-            plot( obj.q_extracted, obj.simulation_time, -sum( q_diff( obj.mesh == obj.primary_melt_id ) ), 'k.' );
-            plot( obj.q_extracted, obj.simulation_time, sum( qm_diff( obj.mesh == 1 ) ), 'b.' );
-            plot( obj.q_extracted, obj.simulation_time, abs( sum( qm_diff( obj.mesh == 1 ) ) + sum( q_diff( obj.mesh == obj.primary_melt_id ) ) ), 'rx' );
             
         end
         
