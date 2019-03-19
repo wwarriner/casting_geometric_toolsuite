@@ -139,7 +139,8 @@ classdef (Sealed) PhysicalProperties < handle
             % Int J Heat Mass Transfer, 24, 251-259, 1981
             % see if there are improvements since?
             rho = max( obj.materials( primary_melt_id ).get( Material.RHO ).values );
-            L = obj.get_min_latent_heat();
+            [ L, S ] = obj.get_min_latent_heat();
+            L = max( L, S ); % if latent heat very small, use sensible heat over freezing range instead
             dx = obj.get_space_step();
             h = -inf;
             ids = obj.materials.keys();
@@ -157,6 +158,8 @@ classdef (Sealed) PhysicalProperties < handle
             numerator = rho * L * dx ^ 2 * ( 1 + H );
             denominator = h * ( Tm - Tinf );
             initial_time_step = numerator / denominator;
+            
+            assert( initial_time_step > 0 );
             
         end
         
