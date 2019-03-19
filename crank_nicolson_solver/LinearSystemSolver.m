@@ -7,6 +7,7 @@ classdef LinearSystemSolver < handle
         BAND_TIME = 'bands';
         DKDU_TIME = 'dkdu';
         KDDU_TIME = 'kddu sparse';
+        SETUP_TIME = 'set up linear system';
         SOLVE_TIME = 'linear solver';
         CHECK_TIME = 'quality check';
         
@@ -30,25 +31,37 @@ classdef LinearSystemSolver < handle
             
             % DEFAULTS
             obj.implicitness = 1.0;
-            obj.pcg_tol = 1e-3;
+            obj.pcg_tol = 1e-4;
             obj.pcg_max_it = 100;
             obj.latent_heat_target_fraction = 0.25;
             obj.quality_ratio_tolerance = 0.1;
             
             obj.times = containers.Map();
-            obj.count = 0;
-            obj.pcg_count = 0;
             
         end
         
         
         function set_implicitness_factor( obj, implicitness )
-            
+            % todo rename, remove _factor
             assert( isscalar( implicitness ) );
             assert( isa( implicitness, 'double' ) );
             assert( 0 <= implicitness && implicitness <= 1 );
             
             obj.implicitness = implicitness;
+            
+        end
+        
+        
+        function value = get_implicitness( obj )
+            
+            value = obj.implicitness;
+            
+        end
+        
+        
+        function value = get_explicitness( obj )
+            
+            value = 1 - obj.implicitness;
             
         end
         
@@ -97,7 +110,7 @@ classdef LinearSystemSolver < handle
         end
         
         
-        function [ u, q, time_step, dkdu ] = solve( ...
+        function [ u, q, time_step, dkdu_term ] = solve( ...
                 obj, ...
                 mesh, ...
                 q_prev, ...
@@ -106,59 +119,112 @@ classdef LinearSystemSolver < handle
                 time_step_prev ...
                 )
             
+            q_prev = q_prev( : );
+            u_prev = u_prev( : );
+            u_curr = u_curr( : );
             
-            % precalculate bulk of effort
-            space_step = obj.pp.get_space_step();
-            [ m_internal_heat_transfer, boundary_heat_transfer, dkdu, rho_cp ] = obj.generate_diff( ...
-                space_step, ...
-                u_prev, ...
-                u_curr ...
+            dx = obj.pp.get_space_step();
+            
+            % PRE TIME STEP
+            
+            % look up properties
+            tic;
+            rho_cp = obj.property_lookup( Material.RHO, u_curr ) .* ...
+                obj.compute_cp( u_prev, u_curr );
+            k = obj.property_lookup( Material.K, u_curr );
+            % h is looked up only when we know both sides of every boundary
+            
+            % determines bands by circshifting
+            
+            obj.times( obj.LOOKUP_TIME ) = toc;
+            
+            % compute boundary resistances
+            tic;
+            boundary_indices = obj.determine_ambient_boundary_indices();
+            boundary_heat_flow = obj.compute_boundary_heat_flow( ...
+                dx, ...
+                u_curr, ...
+                k, ...
+                boundary_indices ...
                 );
+            obj.times( obj.BC_TIME ) = toc;
             
-            % reset
+            % construct internal heat flow matrix
+            tic;
+            internal_resistance_bands = zeros( obj.element_count, obj.DIM_COUNT );
+            for i = 1 : obj.DIM_COUNT
+                
+                internal_resistance_bands( :, i ) = ...
+                    obj.compute_resistance_band( dx, u_curr, k, obj.strides( i ) );
+                internal_resistance_bands( boundary_indices{ i }, i ) = 0;
+                
+            end
+            obj.times( obj.BAND_TIME ) = toc;
+            tic; 
+            m_internal_heat_flow = obj.construct_internal_heat_flow_matrix( dx, internal_resistance_bands );
+            obj.times( obj.KDDU_TIME ) = toc;
+            
+            % construct dkdu term
+            % TODO MAKE OPTIONAL
+            tic;
+            dkdu_term = obj.construct_dkdu_term( ...
+                dx, ...
+                u_curr, ...
+                k, ...
+                boundary_indices ...
+                );
+            obj.times( obj.DKDU_TIME ) = toc;
+            
+            % DETERMINE TIME STEP
+            % uses bisection method
+            
+            % setup
+            setup_time = 0;
             solve_time = 0;
             check_time = 0;
-            obj.count = 0;
-            obj.pcg_count = 0;
+            solver_it = 1;
+            pcg_it = 0;
             
-            % BISECTION METHOD
-            u_pcg_start = u_curr;
-            best_qr = inf;
+            best_u = u_curr;
+            best_quality_ratio = inf;
             TIME_STEP_INDEX = 2;
             time_step_range = [ 0 time_step_prev inf ];
             
-            MAX_IT = 20;
-            it = 0;
-            TOL = 1e-2;
+            MAX_IT = 20; % refactor to client parameter
+            TIME_STEP_CHANGE_TOL = 1e-2; % refactor to client parameter
             time_step_change_ratio = inf;
-            while it < MAX_IT && TOL < time_step_change_ratio
+            % refactor loop condition
+            while solver_it <= MAX_IT && ...
+                    TIME_STEP_CHANGE_TOL < time_step_change_ratio 
                 
-                it = it + 1;
-                obj.count = obj.count + 1;
-                
+                % set up linear system
                 tic;
-                [ lhs, rhs, dkdu ] = obj.setup_system_of_equations_with_time_step( ...
-                    space_step, ...
+                [ lhs, rhs ] = obj.setup_linear_system( ...
                     time_step_range( TIME_STEP_INDEX ), ...
                     rho_cp, ...
-                    m_internal_heat_transfer, ...
-                    boundary_heat_transfer, ...
-                    dkdu, ...
+                    m_internal_heat_flow, ...
+                    boundary_heat_flow, ...
+                    dkdu_term, ...
                     u_curr ...
                     );
-                [ u, pcg_it ] = obj.solve_system_of_equations( lhs, rhs, u_pcg_start );
-                obj.pcg_count = obj.pcg_count + pcg_it;
+                setup_time = setup_time + toc;
+                
+                % solve linear system
+                tic;
+                [ u, pcg_it_curr ] = obj.solve_system_of_equations( lhs, rhs, best_u );
+                pcg_it = pcg_it + pcg_it_curr;
                 solve_time = solve_time + toc;
                 
+                % check solution
                 tic;
-                q = obj.pp.compute_melt_enthalpies( mesh, u );
+                q = obj.pp.compute_melt_enthalpies( mesh, u ); % todo refactor mesh
                 quality_ratio = obj.determine_solution_quality_ratio( q_prev, q );
-                if abs( quality_ratio ) < best_qr
-                    u_pcg_start = u;
+                if abs( quality_ratio ) < best_quality_ratio
+                    best_u = u;
                 end
-                
                 check_time = check_time + toc;
                 
+                % preferred end condition
                 if obj.is_quality_ratio_sufficient( quality_ratio )
                     break;
                 end
@@ -167,10 +233,18 @@ classdef LinearSystemSolver < handle
                     time_step_range ...
                     );
                 
+                % update loop
+                solver_it = solver_it + 1;
+                
             end
+            
+            % store computation times
             time_step = time_step_range( TIME_STEP_INDEX );
+            obj.times( obj.SETUP_TIME ) = setup_time;
             obj.times( obj.SOLVE_TIME ) = solve_time;
             obj.times( obj.CHECK_TIME ) = check_time;
+            obj.solver_count = solver_it;
+            obj.pcg_count = pcg_it;
             
         end
         
@@ -205,7 +279,7 @@ classdef LinearSystemSolver < handle
         
         function count = get_last_solver_count( obj )
             
-            count = obj.count;
+            count = obj.solver_count;
             
         end
         
@@ -236,7 +310,7 @@ classdef LinearSystemSolver < handle
         quality_ratio_tolerance
         
         times
-        count
+        solver_count
         pcg_count
         
     end
@@ -261,35 +335,55 @@ classdef LinearSystemSolver < handle
         %
         % rhs contains dkdu
         % third output arg is for record keeping only
-        function [ ...
-                lhs, ...
-                rhs, ...
-                dkdu ...
-                ] = setup_system_of_equations_with_time_step( ...
+        function [ lhs, rhs ] = setup_linear_system( ...
                 obj, ...
-                space_step, ...
-                time_step, ...
+                dt, ...
                 rho_cp, ...
-                m_heat_transfer, ...
-                amb_heat_transfer, ...
-                dkdu, ...
-                u_curr ...
+                m_heat_flow, ...
+                boundary_heat_flow, ...
+                dkdu_term, ...
+                u ...
                 )
             
-            [ lhs, m_rhs ] = obj.construct_kddu( ...
-                rho_cp, ...
-                space_step, ...
-                time_step, ...
-                m_heat_transfer, ...
-                amb_heat_transfer ...
+            % apply time step
+            m_flow = dt .* m_heat_flow;
+            boundary_flow = dt .* boundary_heat_flow;
+            
+            % precompute sum of resistances for main diagonal
+            flow_sum = full( sum( m_flow, 2 ) ) + boundary_flow;
+            
+            % left-hand side
+            lhs = spdiags2( ...
+                rho_cp + ( obj.get_implicitness() .* flow_sum ), ...
+                0, ...
+                obj.element_count, ...
+                obj.element_count ...
+                ) + ...
+                obj.get_implicitness() .* ( -m_flow );
+            
+            % right-hand side
+            % refactor in case of 0 explicitness, don't need a sparse matrix
+            m_rhs = spdiags2( ...
+                rho_cp - ( obj.get_explicitness() .* flow_sum ), ...
+                0, ...
+                obj.element_count, ...
+                obj.element_count ...
+                ) + ...
+                obj.get_explicitness() .* m_flow;
+            [ v_b_lhs, v_b_rhs ] = obj.construct_boundary_heat_flow_vectors( ...
+                boundary_heat_flow ...
                 );
-            [ amb_lhs, amb_rhs ] = obj.construct_ambient_bc_vectors( amb_heat_transfer );
-            rhs = m_rhs * u_curr( : ) + amb_rhs - amb_lhs;% + dkdu;
+            rhs = m_rhs * u + v_b_rhs - v_b_lhs;% + dkdu_term; % refactor optional dkdu term inside this function?
             
         end
         
         
-        function [ u, pcg_it ] = solve_system_of_equations( obj, lhs, rhs, start_point )
+        function [ u, pcg_it ] = solve_system_of_equations( ...
+                obj, ...
+                lhs, ...
+                rhs, ...
+                u_guess ...
+                )
             
             preconditioner = ichol( lhs, struct( 'michol', 'on' ) );
             [ u, ~, ~, pcg_it, ~ ] = pcg( ...
@@ -299,7 +393,7 @@ classdef LinearSystemSolver < handle
                 obj.pcg_max_it, ...
                 preconditioner, ...
                 preconditioner.', ...
-                start_point( : ) ...
+                u_guess( : ) ...
                 );
             
         end
@@ -313,7 +407,7 @@ classdef LinearSystemSolver < handle
             
             max_delta_q = max( q_prev( : ) - q( : ) );
             [ latent_heat, sensible_heat ] = obj.pp.get_min_latent_heat();
-             % if latent heat very small, use sensible heat over freezing range instead
+            % if latent heat very small, use sensible heat over freezing range instead
             heat = max( latent_heat, sensible_heat );
             desired_q = heat * obj.latent_heat_target_fraction;
             quality_ratio = ( max_delta_q - desired_q ) / desired_q;
@@ -351,79 +445,6 @@ classdef LinearSystemSolver < handle
             end
             
             change_ratio = abs( old_time_step - time_step_range( TIME_STEP ) ) ./ old_time_step;
-            
-        end
-        
-        
-        function [ ...
-                m_heat_transfer, ...
-                amb_heat_transfer, ...
-                dkdu_term, ...
-                rho_cp ...
-                ] = generate_diff( ...
-                obj, ...
-                space_step, ...
-                u_prev, ...
-                u_next ...
-                )
-            
-            % compute differential element
-            difference_element = 1 ./ space_step;
-            
-            % property lookup
-            tic;
-            rho = obj.property_lookup( Material.RHO, u_next );
-            cp = obj.compute_cp( u_prev, u_next );
-            rho_cp = rho .* cp;
-            k_inv = obj.property_lookup( Material.K_INV, u_next );
-            % h is looked up only when we know both sides of every boundary
-            obj.times( obj.LOOKUP_TIME ) = toc;
-            
-            % boundary condition residual vector construction
-            tic;
-            bc_indices = obj.determine_ambient_boundary_indices();
-            amb_heat_transfer = obj.compute_ambient_heat_transfer( ...
-                difference_element, ...
-                u_next, ...
-                k_inv, ...
-                bc_indices ...
-                );
-            obj.times( obj.BC_TIME ) = toc;
-            
-            % matrix band/diagonal construction
-            tic;
-            [ ...
-                heat_transfer_bands, ...
-                u_bands, ...
-                k_bands, ...
-                mesh_ids ...
-                ] = obj.construct_bands( ...
-                difference_element, ...
-                u_next, ...
-                k_inv, ...
-                bc_indices ...
-                );
-            obj.times( obj.BAND_TIME ) = toc;
-            
-            % del k dot del u vector construction
-            tic;
-            dkdu_term = obj.construct_dkdu_term( ...
-                difference_element, ...
-                u_next, ...
-                k_inv, ...
-                u_bands, ...
-                k_bands, ...
-                bc_indices, ...
-                mesh_ids ...
-                );
-            obj.times( obj.DKDU_TIME ) = toc;
-            
-            % k del^2 u sparse matrix construction
-            tic;
-            m_heat_transfer = obj.compute_internal_heat_transfer( ...
-                heat_transfer_bands ...
-                );
-            obj.times( obj.KDDU_TIME ) = toc;
             
         end
         
@@ -476,35 +497,34 @@ classdef LinearSystemSolver < handle
         end
         
         
-        function amb_heat_transfer = compute_ambient_heat_transfer( ...
+        function resistances = compute_boundary_heat_flow( ...
                 obj, ...
-                d_element, ...
+                space_step, ...
                 u, ...
-                k_inv, ...
-                bc_indices ...
+                k, ...
+                boundary_indices ...
                 )
             
-            amb_h = obj.ambient_convection_lookup( u );
-            heat_transfer = zeros( obj.element_count, obj.DIM_COUNT );
-            k = ( 0.5 ./ k_inv );
+            h = obj.boundary_convection_lookup( u );
+            resistances = zeros( obj.element_count, obj.DIM_COUNT );
             for i = 1 : obj.DIM_COUNT
                 
-                heat_transfer( bc_indices{ i }, i ) = amb_h( bc_indices{ i } );
-                heat_transfer( bc_indices{ i }, i ) = ( 1 ./ k( bc_indices{ i } ) + 1 ./ heat_transfer( bc_indices{ i }, i ) );
+                resistances( boundary_indices{ i }, i ) = ...
+                    space_step ./ k( boundary_indices{ i } ) ...
+                    + 1 ./ h( boundary_indices{ i } );
                 
             end
-            amb_heat_transfer = obj.sum_heat_transfer( heat_transfer ) .* d_element;
+            resistances = sum( resistances, 2 );
             
         end
         
         
-        function values = ambient_convection_lookup( obj, u )
+        function values = boundary_convection_lookup( obj, u )
             
             values = zeros( obj.element_count, 1 );
             center_ids = obj.fdm_mesh( : );
-            ids = unique( obj.fdm_mesh );
+            ids = unique( obj.fdm_mesh ); % todo pull out
             id_count = numel( ids );
-            assert( id_count > 0 );
             for i = 1 : id_count
                 
                 material_id = ids( i );
@@ -512,7 +532,6 @@ classdef LinearSystemSolver < handle
                     obj.pp.lookup_ambient_h_values( material_id, u( center_ids == material_id ) );
                 
             end
-            %values = values ./ 2;
             
         end
         
@@ -575,21 +594,27 @@ classdef LinearSystemSolver < handle
         end
         
         
-        function m_heat_transfer = compute_internal_heat_transfer( obj, heat_transfer_bands )
+        function m_heat_flow = construct_internal_heat_flow_matrix( ...
+                obj, ...
+                dx, ...
+                resistance_bands ...
+                )
             
-            m_heat_transfer = spdiags2( ...
-                heat_transfer_bands, ...
+            heat_flow_bands = 1 ./ ( dx .* resistance_bands );
+            heat_flow_bands( ~isfinite( heat_flow_bands ) ) = 0;
+            m_heat_flow = spdiags2( ...
+                heat_flow_bands, ...
                 obj.strides, ...
                 obj.element_count, ...
                 obj.element_count ...
                 );
-            m_heat_transfer = m_heat_transfer + m_heat_transfer.';
+            m_heat_flow = m_heat_flow + m_heat_flow.';
             
         end
         
         
         function [ m_l, m_r ] = construct_kddu( obj, rho_cp, space_step, time_step, m_heat_transfer, amb_heat_transfer )
-                        
+            
             m_heat_transfer = m_heat_transfer .* time_step;
             amb_heat_transfer = amb_heat_transfer .* time_step;
             heat_transfer_sum = full( sum( m_heat_transfer, 2 ) ) + amb_heat_transfer;
@@ -613,39 +638,17 @@ classdef LinearSystemSolver < handle
         end
         
         
-        function dkdu = construct_dkdu_term( ...
+        function dkdu_term = construct_dkdu_term( ...
                 obj, ...
-                d_element, ...
-                u, ...
-                k_inv, ...
-                u_bands, ...
-                k_bands, ...
-                bc_indices, ...
-                mesh_ids ...
+                dx, ...
+                u_c, ...
+                k_c, ...
+                boundary_indices ...
                 )
             
             % uses center difference where possible
             % uses forward/backward when opposite element is convective
             % uses 0 if both convective
-            
-            ec = obj.element_count;
-            sx = obj.strides( obj.X );
-            sy = obj.strides( obj.Y );
-            sz = obj.strides( obj.Z );
-            
-            jumps = [ ...
-                sy - sx, ...
-                sz - sy, ...
-                ec - sz ...
-                ];
-            
-            k_center = 0.5 ./ k_inv;
-            u_center = u( : );
-            
-            k_dkdu = zeros( size( k_bands ) );
-            u_dkdu = zeros( size( u_bands ) );
-            
-            center_mesh_ids = mesh_ids{ end };
             % prefixes:
             %  n is neighbor_mesh_ids
             %  k, u, rho, cp have the same meaning as elsewhere
@@ -655,77 +658,90 @@ classdef LinearSystemSolver < handle
             %  f is forward difference
             %  c is center difference
             %  n is no difference
+            
+            % factor out
+            ec = obj.element_count;
+            sx = obj.strides( obj.X );
+            sy = obj.strides( obj.Y );
+            sz = obj.strides( obj.Z );
+            jumps = [ ...
+                sy - sx, ...
+                sz - sy, ...
+                ec - sz ...
+                ];
+            
+            k_dkdu = zeros( obj.element_count, 1 );
+            u_dkdu = zeros( obj.element_count, 1 );
             for i = 1 : obj.DIM_COUNT
                 
-                k_b = k_bands( :, i );
-                u_b = u_bands( :, i );
+                d_b = false( obj.element_count, 1 );
+                d_b( boundary_indices{ i } ) = true;
                 
-                k_f = circshift( k_b, -obj.strides( i ) );
-                u_f = circshift( u_b, -2.*obj.strides( i ) );
-                
-                n_b = mesh_ids{ i };
-                d_b = center_mesh_ids ~= n_b;
-                d_b( bc_indices{ i } ) = true;
-                
-                n_f = circshift( n_b, -2 .* obj.strides( i ) );
-                d_f = center_mesh_ids ~= n_f;
-                d_f( bc_indices{ i } + jumps( i ) ) = true;
+                d_f = false( obj.element_count, 1 );
+                d_f( boundary_indices{ i } + jumps( i ) ) = true;
                 
                 d_n = d_f & d_b;
                 d_c = ~d_f & ~d_b;
                 
-                k_dkdu( ~d_f & d_b, i ) = k_f( ~d_f & d_b ) - k_center( ~d_f & d_b );
-                k_dkdu( ~d_b & d_f, i ) = k_center( ~d_b & d_f ) - k_b( ~d_b & d_f );
+                k_b = circshift( k_c, obj.strides( i ) );
+                k_f = circshift( k_c, -obj.strides( i ) );
+                k_dkdu( ~d_f & d_b, i ) = k_f( ~d_f & d_b ) - k_c( ~d_f & d_b );
+                k_dkdu( ~d_b & d_f, i ) = k_c( ~d_b & d_f ) - k_b( ~d_b & d_f );
                 k_dkdu( d_n ) = 0;
                 k_dkdu( d_c, i ) = ( k_f( d_c ) - k_b( d_c ) ) ./ 2;
                 
-                u_dkdu( ~d_f & d_b, i ) = u_f( ~d_f & d_b ) - u_center( ~d_f & d_b );
-                u_dkdu( ~d_b & d_f, i ) = u_center( ~d_b & d_f ) - u_b( ~d_b & d_f );
+                u_b = circshift( u_c, obj.strides( i ) ); % todo repeated
+                u_f = circshift( u_c, -obj.strides( i ) );
+                u_dkdu( ~d_f & d_b, i ) = u_f( ~d_f & d_b ) - u_c( ~d_f & d_b );
+                u_dkdu( ~d_b & d_f, i ) = u_c( ~d_b & d_f ) - u_b( ~d_b & d_f );
                 u_dkdu( d_n ) = 0;
                 u_dkdu( d_c, i ) = ( u_f( d_c ) - u_b( d_c ) ) ./ 2;
-                                
+                
             end
-            
-            dkdu = sum( k_dkdu .* u_dkdu, 2 ) .* d_element;
-            assert( ~any( isnan( dkdu ) ) );
+            dkdu_term = sum( k_dkdu .* u_dkdu, 2 ) ./ ( dx * dx );
             
         end
         
         
-        function h_band = compute_h_band( ...
-                obj, ...
-                u, ...
-                k_inv, ...
-                center_ids, ...
-                neighbor_ids, ...
-                stride ...
-                )
+        % prefixes:
+        %  - u: temperature
+        %  - k: thermal conductivity
+        %  - dx: space step
+        % suffixes:
+        %  - c: center (main diagonal)
+        %  - n: neighbors (off diagonal)
+        function r_c = compute_resistance_band( obj, dx, u_c, k_c, stride )
             
-            u_band = obj.compute_u_band( u, stride );
-            k = ( 0.5 ./ k_inv ) .* 2;
-            k_band = circshift( k, stride );
+            u_n = circshift( u_c, stride );
+            k_n = circshift( k_c, stride );
+            r_c = ...
+                dx ./ ( 2 .* k_c ) + ... % todo repeated calculation dx/2
+                dx ./ ( 2 .* k_n );
             
-            h_band = obj.convection_lookup( u, u_band, center_ids, neighbor_ids );
-            h_band = 1 ./ ( 1 ./ k + 1 ./ k_band + 1 ./ h_band );
-            h_band( center_ids == neighbor_ids ) = nan;
+            ids_c = obj.fdm_mesh( : );
+            ids_n = circshift( ids_c, stride );
+            h_c = obj.convection_lookup( u_c, u_n, ids_c, ids_n );
+            r_c( ids_c ~= ids_n ) = ...
+                r_c( ids_c ~= ids_n ) + ...
+                1 ./ h_c( ids_c ~= ids_n );
             
         end
         
         
-        function values = convection_lookup( obj, u, u_band, center_ids, neighbor_ids )
+        function h_c = convection_lookup( obj, u_c, u_n, ids_c, ids_n )
             
-            values = zeros( obj.element_count, 1 );
-            ids = unique( obj.fdm_mesh );
+            % todo merge with ambient somehow
+            h_c = zeros( obj.element_count, 1 );
+            ids = unique( obj.fdm_mesh ); % todo pull out
             id_count = numel( ids );
-            assert( id_count > 0 );
-            mean_u = mean( [ u( : ) u_band ], 2 );
+            mean_u = mean( [ u_c( : ) u_n ], 2 ); % todo repeated calculation mean
             for i = 1 : id_count
                 for j = i + 1 : id_count
                     
-                    first_id = ids( i );
-                    second_id = ids( j );
-                    values( center_ids == first_id & neighbor_ids == second_id ) = obj.pp.lookup_h_values( first_id, second_id, mean_u( center_ids == first_id & neighbor_ids == second_id ) );
-                    values( center_ids == second_id & neighbor_ids == first_id ) = obj.pp.lookup_h_values( first_id, second_id, mean_u( center_ids == second_id & neighbor_ids == first_id ) );
+                    first = ids( i );
+                    second = ids( j );
+                    h_c( ids_c == first & ids_n == second ) = obj.pp.lookup_h_values( first, second, mean_u( ids_c == first & ids_n == second ) );
+                    h_c( ids_c == second & ids_n == first ) = obj.pp.lookup_h_values( first, second, mean_u( ids_c == second & ids_n == first ) );
                     
                 end
             end
@@ -764,14 +780,15 @@ classdef LinearSystemSolver < handle
         end
         
         
-        function [ bc_lhs, bc_rhs ] = construct_ambient_bc_vectors( ...
+        function [ lhs, rhs ] = construct_boundary_heat_flow_vectors( ...
                 obj, ...
-                ambient_heat_transfer_sum ...
+                boundary_heat_flow ...
                 )
             
-            base_vector = ambient_heat_transfer_sum .* obj.pp.get_ambient_temperature();
-            bc_lhs = -obj.implicitness .* base_vector;
-            bc_rhs = ( 1 - obj.implicitness ) .* base_vector;
+            base = obj.pp.get_ambient_temperature() .* boundary_heat_flow;
+            base( ~isfinite( base ) ) = 0;
+            lhs = obj.get_implicitness() .* ( -base );
+            rhs = obj.get_explicitness() .* base;
             
         end
         
@@ -802,19 +819,14 @@ classdef LinearSystemSolver < handle
             rho_cp_lhs = rho_lhs .* cp_lhs;
             rho_cp_rhs = rho_rhs .* cp_rhs;
             rho_cp = mean( [ rho_cp_lhs( : ) rho_cp_rhs( : ) ], 2 );
-%             rho = mean( [ rho_lhs rho_rhs ], 2 );
-%             cp = mean( [ cp_lhs cp_rhs ], 2 );
-%             rho_cp = rho .* cp;
+            %             rho = mean( [ rho_lhs rho_rhs ], 2 );
+            %             cp = mean( [ cp_lhs cp_rhs ], 2 );
+            %             rho_cp = rho .* cp;
             
         end
         
         
-        function k_band = compute_k_band( ...
-                k_inv, ...
-                center_ids, ...
-                neighbor_ids, ...
-                stride ...
-                )
+        function k_band = compute_resistance_bands( u, k, stride )
             
             k_band = 1./ ( k_inv + circshift( k_inv, stride ) );
             k_band( center_ids ~= neighbor_ids ) = nan;
