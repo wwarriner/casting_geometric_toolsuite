@@ -32,7 +32,6 @@ classdef LinearSystemSolver < handle
             obj.implicitness = 1.0;
             obj.pcg_tol = 1e-3;
             obj.pcg_max_it = 100;
-            obj.relaxation_parameter = 0.5;
             obj.latent_heat_target_fraction = 0.25;
             obj.quality_ratio_tolerance = 0.1;
             
@@ -72,17 +71,6 @@ classdef LinearSystemSolver < handle
             assert( 0 < iteration_count );
             
             obj.pcg_max_it = iteration_count;
-            
-        end
-        
-        
-        function set_adaptive_time_step_relaxation_parameter( obj, parameter )
-            
-            assert( isscalar( parameter ) );
-            assert( isa( parameter, 'double' ) );
-            assert( 0 <= parameter && parameter <= 1 );
-            
-            obj.relaxation_parameter = parameter;
             
         end
         
@@ -350,15 +338,15 @@ classdef LinearSystemSolver < handle
                 time_step_range( UPPER_BOUND ) = time_step_range( TIME_STEP );
                 interval = range( time_step_range );
                 time_step_range( TIME_STEP ) = ...
-                    ( interval * obj.relaxation_parameter ) + time_step_range( LOWER_BOUND );
+                    ( interval * 0.5 ) + time_step_range( LOWER_BOUND );
             else
                 time_step_range( LOWER_BOUND ) = time_step_range( TIME_STEP );
                 if isinf( time_step_range( UPPER_BOUND ) )
-                    time_step_range( TIME_STEP ) = time_step_range( TIME_STEP ) / obj.relaxation_parameter;
+                    time_step_range( TIME_STEP ) = time_step_range( TIME_STEP ) / 0.5;
                 else
                     interval = range( time_step_range );
                     time_step_range( TIME_STEP ) = ...
-                        ( interval * obj.relaxation_parameter ) + time_step_range( LOWER_BOUND );
+                        ( interval * 0.5 ) + time_step_range( LOWER_BOUND );
                 end
             end
             
