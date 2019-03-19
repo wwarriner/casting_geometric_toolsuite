@@ -26,10 +26,10 @@ classdef (Sealed) QProperty < MaterialProperty
         end
         
         
-        function sensible_heat = get_sensible_heat( obj, liquidus, solidus )
+        function sensible_heat = get_sensible_heat( obj, upper_t, lower_t )
             
-            d_u = liquidus - solidus;
-            sensible_heat = ( obj.cp.lookup_values( liquidus ) + obj.cp.lookup_values( solidus ) ) .* d_u;
+            d_u = upper_t - lower_t;
+            sensible_heat = ( obj.cp.lookup_values( upper_t ) + obj.cp.lookup_values( lower_t ) ) .* d_u ./ 2;
             
             assert( sensible_heat > 0 );
             
