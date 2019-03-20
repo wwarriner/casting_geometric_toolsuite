@@ -92,7 +92,7 @@ classdef LinearSystemSolver < handle
             
             assert( isscalar( fraction ) );
             assert( isa( fraction, 'double' ) );
-            assert( 0 <= fraction && fraction <= 1 );
+            assert( 0 <= fraction );
             
             obj.latent_heat_target_fraction = fraction;
             
