@@ -15,10 +15,14 @@ classdef (Sealed) AxesPlotHandle < handle
         end
         
         
-        function update( obj, values )
+        function update( obj, values, do_update_color_bar, color_bar_range )
             
             obj.remove();
-            obj.plot_handle = obj.plot_function( values );
+            if nargin < 3
+                obj.plot_handle = obj.plot_function( values );
+            else
+                obj.plot_handle = obj.plot_function( values, do_update_color_bar, color_bar_range );
+            end
             
         end
         

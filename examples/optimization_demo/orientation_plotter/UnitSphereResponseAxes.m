@@ -25,23 +25,36 @@ classdef (Sealed) UnitSphereResponseAxes < handle
                 )
             
             set( 0, 'CurrentFigure', figure_handle );
-            obj.left_axes_h = obj.build_axes( obj.LEFT_SIDE, figure_handle );
-            %obj.right_axes_h = obj.build_axes( obj.RIGHT_SIDE );
+            obj.left_axes_h = obj.build_axes( figure_handle );
             
             obj.set_axes_button_down_Callback( button_down_Callback )
             
-            obj.surface_plot_handles = obj.create_plot_handles( @(side,values)obj.create_surface_plot( side, phi_grid, theta_grid, values ) );
+            obj.surface_plot_handles = obj.create_plot_handle( @(values, update_color_bar, color_bar_range)obj.create_surface_plot( phi_grid, theta_grid, values, update_color_bar, color_bar_range ) );
             [ PHI_INDEX, THETA_INDEX ] = unit_sphere_plot_indices();
-            obj.minimum_plot_handles = obj.create_plot_handles( @(side,point)obj.create_minimum_plot( PHI_INDEX, THETA_INDEX, point ) );
-            obj.pareto_front_plot_handles = obj.create_plot_handles( @(side,points)obj.create_pareto_front_plot( PHI_INDEX, THETA_INDEX, points ) );
-            obj.picked_point_plot_handles = obj.create_plot_handles( @(side,point)obj.create_picked_point_plot( PHI_INDEX, THETA_INDEX, point ) );
+            obj.minimum_plot_handles = obj.create_plot_handle( @(point)obj.create_minimum_plot( PHI_INDEX, THETA_INDEX, point ) );
+            obj.pareto_front_plot_handles = obj.create_plot_handle( @(points)obj.create_pareto_front_plot( PHI_INDEX, THETA_INDEX, points ) );
+            obj.picked_point_plot_handles = obj.create_plot_handle( @(point)obj.create_picked_point_plot( PHI_INDEX, THETA_INDEX, point ) );
             
         end
         
         
-        function update_surface_plots( obj, values )
+        function pos = get_axes_position( obj )
             
-            obj.update_plot_handles( obj.surface_plot_handles, values );
+            pos = obj.left_axes_h.Position;
+            
+        end
+        
+        
+        function set_axes_position( obj, pos )
+            
+            obj.left_axes_h.Position = pos;
+            
+        end
+        
+        
+        function update_surface_plots( obj, values, do_update_color_bar, color_bar_range )
+            
+            obj.update_plot_handles( obj.surface_plot_handles, values, do_update_color_bar, color_bar_range );
             
         end
         
@@ -89,7 +102,6 @@ classdef (Sealed) UnitSphereResponseAxes < handle
         color_map
         grid_color
         left_axes_h
-        right_axes_h
         
         surface_plot_handles
         minimum_plot_handles
@@ -99,110 +111,89 @@ classdef (Sealed) UnitSphereResponseAxes < handle
     end
     
     
-    properties ( Access = private, Constant )
-        
-        LEFT_SIDE = 1;
-        RIGHT_SIDE = 2;
-        
-    end
-    
-    
     methods ( Access = private )
         
         function set_axes_button_down_Callback( obj, button_down_Callback )
             
             assert( ~isempty( obj.left_axes_h ) );
-            %assert( ~isempty( obj.right_axes_h ) );
-            
             obj.left_axes_h.ButtonDownFcn = button_down_Callback;
-            %obj.right_axes_h.ButtonDownFcn = button_down_Callback;
             
         end
         
         
-        function update_plot_handles( obj, handles, values )
+        function update_plot_handles( obj, handle, values, do_update_color_bar, color_bar_range )
             
-            update_fn = @(side)handles( side ).update( values );
-            obj.update_both_sides( update_fn );
+            if nargin < 4
+                handle.update( values );
+            else
+                handle.update( values, do_update_color_bar, color_bar_range );
+            end
             
-        end
-        
-        
-        function remove_plot_handles( obj, handles )
-            
-            update_fn = @(side)handles( side ).remove();
-            obj.update_both_sides( update_fn );
             
         end
         
         
-        function handles = create_plot_handles( obj, plot_function )
+        function remove_plot_handles( obj, handle )
             
-            handles = [ ...
-                AxesPlotHandle( obj.get_axes( obj.LEFT_SIDE ), @(x)plot_function( obj.LEFT_SIDE, x ) ) ...
-                ];
-                %AxesPlotHandle( obj.get_axes( obj.RIGHT_SIDE ), @(x)plot_function( obj.RIGHT_SIDE, x ) ) ...
-                %];
+            handle.remove();
             
         end
         
         
-        function handle = create_surface_plot( obj, side, phi_grid, theta_grid, values )
+        function handle = create_plot_handle( obj, plot_function )
             
-            handle = surfacem( theta_grid, phi_grid, values );
+            handle = AxesPlotHandle( obj.get_axes(), plot_function );
+            
+        end
+        
+        
+        function handle = create_surface_plot( obj, phi_grid, theta_grid, values, do_update_color_bar, color_bar_range )
+            
+            handle = surfacem( theta_grid, phi_grid, rescale( values, color_bar_range( 1 ), color_bar_range( 2 ) ) );
             handle.HitTest = 'off';
             uistack( handle, 'bottom' );
-            obj.update_colorbar( side );
-            
-        end
-        
-        
-        function update_colorbar( obj, side )
-            
-            colormap( obj.color_map );
-            if side == obj.LEFT_SIDE
-                colorbar_handle = obj.add_colorbar( side );
-                obj.rescale_colorbar( colorbar_handle );
+            if do_update_color_bar
+                obj.update_colorbar( color_bar_range );
             end
             
         end
         
         
-        function colorbar_handle = add_colorbar( obj, side )
+        function update_colorbar( obj, color_bar_range )
             
-            axes_handle = obj.get_axes( side );
+            colormap( obj.color_map );
+            colorbar_handle = obj.add_colorbar( color_bar_range );
+            obj.reposition_colorbar( colorbar_handle );
+            
+        end
+        
+        
+        function colorbar_handle = add_colorbar( obj, color_bar_range )
+            
+            axes_handle = obj.get_axes();
             original_axes_size = axes_handle.Position;
             
             colorbar( axes_handle, 'off' );
             colorbar_handle = colorbar( axes_handle );
+            caxis( color_bar_range );
             clim = colorbar_handle.Limits;
             COLORBAR_TICK_COUNT = 11;
             colorbar_handle.Ticks = linspace( clim( 1 ), clim( 2 ), COLORBAR_TICK_COUNT );
+            
+            caxis( axes_handle, 'manual' );
             
             axes_handle.Position = original_axes_size;
                 
         end
         
         
-        function handle = build_axes( obj, side, figure_handle )
+        function handle = build_axes( obj, figure_handle )
             
-            switch side
-                case obj.LEFT_SIDE
-                    subplot_position = 1;
-                    polar_azimuth_deg = 0;
-                case obj.RIGHT_SIDE
-                    subplot_position = 2;
-                    polar_azimuth_deg = 180;
-                otherwise
-                    assert( false )
-            end
-            
-            %subtightplot( 1, 2, subplot_position, 0.08 );
             handle = axesm( ...
                 'pcarree', ...
                 'frame', 'on', ...
                 'grid', 'on', ...
-                'origin', newpole( 90, polar_azimuth_deg ), ...
+                'origin', newpole( 90, 0 ), ...
                 'glinewidth', 1, ...
                 'mlinelocation', 30, ...
                 'mlabellocation', 30, ...
@@ -210,7 +201,7 @@ classdef (Sealed) UnitSphereResponseAxes < handle
                 'meridianlabel', 'on', ...
                 'plinelocation', 30, ...
                 'plabellocation', 30, ...
-                'plabelmeridian', polar_azimuth_deg, ...
+                'plabelmeridian', 0, ...
                 'parallellabel', 'on', ...
                 'labelformat', 'signed', ...
                 'gcolor', obj.grid_color, ...
@@ -242,40 +233,9 @@ classdef (Sealed) UnitSphereResponseAxes < handle
         end
         
         
-        function update_both_sides( obj, update_function )
+        function axes_h = get_axes( obj )
             
-            obj.update_side( obj.LEFT_SIDE, update_function );
-            %obj.update_side( obj.RIGHT_SIDE, update_function );
-            
-        end
-        
-        
-        function update_side( obj, side, update_function )
-            
-            obj.select_axes( side );
-            update_function( side );
-            
-        end
-        
-        
-        function axes_h = select_axes( obj, side )
-            
-            axes_h = obj.get_axes( side );
-            axes( axes_h );
-            
-        end
-        
-        
-        function axes_h = get_axes( obj, side )
-            
-            switch side
-                case obj.LEFT_SIDE
-                    axes_h = obj.left_axes_h;
-                case obj.RIGHT_SIDE
-                    axes_h = obj.right_axes_h;
-                otherwise
-                    assert( false );
-            end
+            axes_h = obj.left_axes_h;
             
         end
         
@@ -330,7 +290,7 @@ classdef (Sealed) UnitSphereResponseAxes < handle
         end
         
         
-        function rescale_colorbar( handle )
+        function reposition_colorbar( handle )
             
             pos = handle.Position;
             new_pos = pos;

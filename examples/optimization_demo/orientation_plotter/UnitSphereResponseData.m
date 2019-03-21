@@ -137,6 +137,14 @@ classdef (Sealed) UnitSphereResponseData < handle
         end
         
         
+        function values = get_objective_value_range( obj, objective_index )
+            
+            values.min = min( obj.get_objective_values( objective_index ), [], 'all' );
+            values.max = max( obj.get_objective_values( objective_index ), [], 'all' );
+            
+        end
+        
+        
         function values = get_quantile_values( obj, quantile, objective_index )
             
             values = obj.get_objective_values( objective_index );
@@ -144,6 +152,14 @@ classdef (Sealed) UnitSphereResponseData < handle
                 quantile, ...
                 objective_index ...
                 );
+            values = values < threshold;
+            
+        end
+        
+        
+        function values = get_thresholded_values( obj, threshold, objective_index )
+            
+            values = obj.get_objective_values( objective_index );
             values = values < threshold;
             
         end
@@ -375,7 +391,7 @@ classdef (Sealed) UnitSphereResponseData < handle
                 append_scaled_maximum_objective( objective_values, titles, display_titles, interp_methods )
             
             temp = objective_values;
-%             removes = [];
+            removes = [];
             for i = 1 : size( objective_values, 3 )
 %                 if strcmpi( titles{ i }, 'draft_metric' ) || strcmpi( titles{ i }, 'fd_inaccessibility_max' )
 %                     removes = [ removes i ];
