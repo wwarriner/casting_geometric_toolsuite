@@ -29,8 +29,6 @@ classdef (Sealed) UnitSphereResponsePlot < handle
             obj.response_axes.set_axes_position( widgets.adjust_axes_position( pos ) );
             obj.last_picked_decisions = [ 0 0 ];
             
-            obj.constrain_quantile_value();
-            obj.constrain_threshold_value();
             obj.update_surface_plots( obj.UPDATE_COLOR_BAR );
             obj.update_picked_point();
                         
@@ -41,10 +39,7 @@ classdef (Sealed) UnitSphereResponsePlot < handle
             
             obj.figure_h.Color = bg_color;
             obj.static_text_h.BackgroundColor = bg_color;
-            obj.threshold_button_group_h.BackgroundColor = bg_color;
-            for i = 1 : numel( obj.threshold_button_group_h.Children )
-                obj.threshold_button_group_h.Children( i ).BackgroundColor = bg_color;
-            end
+            obj.thresholding_widgets_h.set_background_color( bg_color );
             obj.minima_checkbox_h.BackgroundColor = bg_color;
             obj.pareto_front_checkbox_h.BackgroundColor = bg_color;
             
@@ -69,13 +64,7 @@ classdef (Sealed) UnitSphereResponsePlot < handle
         
         visualize_button_h
         
-        threshold_button_group_h
-        
-        quantile_edit_text_h
-        old_quantile_value
-        
-        threshold_edit_text_h
-        old_threshold_value
+        thresholding_widgets_h
         
         minima_checkbox_h
         
@@ -85,18 +74,6 @@ classdef (Sealed) UnitSphereResponsePlot < handle
     
     
     properties ( Access = private, Constant )
-        
-        QUANTILE_SELECTED = 'quantile';
-        VALUE_SELECTED = 'value';
-        NONE_SELECTED = 'none';
-        
-        QUANTILE_MIN = 0.0;
-        QUANTILE_MAX = 1.0;
-        INITIAL_QUANTILE_VALUE = 0.01;
-        
-        THRESHOLD_MIN = 0.0;
-        THRESHOLD_MAX = 1.0;
-        INITIAL_THRESHOLD_VALUE = 0.5;
         
         MINIMA_OFF = false;
         MINIMA_ON = true;
@@ -132,18 +109,19 @@ classdef (Sealed) UnitSphereResponsePlot < handle
                 figure_h, ...
                 @obj.ui_visualize_button_Callback ...
                 );
-            
-            [ obj.threshold_button_group_h, obj.quantile_edit_text_h, obj.threshold_edit_text_h ] = ...
-                widgets.add_threshold_widgets( ...
-                { obj.QUANTILE_SELECTED, obj.VALUE_SELECTED, obj.NONE_SELECTED }, ...
-                [ obj.INITIAL_QUANTILE_VALUE, obj.INITIAL_THRESHOLD_VALUE ], ...
+                
+            ids = ThresholdingWidgets.get_ids();
+            obj.thresholding_widgets_h = widgets.add_thresholding_widget( ...
                 figure_h, ...
-                @obj.ui_threshold_selection_Callback, ...
-                { @obj.ui_quantile_value_edit_text_Callback, @obj.ui_threshold_value_edit_text_Callback }, ...
-                { @(~,~,~,~)drawnow(), @(~,~,~,~)drawnow() } ...
+                containers.Map( ids, { @obj.value_picker_objective_values, @obj.value_picker_thresholded_values, @obj.value_picker_quantile_values } ), ...
+                containers.Map( ids, { 'Threshold Off', 'Value Threshold', 'Quantile Threshold' } ), ...
+                containers.Map( ids, { 0 0 0 } ), ...
+                containers.Map( ids, { 1 1 1 } ), ...
+                containers.Map( ids, { 0.5 0.5 0.5 } ), ...
+                @obj.ui_threshold_selection_changed_Callback, ...
+                @obj.ui_threshold_edit_text_Callback, ...
+                @obj.ui_threshold_slider_Callback ...
                 );
-            obj.old_quantile_value = obj.get_quantile_value();
-            obj.old_threshold_value = obj.get_threshold_value();
             
             [ obj.minima_checkbox_h, obj.pareto_front_checkbox_h ] = ...
                 widgets.add_point_plot_widgets( ...
@@ -164,18 +142,18 @@ classdef (Sealed) UnitSphereResponsePlot < handle
         function ui_objective_selection_listbox_Callback( obj, ~, ~, ~ )
             
             if obj.get_objective_index() ~= obj.old_listbox_value
+                obj.update_value_range();
                 obj.update_surface_plots( obj.UPDATE_COLOR_BAR );
                 obj.update_minima();
                 obj.update_picked_point();
                 obj.update_old_listbox_value();
-                obj.constrain_threshold_value();
             end
             drawnow();
             
         end
         
         
-        function ui_threshold_selection_Callback( obj, ~, ~, ~ )
+        function ui_threshold_selection_changed_Callback( obj, ~, ~ )
             
             obj.update_surface_plots();
             drawnow();
@@ -183,66 +161,27 @@ classdef (Sealed) UnitSphereResponsePlot < handle
         end
         
         
-        function ui_quantile_value_edit_text_Callback( obj, ~, ~, ~ )
-            
-            obj.constrain_quantile_value();
-            if obj.get_quantile_value() ~= obj.old_quantile_value
-                obj.set_threshold_state( obj.QUANTILE_SELECTED );
+        function ui_threshold_edit_text_Callback( obj, ~, ~, widget )
+
+            if widget.update_threshold_value_from_edit_text()
+                widget.select();
                 obj.update_surface_plots();
-                obj.update_old_quantile_value();
             end
             drawnow();
             
         end
         
         
-        function ui_threshold_value_edit_text_Callback( obj, ~, ~, ~ )
-            
-            obj.constrain_threshold_value();
-            if obj.get_threshold_value() ~= obj.old_threshold_value
-                obj.set_threshold_state( obj.VALUE_SELECTED );
+        function ui_threshold_slider_Callback( obj, ~, ~, widget )
+
+            if widget.update_threshold_value_from_slider()
+                widget.select();
                 obj.update_surface_plots();
-                obj.update_old_threshold_value();
             end
             drawnow();
             
         end
-        
-        
-        function constrain_quantile_value( obj )
-            
-            value = obj.get_quantile_value();
-            
-            if isnan( value )
-                obj.set_quantile_value( obj.old_quantile_value );
-            end
-            
-            if obj.QUANTILE_MAX < value
-                obj.set_quantile_value( obj.QUANTILE_MAX );
-            elseif value < obj.QUANTILE_MIN
-                obj.set_quantile_value( obj.QUANTILE_MIN );
-            end
-            
-        end
-        
-        
-        function constrain_threshold_value( obj )
-            
-            value = obj.get_threshold_value();
-            
-            if isnan( value )
-                obj.set_threshold_value( obj.old_threshold_value );
-            end
-            
-            values = obj.get_value_range();
-            if values.max < value
-                obj.set_threshold_value( values.max );
-            elseif value < values.min
-                obj.set_threshold_value( values.min );
-            end
-            
-        end
-        
+                
         
         function ui_minima_checkbox_Callback( obj, ~, ~, ~ )
             
@@ -414,45 +353,22 @@ classdef (Sealed) UnitSphereResponsePlot < handle
         end
         
         
+        function update_value_range( obj )
+            
+            value_range = obj.get_value_range();
+            obj.thresholding_widgets_h.update_value_range( value_range );
+            
+        end
+        
+        
         function update_surface_plots( obj, do_update_color_bar )
             
             if nargin < 2
                 do_update_color_bar = false;
             end
-            objective_values = obj.get_objective_values();
-            color_bar_range = [ min( objective_values, [], 'all' ) max( objective_values, [], 'all' ) ];
-            obj.response_axes.update_surface_plots( obj.get_surface_plot_values(), do_update_color_bar, color_bar_range );
-            
-        end
-        
-        
-        function values = get_surface_plot_values( obj )
-            
-            switch obj.get_threshold_state()
-                case obj.QUANTILE_SELECTED
-                    values = obj.get_quantile_values();
-                case obj.VALUE_SELECTED
-                    values = obj.get_thresholded_values();
-                case obj.NONE_SELECTED
-                    values = obj.get_objective_values();
-                otherwise
-                    assert( false );
-            end
-            
-        end
-        
-        
-        function state = get_threshold_state( obj )
-            
-            state = obj.threshold_button_group_h.SelectedObject.Tag;
-            
-        end
-        
-        
-        function set_threshold_state( obj, tag )
-            
-            h = findobj( obj.threshold_button_group_h, 'tag', tag );
-            h.Value = 1;
+            color_bar_range = obj.get_value_range();
+            values = obj.thresholding_widgets_h.pick_selected_values();
+            obj.response_axes.update_surface_plots( values, do_update_color_bar, color_bar_range );
             
         end
         
@@ -460,34 +376,6 @@ classdef (Sealed) UnitSphereResponsePlot < handle
         function update_old_listbox_value( obj )
             
             obj.old_listbox_value = obj.get_objective_index();
-            
-        end
-        
-        
-        function update_old_quantile_value( obj )
-            
-            obj.old_quantile_value = obj.get_quantile_value();
-            
-        end
-        
-        
-        function update_old_threshold_value( obj )
-            
-            obj.old_threshold_value = obj.get_threshold_value();
-            
-        end
-        
-        
-        function set_quantile_value( obj, value )
-            
-            obj.quantile_edit_text_h.String = num2str( value );
-            
-        end
-        
-        
-        function set_threshold_value( obj, value )
-            
-            obj.threshold_edit_text_h.String = num2str( value, '%.3g' );
             
         end
         
@@ -503,7 +391,7 @@ classdef (Sealed) UnitSphereResponsePlot < handle
         end
         
         
-        function values = get_objective_values( obj )
+        function values = value_picker_objective_values( obj, ~ )
             
             values = obj.response_data.get_objective_values( ...
                 obj.get_objective_index() ...
@@ -512,10 +400,10 @@ classdef (Sealed) UnitSphereResponsePlot < handle
         end
         
         
-        function values = get_quantile_values( obj )
+        function values = value_picker_quantile_values( obj, quantile )
             
             values = obj.response_data.get_quantile_values( ...
-                obj.get_quantile_value(), ...
+                quantile, ...
                 obj.get_objective_index() ...
                 );
             values = double( values );
@@ -523,10 +411,10 @@ classdef (Sealed) UnitSphereResponsePlot < handle
         end
         
         
-        function values = get_thresholded_values( obj )
+        function values = value_picker_thresholded_values( obj, threshold )
             
             values = obj.response_data.get_thresholded_values( ...
-                obj.get_threshold_value(), ...
+                threshold, ...
                 obj.get_objective_index() ...
                 );
             values = double( values );
@@ -537,20 +425,6 @@ classdef (Sealed) UnitSphereResponsePlot < handle
         function value = get_objective_index( obj )
             
             value = obj.listbox_h.Value;
-            
-        end
-        
-        
-        function value = get_quantile_value( obj )
-            
-            value = str2double( obj.quantile_edit_text_h.String );
-            
-        end
-        
-        
-        function value = get_threshold_value( obj )
-            
-            value = str2double( obj.threshold_edit_text_h.String );
             
         end
         

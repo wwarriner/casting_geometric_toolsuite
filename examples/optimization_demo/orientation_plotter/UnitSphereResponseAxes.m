@@ -149,7 +149,7 @@ classdef (Sealed) UnitSphereResponseAxes < handle
         
         function handle = create_surface_plot( obj, phi_grid, theta_grid, values, do_update_color_bar, color_bar_range )
             
-            handle = surfacem( theta_grid, phi_grid, rescale( values, color_bar_range( 1 ), color_bar_range( 2 ) ) );
+            handle = surfacem( theta_grid, phi_grid, rescale( values, color_bar_range.min, color_bar_range.max ) );
             handle.HitTest = 'off';
             uistack( handle, 'bottom' );
             if do_update_color_bar
@@ -175,7 +175,7 @@ classdef (Sealed) UnitSphereResponseAxes < handle
             
             colorbar( axes_handle, 'off' );
             colorbar_handle = colorbar( axes_handle );
-            caxis( color_bar_range );
+            caxis( [ color_bar_range.min color_bar_range.max ] );
             clim = colorbar_handle.Limits;
             COLORBAR_TICK_COUNT = 11;
             colorbar_handle.Ticks = linspace( clim( 1 ), clim( 2 ), COLORBAR_TICK_COUNT );
