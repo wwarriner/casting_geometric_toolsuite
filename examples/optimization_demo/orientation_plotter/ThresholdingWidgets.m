@@ -17,6 +17,7 @@ classdef ThresholdingWidgets < handle
                 corner_pos, ...
                 padding, ...
                 font_size, ...
+                default_id, ...
                 value_picker_fns, ...
                 labels, ...
                 default_mins, ...
@@ -27,8 +28,10 @@ classdef ThresholdingWidgets < handle
                 slider_callback ...
                 )
             
-            height_each = ThresholdingOption.get_height( font_size );
-            height = obj.get_height( ...
+            obj.selected_id = default_id;
+            
+            height_each = get_height( font_size );
+            height = obj.get_height_internal( ...
                 obj.COUNT, ...
                 padding, ...
                 height_each ...
@@ -94,7 +97,7 @@ classdef ThresholdingWidgets < handle
             
             obj.button_group_handle.BackgroundColor = color;
             ids = obj.widget_handles.keys();
-            for i = 1 : numel( ids )
+            for i = 1 : obj.widget_handles.Count()
                 
                 id = ids{ i };
                 h = obj.widget_handles( id );
@@ -138,9 +141,24 @@ classdef ThresholdingWidgets < handle
         end
         
         
+        function set_position( obj, pos )
+            
+            obj.button_group_handle.Position = pos;
+            
+        end
+        
+        
         function pos = get_position( obj )
             
             pos = obj.button_group_handle.Position;
+            
+        end
+        
+        
+        function height = get_height( obj )
+            
+            pos = obj.get_position();
+            height = pos( 4 );
             
         end
 
@@ -161,7 +179,7 @@ classdef ThresholdingWidgets < handle
         end
         
         
-        function height = get_height( count, padding, height_each )
+        function height = get_height_internal( count, padding, height_each )
             
             height = ( padding + height_each ) * count + padding;
             
@@ -191,7 +209,7 @@ classdef ThresholdingWidgets < handle
         
         function y = get_y_pos( id, padding, height_each )
             
-            y = ThresholdingWidgets.get_height( id - 1, padding, height_each );
+            y = ThresholdingWidgets.get_height_internal( id - 1, padding, height_each );
             
         end
         
