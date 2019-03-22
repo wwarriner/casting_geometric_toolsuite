@@ -25,29 +25,26 @@ classdef (Sealed) UnitSphereResponseAxes < handle
                 )
             
             set( 0, 'CurrentFigure', figure_handle );
-            obj.left_axes_h = obj.build_axes( figure_handle );
+            obj.axes_handle = obj.build_axes( figure_handle );
             
             obj.set_axes_button_down_Callback( button_down_Callback )
             
-            obj.surface_plot_handles = obj.create_plot_handle( @(values, update_color_bar, color_bar_range)obj.create_surface_plot( phi_grid, theta_grid, values, update_color_bar, color_bar_range ) );
-            [ PHI_INDEX, THETA_INDEX ] = unit_sphere_plot_indices();
-            obj.minimum_plot_handles = obj.create_plot_handle( @(point)obj.create_minimum_plot( PHI_INDEX, THETA_INDEX, point ) );
-            obj.pareto_front_plot_handles = obj.create_plot_handle( @(points)obj.create_pareto_front_plot( PHI_INDEX, THETA_INDEX, points ) );
-            obj.picked_point_plot_handles = obj.create_plot_handle( @(point)obj.create_picked_point_plot( PHI_INDEX, THETA_INDEX, point ) );
+            obj.surface_plot_handles = obj.create_plot_handle( @(axhm, values, update_color_bar, color_bar_range)obj.create_surface_plot( axhm, phi_grid, theta_grid, values, update_color_bar, color_bar_range ) );
+            obj.picked_point_plot_handles = obj.create_plot_handle( @(axhm, point)obj.create_picked_point_plot( axhm, point ) );
             
         end
         
         
         function pos = get_axes_position( obj )
             
-            pos = obj.left_axes_h.Position;
+            pos = obj.axes_handle.Position;
             
         end
         
         
         function set_axes_position( obj, pos )
             
-            obj.left_axes_h.Position = pos;
+            obj.axes_handle.Position = pos;
             
         end
         
@@ -59,37 +56,16 @@ classdef (Sealed) UnitSphereResponseAxes < handle
         end
         
         
-        function update_minimum( obj, point )
-            
-            obj.update_plot_handles( obj.minimum_plot_handles, point );
-            
-        end
-        
-        
-        function remove_minimum( obj )
-            
-            obj.remove_plot_handles( obj.minimum_plot_handles );
-            
-        end
-        
-        
-        function update_pareto_fronts( obj, values )
-            
-            obj.update_plot_handles( obj.pareto_front_plot_handles, values );
-            
-        end
-        
-        
-        function remove_pareto_fronts( obj )
-            
-            obj.remove_plot_handles( obj.pareto_front_plot_handles );
-            
-        end
-        
-        
         function update_picked_point( obj, values )
             
             obj.update_plot_handles( obj.picked_point_plot_handles, values );
+            
+        end
+        
+        
+        function axes_h = get_axes( obj )
+            
+            axes_h = obj.axes_handle;
             
         end
         
@@ -101,11 +77,9 @@ classdef (Sealed) UnitSphereResponseAxes < handle
         
         color_map
         grid_color
-        left_axes_h
+        axes_handle
         
         surface_plot_handles
-        minimum_plot_handles
-        pareto_front_plot_handles
         picked_point_plot_handles
         
     end
@@ -115,8 +89,8 @@ classdef (Sealed) UnitSphereResponseAxes < handle
         
         function set_axes_button_down_Callback( obj, button_down_Callback )
             
-            assert( ~isempty( obj.left_axes_h ) );
-            obj.left_axes_h.ButtonDownFcn = button_down_Callback;
+            assert( ~isempty( obj.axes_handle ) );
+            obj.axes_handle.ButtonDownFcn = button_down_Callback;
             
         end
         
@@ -124,9 +98,9 @@ classdef (Sealed) UnitSphereResponseAxes < handle
         function update_plot_handles( obj, handle, values, do_update_color_bar, color_bar_range )
             
             if nargin < 4
-                handle.update( values );
+                handle.update( obj.axes_handle, values );
             else
-                handle.update( values, do_update_color_bar, color_bar_range );
+                handle.update( obj.axes_handle, values, do_update_color_bar, color_bar_range );
             end
             
             
@@ -142,13 +116,14 @@ classdef (Sealed) UnitSphereResponseAxes < handle
         
         function handle = create_plot_handle( obj, plot_function )
             
-            handle = AxesPlotHandle( obj.get_axes(), plot_function );
+            handle = AxesPlotHandle( plot_function );
             
         end
         
         
-        function handle = create_surface_plot( obj, phi_grid, theta_grid, values, do_update_color_bar, color_bar_range )
+        function handle = create_surface_plot( obj, axhm, phi_grid, theta_grid, values, do_update_color_bar, color_bar_range )
             
+            axes( axhm );
             handle = surfacem( theta_grid, phi_grid, rescale( values, color_bar_range.min, color_bar_range.max ) );
             handle.HitTest = 'off';
             uistack( handle, 'bottom' );
@@ -170,19 +145,19 @@ classdef (Sealed) UnitSphereResponseAxes < handle
         
         function colorbar_handle = add_colorbar( obj, color_bar_range )
             
-            axes_handle = obj.get_axes();
-            original_axes_size = axes_handle.Position;
+            axh = obj.get_axes();
+            original_axes_size = axh.Position;
             
-            colorbar( axes_handle, 'off' );
-            colorbar_handle = colorbar( axes_handle );
+            colorbar( axh, 'off' );
+            colorbar_handle = colorbar( axh );
             caxis( [ color_bar_range.min color_bar_range.max ] );
             clim = colorbar_handle.Limits;
             COLORBAR_TICK_COUNT = 11;
             colorbar_handle.Ticks = linspace( clim( 1 ), clim( 2 ), COLORBAR_TICK_COUNT );
             
-            caxis( axes_handle, 'manual' );
+            caxis( axh, 'manual' );
             
-            axes_handle.Position = original_axes_size;
+            axh.Position = original_axes_size;
                 
         end
         
@@ -232,60 +207,20 @@ classdef (Sealed) UnitSphereResponseAxes < handle
             
         end
         
-        
-        function axes_h = get_axes( obj )
-            
-            axes_h = obj.left_axes_h;
-            
-        end
-        
     end
     
     
     methods ( Access = private, Static )
         
-        function handle = create_minimum_plot( phi_index, theta_index, decisions )
+        function handle = create_picked_point_plot( axhm, decisions )
             
-            handle = UnitSphereResponseAxes.add_point_plot( phi_index, theta_index, decisions );
-            handle.LineStyle = 'none';
-            handle.Marker = 'o';
-            handle.MarkerSize = 6;
-            handle.MarkerEdgeColor = 'k';
-            handle.MarkerFaceColor = 'g';
-            handle.HitTest = 'off';
-            
-        end
-        
-        
-        function handle = create_pareto_front_plot( phi_index, theta_index, decisions )
-            
-            handle = UnitSphereResponseAxes.add_point_plot( phi_index, theta_index, decisions );
-            handle.LineStyle = 'none';
-            handle.Marker = 'o';
-            handle.MarkerSize = 4;
-            handle.MarkerEdgeColor = 'k';
-            handle.MarkerFaceColor = 'r';
-            handle.HitTest = 'off';
-            
-        end
-        
-        
-        function handle = create_picked_point_plot( phi_index, theta_index, decisions )
-            
-            handle = UnitSphereResponseAxes.add_point_plot( phi_index, theta_index, decisions );
+            handle = add_point_plot( axhm, decisions );
             handle.LineStyle = 'none';
             handle.Marker = 'o';
             handle.MarkerSize = 6;
             handle.MarkerEdgeColor = 'k';
             handle.MarkerFaceColor = 'b';
             handle.HitTest = 'off';
-            
-        end
-        
-        
-        function handle = add_point_plot( phi_index, theta_index, points )
-            
-            handle = plotm( points( :, theta_index ), points( :, phi_index ) );
             
         end
         
