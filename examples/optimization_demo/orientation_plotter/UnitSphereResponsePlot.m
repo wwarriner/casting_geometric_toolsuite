@@ -86,6 +86,101 @@ classdef (Sealed) UnitSphereResponsePlot < handle
     
     methods ( Access = private )
         
+        function update_points( obj )
+            
+            obj.update_pareto_front();
+            obj.update_minimum();
+            obj.update_picked_point();
+            
+        end
+        
+        
+        function update_pareto_front( obj )
+            
+            points = obj.responses.get_pareto_front_decisions_in_degrees();
+            obj.point_plotter.update_pareto_front( points );
+            
+        end
+        
+        
+        function update_minimum( obj )
+            
+            point = obj.responses.get_minima_decisions_in_degrees( ...
+                obj.get_objective_index() ...
+                );
+            obj.point_plotter.update_minimum( point );
+            
+        end
+        
+        
+        function update_picked_point( obj )
+            
+            indices = obj.get_indices_from_point( obj.picked_point );
+            value = obj.responses.get_objective_value( ...
+                indices, ...
+                obj.get_objective_index() ...
+                );
+            obj.picked_point_reporter.update_picked_point( ...
+                obj.picked_point, ...
+                value ...
+                );
+            
+        end
+        
+        
+        function update_value_range( obj )
+            
+            value_range = obj.get_value_range();
+            obj.thresholder.update_value_range( value_range );
+            
+        end
+        
+        
+        function update_surface_plots( obj, do_update_color_bar )
+            
+            if nargin < 2
+                do_update_color_bar = false;
+            end
+            value_range = obj.get_value_range();
+            values = obj.thresholder.pick_selected_values();
+            scaled_values = rescale( values, value_range.min, value_range.max );
+            obj.surface_plotter.update_surface_plot( scaled_values );
+            if do_update_color_bar
+                obj.axes.update_color_bar( value_range );
+            end
+            
+        end
+        
+        
+        function values = get_value_range( obj )
+            
+            values = obj.responses.get_objective_value_range( obj.get_objective_index() );
+            
+        end
+        
+        
+        function indices = get_indices_from_point( obj, point )
+            
+            indices = obj.responses.get_grid_indices_from_decisions( point );
+            
+        end
+        
+        
+        function value = get_objective_index( obj )
+            
+            value = obj.objective_picker.get_selection_index();
+            
+        end
+        
+        
+        function point = snap_to_grid( obj, point )
+            
+            indices = obj.get_indices_from_point( point );
+            point = obj.responses.get_point_in_degrees_from_indices( indices );
+            
+        end
+        
+        
         function create_figure( obj, ...
                 figure_resolution_px, ...
                 figure_title, ...
@@ -93,7 +188,6 @@ classdef (Sealed) UnitSphereResponsePlot < handle
                 phi_grid, ...
                 theta_grid ...
                 )
-            
             
             % HACK order matters, determines tab order
             wf = WidgetFactory( figure_resolution_px );
@@ -144,6 +238,11 @@ classdef (Sealed) UnitSphereResponsePlot < handle
             
         end
         
+    end
+    
+    
+    % callbacks
+    methods ( Access = private )
         
         function ui_objective_selection_list_box_Callback( obj, ~, ~, widget )
             
@@ -226,102 +325,6 @@ classdef (Sealed) UnitSphereResponsePlot < handle
         end
         
         
-        function update_points( obj )
-            
-            obj.update_pareto_front();
-            obj.update_minimum();
-            obj.update_picked_point();
-            
-        end
-        
-        
-        function update_pareto_front( obj )
-            
-            obj.point_plotter.update_pareto_front( ...
-                obj.get_pareto_front_decisions() ...
-                );
-            
-        end
-        
-        
-        function update_minimum( obj )
-            
-            obj.point_plotter.update_minimum( ...
-                obj.get_minima_decisions() ...
-                );
-            
-        end
-        
-        
-        function decisions = get_minima_decisions( obj )
-            
-            decisions = obj.responses.get_minima_decisions_in_degrees( ...
-                obj.get_objective_index() ...
-                );
-            
-        end
-        
-        
-        function decisions = get_pareto_front_decisions( obj )
-            
-            decisions = obj.responses.get_pareto_front_decisions_in_degrees();
-            
-        end
-        
-        
-        function update_picked_point( obj )
-            
-            indices = obj.get_indices_from_point( obj.picked_point );
-            value = obj.get_objective_value( indices );
-            obj.picked_point_reporter.update_picked_point( ...
-                obj.picked_point, ...
-                value ...
-                );
-            
-        end
-        
-        
-        function indices = get_indices_from_point( obj, point )
-            
-            indices = obj.responses.get_grid_indices_from_decisions( point );
-            
-        end
-        
-        
-        function update_value_range( obj )
-            
-            value_range = obj.get_value_range();
-            obj.thresholder.update_value_range( value_range );
-            
-        end
-        
-        
-        function update_surface_plots( obj, do_update_color_bar )
-            
-            if nargin < 2
-                do_update_color_bar = false;
-            end
-            value_range = obj.get_value_range();
-            values = obj.thresholder.pick_selected_values();
-            scaled_values = rescale( values, value_range.min, value_range.max );
-            obj.surface_plotter.update_surface_plot( scaled_values );
-            if do_update_color_bar
-                obj.axes.update_color_bar( value_range );
-            end
-            
-        end
-        
-        
-        function value = get_objective_value( obj, indices )
-            
-            value = obj.responses.get_objective_value( ...
-                indices, ...
-                obj.get_objective_index() ...
-                );
-            
-        end
-        
-        
         function values = value_picker_objective_values( obj, ~ )
             
             values = obj.responses.get_objective_values( ...
@@ -349,28 +352,6 @@ classdef (Sealed) UnitSphereResponsePlot < handle
                 obj.get_objective_index() ...
                 );
             values = double( values );
-            
-        end
-        
-        
-        function value = get_objective_index( obj )
-            
-            value = obj.objective_picker.get_selection_index();
-            
-        end
-        
-        
-        function values = get_value_range( obj )
-            
-            values = obj.responses.get_objective_value_range( obj.get_objective_index() );
-            
-        end
-        
-        
-        function point = snap_to_grid( obj, point )
-            
-            indices = obj.get_indices_from_point( point );
-            point = obj.responses.get_point_in_degrees_from_indices( indices );
             
         end
         
