@@ -21,6 +21,7 @@ classdef PointPlotWidgets < handle
             min_h.Callback = check_box_callback;
             min_h.Parent = figure_handle;
             
+            
             par_h = uicontrol();
             par_h.Style = 'checkbox';
             par_h.String = 'Show Pareto Front';
@@ -35,7 +36,12 @@ classdef PointPlotWidgets < handle
             par_h.Parent = figure_handle;
             
             obj.minimum_check_box_handle = min_h;
-            obj.pareto_check_box_handle = par_h;
+            obj.pareto_front_check_box_handle = par_h;
+            
+            obj.minimum_plot_handle = ...
+                AxesPlotHandle( @obj.create_minimum_plot );
+            obj.pareto_front_plot_handle = ...
+                AxesPlotHandle( @obj.create_pareto_front_plot );
             
         end
         
@@ -43,18 +49,19 @@ classdef PointPlotWidgets < handle
         function set_background_color( obj, color )
             
             obj.minimum_check_box_handle.BackgroundColor = color;
-            obj.pareto_check_box_handle.BackgroundColor = color;
+            obj.pareto_front_check_box_handle.BackgroundColor = color;
             
         end
         
         
-        function update_minimum( obj, response_axes, minimum_point )
+        function update_minimum( obj, axhm, point )
             
             switch obj.minimum_check_box_handle.Value
                 case false
-                    response_axes.remove_minimum();
+                    obj.minimum_plot_handle.remove();
                 case true
-                    response_axes.update_minimum( minimum_point );
+                    obj.minimum_plot_handle.remove();
+                    obj.minimum_plot_handle.update( axhm, point );
                 otherwise
                     assert( false );
             end
@@ -62,13 +69,14 @@ classdef PointPlotWidgets < handle
         end
         
         
-        function update_pareto_front( obj, response_axes, pareto_front_points )
+        function update_pareto_front( obj, axhm, points )
             
-            switch obj.pareto_check_box_handle.Value
+            switch obj.pareto_front_check_box_handle.Value
                 case false
-                    response_axes.remove_pareto_fronts();
+                    obj.pareto_front_plot_handle.remove();
                 case true
-                    response_axes.update_pareto_fronts( pareto_front_points );
+                    obj.pareto_front_plot_handle.remove();
+                    obj.pareto_front_plot_handle.update( axhm, points );
                 otherwise
                     assert( false );
             end
@@ -110,7 +118,10 @@ classdef PointPlotWidgets < handle
     properties ( Access = private )
         
         minimum_check_box_handle
-        pareto_check_box_handle
+        pareto_front_check_box_handle
+        
+        minimum_plot_handle
+        pareto_front_plot_handle
         
     end
     
@@ -119,6 +130,36 @@ classdef PointPlotWidgets < handle
         
         MIN_WIDTH = 140;
         PAR_WIDTH = 140;
+        
+    end
+    
+    
+    methods ( Access = private, Static )
+        
+        function plot_handle = create_minimum_plot( axhm, points )
+            
+            plot_handle = add_point_plot( axhm, points );
+            plot_handle.LineStyle = 'none';
+            plot_handle.Marker = 'o';
+            plot_handle.MarkerSize = 6;
+            plot_handle.MarkerEdgeColor = 'k';
+            plot_handle.MarkerFaceColor = 'g';
+            plot_handle.HitTest = 'off';
+            
+        end
+        
+        
+        function plot_handle = create_pareto_front_plot( axhm, points )
+            
+            plot_handle = add_point_plot( axhm, points );
+            plot_handle.LineStyle = 'none';
+            plot_handle.Marker = 'o';
+            plot_handle.MarkerSize = 4;
+            plot_handle.MarkerEdgeColor = 'k';
+            plot_handle.MarkerFaceColor = 'r';
+            plot_handle.HitTest = 'off';
+            
+        end
         
     end
     
