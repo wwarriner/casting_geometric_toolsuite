@@ -14,11 +14,12 @@ data.Properties.UserData.OptionsPath = which( data.Properties.UserData.OptionsPa
 %data.draft_metric( data.draft_metric > 0 ) = - ( 1 ./ log10( data.draft_metric( data.draft_metric > 0 ) ) );
 
 figure_resolution_px = 600;
-color_map = interp1( [ 0; 1 ], repmat( [ 0.3; 0.9 ], [ 1 3 ] ), linspace( 0, 1, 256 ) );
-grid_color = [ 0 0 0 ];
-usra = UnitSphereResponseAxes( color_map, grid_color );
 usrd = UnitSphereResponseData( data, figure_resolution_px );
-usrp = UnitSphereResponsePlot( usrd, usra, figure_resolution_px );
+usrp = UnitSphereResponsePlot( usrd, figure_resolution_px );
+color_map = interp1( [ 0; 1 ], repmat( [ 0.3; 0.9 ], [ 1 3 ] ), linspace( 0, 1, 256 ) );
+usrp.set_color_map( color_map );
+grid_color = [ 0 0 0 ];
+usrp.set_grid_color( grid_color );
 bg_color = [ 1 1 1 ];
 usrp.set_background_color( bg_color );
 

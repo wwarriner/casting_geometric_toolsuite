@@ -21,7 +21,6 @@ classdef PointPlotWidgets < handle
             min_h.Callback = check_box_callback;
             min_h.Parent = figure_handle;
             
-            
             par_h = uicontrol();
             par_h.Style = 'checkbox';
             par_h.String = 'Show Pareto Front';
@@ -54,14 +53,14 @@ classdef PointPlotWidgets < handle
         end
         
         
-        function update_minimum( obj, axhm, point )
+        function update_minimum( obj, point )
             
             switch obj.minimum_check_box_handle.Value
                 case false
                     obj.minimum_plot_handle.remove();
                 case true
                     obj.minimum_plot_handle.remove();
-                    obj.minimum_plot_handle.update( axhm, point );
+                    obj.minimum_plot_handle.update( point );
                 otherwise
                     assert( false );
             end
@@ -69,14 +68,14 @@ classdef PointPlotWidgets < handle
         end
         
         
-        function update_pareto_front( obj, axhm, points )
+        function update_pareto_front( obj, points )
             
             switch obj.pareto_front_check_box_handle.Value
                 case false
                     obj.pareto_front_plot_handle.remove();
                 case true
                     obj.pareto_front_plot_handle.remove();
-                    obj.pareto_front_plot_handle.update( axhm, points );
+                    obj.pareto_front_plot_handle.update( points );
                 otherwise
                     assert( false );
             end
@@ -136,27 +135,29 @@ classdef PointPlotWidgets < handle
     
     methods ( Access = private, Static )
         
-        function plot_handle = create_minimum_plot( axhm, points )
+        % color from http://jfly.iam.u-tokyo.ac.jp/color/#redundant2
+        function plot_handle = create_minimum_plot( points )
             
-            plot_handle = add_point_plot( axhm, points );
+            plot_handle = add_point_plot( points );
             plot_handle.LineStyle = 'none';
-            plot_handle.Marker = 'o';
-            plot_handle.MarkerSize = 6;
+            plot_handle.Marker = 's';
+            plot_handle.MarkerSize = 8;
             plot_handle.MarkerEdgeColor = 'k';
-            plot_handle.MarkerFaceColor = 'g';
+            plot_handle.MarkerFaceColor = [ 0.9 0.6 0 ];
             plot_handle.HitTest = 'off';
             
         end
         
         
-        function plot_handle = create_pareto_front_plot( axhm, points )
+        % color from http://jfly.iam.u-tokyo.ac.jp/color/#redundant2
+        function plot_handle = create_pareto_front_plot( points )
             
-            plot_handle = add_point_plot( axhm, points );
+            plot_handle = add_point_plot( points );
             plot_handle.LineStyle = 'none';
             plot_handle.Marker = 'o';
             plot_handle.MarkerSize = 4;
             plot_handle.MarkerEdgeColor = 'k';
-            plot_handle.MarkerFaceColor = 'r';
+            plot_handle.MarkerFaceColor = [ 0 0.6 0.5 ];
             plot_handle.HitTest = 'off';
             
         end

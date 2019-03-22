@@ -3,41 +3,56 @@ classdef (Sealed) UnitSphereResponsePlot < handle
     methods ( Access = public )
         
         function obj = UnitSphereResponsePlot( ...
-                unit_sphere_response_data, ...
-                unit_sphere_response_axes, ...
+                responses, ...
                 figure_resolution_px ...
                 )
             
             % create figure
-            figure_handle = obj.create_figure( ...
+            [ phi_grid, theta_grid ] = ...
+                responses.get_grid_in_degrees();
+            obj.create_figure( ...
                 figure_resolution_px, ...
-                unit_sphere_response_data, ...
-                unit_sphere_response_axes ...
-                );
+                responses.get_name(), ...
+                responses.get_all_display_titles(), ...
+                phi_grid, ...
+                theta_grid ...
+            );
             
             % assign inputs
-            obj.response_data = unit_sphere_response_data;
-            obj.response_axes = unit_sphere_response_axes;
-            obj.figure_h = figure_handle;
+            obj.responses = responses;
             
             % prepare visualization for the user
             obj.update_value_range();
             obj.update_surface_plots( obj.UPDATE_COLOR_BAR );
             
-            obj.last_picked_decisions = [ 0 0 ];
+            obj.picked_point = [ 0 0 ];
             obj.update_picked_point();
             
             drawnow();
-                        
+            
+        end
+        
+        
+        function set_color_map( obj, color_map )
+            
+            obj.axes.set_color_map( color_map );
+            
+        end
+        
+        
+        function set_grid_color( obj, grid_color )
+            
+            obj.axes.set_grid_color( grid_color );
+            
         end
         
         
         function set_background_color( obj, bg_color )
             
-            obj.figure_h.Color = bg_color;
-            obj.static_text_h.BackgroundColor = bg_color;
-            obj.thresholding_widgets_h.set_background_color( bg_color );
-            obj.point_plot_widgets_h.set_background_color( bg_color );
+            obj.figure_handle.Color = bg_color;
+            obj.picked_point_reporter.set_background_color( bg_color );
+            obj.thresholder.set_background_color( bg_color );
+            obj.point_plotter.set_background_color( bg_color );
             
         end
         
@@ -46,19 +61,18 @@ classdef (Sealed) UnitSphereResponsePlot < handle
     
     properties ( Access = private )
         
-        response_data
-        last_picked_decisions
+        responses
+        picked_point
         
-        figure_h
+        figure_handle
         
-        static_text_h
-        objective_picker_h
-                
-        response_axes
-        
-        thresholding_widgets_h
-        point_plot_widgets_h
-        visualization_widget_h
+        picked_point_reporter
+        objective_picker
+        axes
+        surface_plotter
+        thresholder
+        point_plotter
+        visualizer
         
     end
     
@@ -72,48 +86,44 @@ classdef (Sealed) UnitSphereResponsePlot < handle
     
     methods ( Access = private )
         
-        function figure_handle = create_figure( obj, ...
+        function create_figure( obj, ...
                 figure_resolution_px, ...
-                unit_sphere_response_data, ...
-                unit_sphere_response_axes ...
+                figure_title, ...
+                objective_names, ...
+                phi_grid, ...
+                theta_grid ...
                 )
             
-            widget_factory = WidgetFactory( figure_resolution_px );
             
-            figure_handle = widget_factory.create_figure( ...
-                unit_sphere_response_data.get_name() ...
+            % HACK order matters, determines tab order
+            wf = WidgetFactory( figure_resolution_px );
+            h = wf.create_figure( figure_title );
+            obj.picked_point_reporter = wf.add_picked_point_reporter_widget( ...
+                h ...
                 );
-            
-            obj.static_text_h = widget_factory.add_point_information_text( ...
-                figure_handle ...
-                );
-            
             DEFAULT_OBJECTIVE_INDEX = 1;
-            obj.objective_picker_h = widget_factory.add_objective_picker_widget( ...
-                figure_handle, ...
-                unit_sphere_response_data.get_all_display_titles(), ...
+            obj.objective_picker = wf.add_objective_picker_widget( ...
+                h, ...
+                objective_names, ...
                 DEFAULT_OBJECTIVE_INDEX, ...
-                @obj.ui_objective_selection_listbox_Callback ...
+                @obj.ui_objective_selection_list_box_Callback ...
                 );
-            
-            [ phi_grid, theta_grid ] = unit_sphere_response_data.get_grid_in_degrees();
-            widget_factory.add_response_axes( ...
-                figure_handle, ...
-                unit_sphere_response_axes, ...
-                phi_grid, ...
-                theta_grid, ...
+            obj.axes = wf.add_axes_widget( ...
+                h, ...
                 @obj.ui_axes_button_down_Callback ...
                 );
-            
-            obj.point_plot_widgets_h = widget_factory.add_point_plot_widgets( ...
-                figure_handle, ...
+            obj.surface_plotter = wf.add_surface_plotter_widget( ...
+                phi_grid, ...
+                theta_grid ...
+                );
+            obj.point_plotter = wf.add_point_plot_widgets( ...
+                h, ...
                 @obj.ui_point_check_box_Callback ...
                 );
-            
             DEFAULT_THRESHOLD_SELECTION_ID = ThresholdingWidgets.NO_THRESHOLD;
             ids = ThresholdingWidgets.get_ids();
-            obj.thresholding_widgets_h = widget_factory.add_thresholding_widget( ...
-                figure_handle, ...
+            obj.thresholder = wf.add_thresholding_widget( ...
+                h, ...
                 DEFAULT_THRESHOLD_SELECTION_ID, ...
                 containers.Map( ids, { @obj.value_picker_objective_values, @obj.value_picker_thresholded_values, @obj.value_picker_quantile_values } ), ...
                 containers.Map( ids, { 'Threshold Off', 'Value Threshold', 'Quantile Threshold' } ), ...
@@ -124,18 +134,20 @@ classdef (Sealed) UnitSphereResponsePlot < handle
                 @obj.ui_threshold_edit_text_Callback, ...
                 @obj.ui_threshold_slider_Callback ...
                 );
-            obj.thresholding_widgets_h.select( ThresholdingWidgets.NO_THRESHOLD );
-            
-            obj.visualization_widget_h = widget_factory.add_visualization_widget( ...
-                figure_handle, ...
+            obj.thresholder.select( ThresholdingWidgets.NO_THRESHOLD );
+            obj.visualizer = wf.add_visualization_widget( ...
+                h, ...
                 @obj.ui_visualize_button_Callback ...
                 );
+            
+            obj.figure_handle = h;
             
         end
         
         
-        function ui_objective_selection_listbox_Callback( obj, ~, ~, widget )
+        function ui_objective_selection_list_box_Callback( obj, ~, ~, widget )
             
+            obj.axes.activate( obj.figure_handle );
             if widget.update_selection()
                 obj.update_value_range();
                 obj.update_surface_plots( obj.UPDATE_COLOR_BAR );
@@ -148,74 +160,68 @@ classdef (Sealed) UnitSphereResponsePlot < handle
         
         function ui_threshold_selection_changed_Callback( obj, ~, ~ )
             
+            obj.axes.activate( obj.figure_handle );
             obj.update_surface_plots();
-            drawnow();
-            
-        end
-        
-        
-        function ui_threshold_edit_text_Callback( obj, ~, ~, widget )
-
-            if widget.update_threshold_value_from_edit_text()
-                widget.select();
-                obj.update_surface_plots();
-            end
-            drawnow();
-            
-        end
-        
-        
-        function ui_threshold_slider_Callback( obj, ~, ~, widget )
-
-            if widget.update_threshold_value_from_slider()
-                widget.select();
-                obj.update_surface_plots();
-            end
-            drawnow();
-            
-        end
-                
-        
-        function ui_point_check_box_Callback( obj, ~, ~, ~ )
-            
             obj.update_points();
             drawnow();
             
         end
         
         
-        function ui_visualize_button_Callback( obj, ~, ~, ~ )
+        function ui_threshold_edit_text_Callback( obj, ~, ~, widget )
             
-            obj.visualization_widget_h.generate_visualization( ...
-                obj.last_picked_decisions, ...
-                obj.response_data ...
+            obj.axes.activate( obj.figure_handle );
+            if widget.update_threshold_value_from_edit_text()
+                widget.select();
+                obj.update_surface_plots();
+            end
+            obj.update_points();
+            drawnow();
+            
+        end
+        
+        
+        function ui_threshold_slider_Callback( obj, ~, ~, widget )
+            
+            obj.axes.activate( obj.figure_handle );
+            if widget.update_threshold_value_from_slider()
+                widget.select();
+                obj.update_surface_plots();
+            end
+            obj.update_points();
+            drawnow();
+            
+        end
+        
+        
+        function ui_point_check_box_Callback( obj, ~, ~ )
+            
+            obj.axes.activate( obj.figure_handle );
+            obj.update_points();
+            drawnow();
+            
+        end
+        
+        
+        function ui_visualize_button_Callback( obj, ~, ~ )
+            
+            obj.visualizer.generate_visualization( ...
+                obj.picked_point, ...
+                obj.responses ...
                 );
             
         end
         
         
-        function ui_axes_button_down_Callback( obj, h, ~, ~ )
+        function ui_axes_button_down_Callback( obj, ~, ~ )
             
-            point_values = gcpmap( h );
-            phi_raw = point_values( 1, 2 );
-            theta_raw = point_values( 1, 1 );
-            [ phi_index, theta_index ] = ...
-                obj.get_grid_indices_from_decisions( phi_raw, theta_raw );
-            [ phi, theta ] = ...
-                obj.response_data.get_grid_decisions_from_indices_in_radians( phi_index, theta_index );
-            phi_deg = rad2deg( phi );
-            theta_deg = rad2deg( theta );
-            value = num2str( obj.get_objective_value( theta_index, phi_index ) );
-            degrees = char( 176 );
-            pattern = [ ...
-                'Selected Point is @X: %.2f' degrees ...
-                ', @Y: %.2f' degrees ...
-                ', Value: %s' ...
-                ];
-            obj.static_text_h.String = sprintf( pattern, phi_deg, theta_deg, value );
+            point = obj.axes.get_picked_point();
+            obj.picked_point = obj.snap_to_grid( point );
+            
+            % update
+            obj.axes.activate( obj.figure_handle );
+            obj.update_points();
             drawnow();
-            obj.last_picked_decisions = [ phi theta ];
-            obj.update_picked_point();
             
         end
         
@@ -231,8 +237,7 @@ classdef (Sealed) UnitSphereResponsePlot < handle
         
         function update_pareto_front( obj )
             
-            obj.point_plot_widgets_h.update_pareto_front( ...
-                obj.response_axes.get_axes(), ...
+            obj.point_plotter.update_pareto_front( ...
                 obj.get_pareto_front_decisions() ...
                 );
             
@@ -241,8 +246,7 @@ classdef (Sealed) UnitSphereResponsePlot < handle
         
         function update_minimum( obj )
             
-            obj.point_plot_widgets_h.update_minimum( ...
-                obj.response_axes.get_axes(), ...
+            obj.point_plotter.update_minimum( ...
                 obj.get_minima_decisions() ...
                 );
             
@@ -251,7 +255,7 @@ classdef (Sealed) UnitSphereResponsePlot < handle
         
         function decisions = get_minima_decisions( obj )
             
-            decisions = obj.response_data.get_minima_decisions_in_degrees( ...
+            decisions = obj.responses.get_minima_decisions_in_degrees( ...
                 obj.get_objective_index() ...
                 );
             
@@ -260,26 +264,26 @@ classdef (Sealed) UnitSphereResponsePlot < handle
         
         function decisions = get_pareto_front_decisions( obj )
             
-            decisions = obj.response_data.get_pareto_front_decisions_in_degrees();
+            decisions = obj.responses.get_pareto_front_decisions_in_degrees();
             
         end
         
         
         function update_picked_point( obj )
             
-            obj.response_axes.update_picked_point( rad2deg( obj.last_picked_decisions ) );
+            indices = obj.get_indices_from_point( obj.picked_point );
+            value = obj.get_objective_value( indices );
+            obj.picked_point_reporter.update_picked_point( ...
+                obj.picked_point, ...
+                value ...
+                );
             
         end
         
         
-        function [ phi_index, theta_index ] = get_grid_indices_from_decisions( ...
-                obj, ...
-                phi, ...
-                theta ...
-                )
+        function indices = get_indices_from_point( obj, point )
             
-            [ phi_index, theta_index ] = ...
-                obj.response_data.get_grid_indices_from_decisions( phi, theta );
+            indices = obj.responses.get_grid_indices_from_decisions( point );
             
         end
         
@@ -287,7 +291,7 @@ classdef (Sealed) UnitSphereResponsePlot < handle
         function update_value_range( obj )
             
             value_range = obj.get_value_range();
-            obj.thresholding_widgets_h.update_value_range( value_range );
+            obj.thresholder.update_value_range( value_range );
             
         end
         
@@ -297,18 +301,21 @@ classdef (Sealed) UnitSphereResponsePlot < handle
             if nargin < 2
                 do_update_color_bar = false;
             end
-            color_bar_range = obj.get_value_range();
-            values = obj.thresholding_widgets_h.pick_selected_values();
-            obj.response_axes.update_surface_plots( values, do_update_color_bar, color_bar_range );
+            value_range = obj.get_value_range();
+            values = obj.thresholder.pick_selected_values();
+            scaled_values = rescale( values, value_range.min, value_range.max );
+            obj.surface_plotter.update_surface_plot( scaled_values );
+            if do_update_color_bar
+                obj.axes.update_color_bar( value_range );
+            end
             
         end
         
         
-        function value = get_objective_value( obj, phi_index, theta_index )
+        function value = get_objective_value( obj, indices )
             
-            value = obj.response_data.get_objective_value( ...
-                phi_index, ...
-                theta_index, ...
+            value = obj.responses.get_objective_value( ...
+                indices, ...
                 obj.get_objective_index() ...
                 );
             
@@ -317,7 +324,7 @@ classdef (Sealed) UnitSphereResponsePlot < handle
         
         function values = value_picker_objective_values( obj, ~ )
             
-            values = obj.response_data.get_objective_values( ...
+            values = obj.responses.get_objective_values( ...
                 obj.get_objective_index() ...
                 );
             
@@ -326,7 +333,7 @@ classdef (Sealed) UnitSphereResponsePlot < handle
         
         function values = value_picker_quantile_values( obj, quantile )
             
-            values = obj.response_data.get_quantile_values( ...
+            values = obj.responses.get_quantile_values( ...
                 quantile, ...
                 obj.get_objective_index() ...
                 );
@@ -337,7 +344,7 @@ classdef (Sealed) UnitSphereResponsePlot < handle
         
         function values = value_picker_thresholded_values( obj, threshold )
             
-            values = obj.response_data.get_thresholded_values( ...
+            values = obj.responses.get_thresholded_values( ...
                 threshold, ...
                 obj.get_objective_index() ...
                 );
@@ -348,14 +355,22 @@ classdef (Sealed) UnitSphereResponsePlot < handle
         
         function value = get_objective_index( obj )
             
-            value = obj.objective_picker_h.get_selection_index();
+            value = obj.objective_picker.get_selection_index();
             
         end
         
         
         function values = get_value_range( obj )
             
-            values = obj.response_data.get_objective_value_range( obj.get_objective_index() );
+            values = obj.responses.get_objective_value_range( obj.get_objective_index() );
+            
+        end
+        
+        
+        function point = snap_to_grid( obj, point )
+            
+            indices = obj.get_indices_from_point( point );
+            point = obj.responses.get_point_in_degrees_from_indices( indices );
             
         end
         
