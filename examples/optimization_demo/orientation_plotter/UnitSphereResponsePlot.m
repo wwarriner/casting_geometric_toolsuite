@@ -37,8 +37,7 @@ classdef (Sealed) UnitSphereResponsePlot < handle
             obj.figure_h.Color = bg_color;
             obj.static_text_h.BackgroundColor = bg_color;
             obj.thresholding_widgets_h.set_background_color( bg_color );
-            obj.minima_checkbox_h.BackgroundColor = bg_color;
-            obj.pareto_front_checkbox_h.BackgroundColor = bg_color;
+            obj.point_plot_widgets_h.set_background_color( bg_color );
             
         end
         
@@ -53,26 +52,18 @@ classdef (Sealed) UnitSphereResponsePlot < handle
         figure_h
         
         static_text_h
-        visualize_button_h
-        minima_checkbox_h
-        pareto_front_checkbox_h
-        
+        objective_picker_h
+                
         response_axes
         
-        objective_picker_h
         thresholding_widgets_h
-        
+        point_plot_widgets_h
+        visualization_widget_h
         
     end
     
     
     properties ( Access = private, Constant )
-        
-        MINIMA_OFF = false;
-        MINIMA_ON = true;
-        
-        PARETO_FRONT_OFF = false;
-        PARETO_FRONT_ON = true;
         
         UPDATE_COLOR_BAR = true;
         
@@ -114,18 +105,10 @@ classdef (Sealed) UnitSphereResponsePlot < handle
                 @obj.ui_axes_button_down_Callback ...
                 );
             
-            [ obj.minima_checkbox_h, obj.pareto_front_checkbox_h ] = ...
-                widget_factory.add_point_plot_widgets( ...
+            obj.point_plot_widgets_h = widget_factory.add_point_plot_widgets( ...
                 figure_handle, ...
-                @obj.ui_minima_checkbox_Callback, ...
-                @obj.ui_pareto_front_checkbox_Callback ...
+                @obj.ui_point_check_box_Callback ...
                 );
-            obj.minima_checkbox_h.Min = obj.MINIMA_OFF;
-            obj.minima_checkbox_h.Max = obj.MINIMA_ON;
-            obj.minima_checkbox_h.Value = obj.MINIMA_OFF;
-            obj.pareto_front_checkbox_h.Min = obj.PARETO_FRONT_OFF;
-            obj.pareto_front_checkbox_h.Max = obj.PARETO_FRONT_ON;
-            obj.pareto_front_checkbox_h.Value = obj.PARETO_FRONT_OFF;
             
             DEFAULT_THRESHOLD_SELECTION_ID = ThresholdingWidgets.NO_THRESHOLD;
             ids = ThresholdingWidgets.get_ids();
@@ -143,7 +126,7 @@ classdef (Sealed) UnitSphereResponsePlot < handle
                 );
             obj.thresholding_widgets_h.select( ThresholdingWidgets.NO_THRESHOLD );
             
-            obj.visualize_button_h = widget_factory.add_visualize_button( ...
+            obj.visualization_widget_h = widget_factory.add_visualization_widget( ...
                 figure_handle, ...
                 @obj.ui_visualize_button_Callback ...
                 );
@@ -156,8 +139,7 @@ classdef (Sealed) UnitSphereResponsePlot < handle
             if widget.update_selection()
                 obj.update_value_range();
                 obj.update_surface_plots( obj.UPDATE_COLOR_BAR );
-                obj.update_minima();
-                obj.update_picked_point();
+                obj.update_points();
             end
             drawnow();
             
@@ -194,122 +176,20 @@ classdef (Sealed) UnitSphereResponsePlot < handle
         end
                 
         
-        function ui_minima_checkbox_Callback( obj, ~, ~, ~ )
+        function ui_point_check_box_Callback( obj, ~, ~, ~ )
             
-            obj.update_minima();
+            obj.update_points();
             drawnow();
-            
-        end
-        
-        
-        function update_minima( obj )
-            
-            switch obj.minima_checkbox_h.Value
-                case obj.MINIMA_OFF
-                    obj.response_axes.remove_minima();
-                case obj.MINIMA_ON
-                    obj.response_axes.update_minima( obj.get_minima_decisions() );
-                otherwise
-                    assert( false );
-            end
-            
-        end
-        
-        
-        function decisions = get_minima_decisions( obj )
-            
-            decisions = obj.response_data.get_minima_decisions_in_degrees( ...
-                obj.get_objective_index() ...
-                );
-            
-        end
-        
-        
-        function ui_pareto_front_checkbox_Callback( obj, handle, ~, ~ )
-            
-            switch handle.Value
-                case obj.PARETO_FRONT_OFF
-                    obj.response_axes.remove_pareto_fronts();
-                case obj.PARETO_FRONT_ON
-                    obj.response_axes.update_pareto_fronts( ...
-                        obj.get_pareto_front_decisions() ...
-                        );
-                otherwise
-                    assert( false );
-            end
-            obj.update_minima();
-            drawnow();
-            
-        end
-        
-        
-        function decisions = get_pareto_front_decisions( obj )
-            
-            decisions = obj.response_data.get_pareto_front_decisions_in_degrees();
             
         end
         
         
         function ui_visualize_button_Callback( obj, ~, ~, ~ )
             
-            % TODO lock out other callbacks while running
-            % TODO feeder intersection with undercuts means inaccessible
-            
-            decisions = obj.last_picked_decisions;
-            
-            fh = figure();
-            fh.Name = sprintf( ...
-                'Visualization with @X: %.2f and @Y: %.2f', ...
-                rad2deg( decisions( 1 ) ), ...
-                rad2deg( decisions( 2 ) ) ...
+            obj.visualization_widget_h.generate_visualization( ...
+                obj.last_picked_decisions, ...
+                obj.response_data ...
                 );
-            fh.NumberTitle = 'off';
-            fh.MenuBar = 'none';
-            fh.ToolBar = 'none';
-            fh.DockControls = 'off';
-            fh.Resize = 'off';
-            cameratoolbar( fh, 'show' );
-            
-            axh = axes( fh );
-            axh.Color = 'none';
-            hold( axh, 'on' );
-            rotated_component_fv = obj.response_data.get_rotated_component_fv( obj.last_picked_decisions );
-            rch = patch( axh, rotated_component_fv, 'SpecularStrength', 0.0 );
-            rch.FaceColor = [ 0.9 0.9 0.9 ];
-            rch.EdgeColor = 'none';
-            
-            rotated_feeder_fvs = obj.response_data.get_rotated_feeder_fvs( obj.last_picked_decisions );
-            for i = 1 : numel( rotated_feeder_fvs )
-                
-                rfh = patch( axh, rotated_feeder_fvs{ i }, 'SpecularStrength', 0.0 );
-                rfh.FaceColor = [ 0.75 0.0 0.0 ];
-                rfh.FaceAlpha = 0.5;
-                rfh.EdgeColor = 'none';
-                
-            end
-            
-            all_fvs = [ rotated_feeder_fvs; rotated_component_fv ];
-            min_point = [ 0 0 0 ];
-            max_point = [ 0 0 0 ];
-            for i = 1 : numel( all_fvs )
-                
-                curr_min_point = min( all_fvs{ i }.vertices );
-                min_point = min( [ curr_min_point; min_point ] );
-                
-                curr_max_point = max( all_fvs{ i }.vertices );
-                max_point = max( [ curr_max_point; max_point ] );
-                
-            end
-            cor_point = obj.response_data.get_center_of_rotation();
-            pa = PrettyAxes3D( min_point, max_point, cor_point );
-            pa.draw( axh );
-            bm = BasicMold( min_point, max_point, cor_point );
-            bm.draw( axh );
-            view( 3 );
-            light( axh, 'Position', [ 0 0 -1 ] );
-            light( axh, 'Position', [ 0 0 1 ] );
-            
-            axis( axh, 'equal', 'vis3d', 'off' );
             
         end
         
@@ -336,6 +216,51 @@ classdef (Sealed) UnitSphereResponsePlot < handle
             drawnow();
             obj.last_picked_decisions = [ phi theta ];
             obj.update_picked_point();
+            
+        end
+        
+        
+        function update_points( obj )
+            
+            obj.update_pareto_front();
+            obj.update_minimum();
+            obj.update_picked_point();
+            
+        end
+        
+        
+        function update_pareto_front( obj )
+            
+            obj.point_plot_widgets_h.update_pareto_front( ...
+                obj.response_axes, ...
+                obj.get_pareto_front_decisions() ...
+                );
+            
+        end
+        
+        
+        function update_minimum( obj )
+            
+            obj.point_plot_widgets_h.update_minimum( ...
+                obj.response_axes, ...
+                obj.get_minima_decisions() ...
+                );
+            
+        end
+        
+        
+        function decisions = get_minima_decisions( obj )
+            
+            decisions = obj.response_data.get_minima_decisions_in_degrees( ...
+                obj.get_objective_index() ...
+                );
+            
+        end
+        
+        
+        function decisions = get_pareto_front_decisions( obj )
+            
+            decisions = obj.response_data.get_pareto_front_decisions_in_degrees();
             
         end
         

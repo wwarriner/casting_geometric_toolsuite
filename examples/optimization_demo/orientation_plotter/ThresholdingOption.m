@@ -59,7 +59,7 @@ classdef ThresholdingOption < handle
             
             obj.radio_button_handle.BackgroundColor = color;
             obj.edit_text_handle.BackgroundColor = color;
-            obj.slider_handle.BackgroundColor = color;
+            %obj.slider_handle.BackgroundColor = color;
             
         end
         

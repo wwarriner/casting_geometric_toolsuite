@@ -59,14 +59,14 @@ classdef (Sealed) UnitSphereResponseAxes < handle
         end
         
         
-        function update_minima( obj, values )
+        function update_minimum( obj, point )
             
-            obj.update_plot_handles( obj.minimum_plot_handles, values );
+            obj.update_plot_handles( obj.minimum_plot_handles, point );
             
         end
         
         
-        function remove_minima( obj )
+        function remove_minimum( obj )
             
             obj.remove_plot_handles( obj.minimum_plot_handles );
             
