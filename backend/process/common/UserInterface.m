@@ -1,4 +1,4 @@
-classdef UserInterface < Cancelable & Notifier & Print & handle
+classdef UserInterface < Cancelable & Notifier & Print & Saveable & handle
     
     % Common mixin collector
     methods ( Access = protected )
