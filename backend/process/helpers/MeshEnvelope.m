@@ -58,6 +58,13 @@ classdef ( Sealed ) MeshEnvelope < ProcessHelper & matlab.mixin.Copyable
         end
         
         
+        function volume = get_volume( obj )
+            
+            volume = prod( obj.lengths );
+            
+        end
+        
+        
         function clone = clone_uniform_padding( obj, padding )
             
             clone = obj.clone_padding( padding, padding );
