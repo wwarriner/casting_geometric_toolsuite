@@ -1,14 +1,14 @@
 classdef (Sealed) Component < Process & matlab.mixin.Copyable
     
     properties ( GetAccess = public, SetAccess = private )
-        %% inputs
+        % inputs
         stl_path
         
-        %% outputs
+        % outputs
         path
         name
         
-        %% affected by rigid transformations
+        % affected by rigid transformations
         fv
         normals
         envelope
@@ -17,14 +17,14 @@ classdef (Sealed) Component < Process & matlab.mixin.Copyable
         reduced_draft_metric
         convex_hull_fv
         
-        %% affected by scaling transformations
+        % affected by scaling transformations
         centroid
         convex_hull_volume
         triangle_areas
         surface_area
         volume
         
-        %% transformation invariant
+        % transformation invariant
         hole_count
         flatness
         ranginess
