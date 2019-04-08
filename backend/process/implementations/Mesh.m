@@ -1,12 +1,12 @@
 classdef ( Sealed ) Mesh < Process
     
     properties ( GetAccess = public, SetAccess = private )
-        %% inputs
+        % inputs
         component
         desired_element_count
         desired_envelope
         
-        %% outputs
+        % outputs
         element
         scale % mm
         
