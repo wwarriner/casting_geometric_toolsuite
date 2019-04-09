@@ -17,6 +17,7 @@ classdef FdmDashboard < handle
             obj.fh = figure();
             obj.fh.Position = [ 50 50 1200 800 ];
             obj.fh.Name = 'Solidification FDM Dashboard';
+            obj.fh.NumberTitle = 'off';
             obj.fh.MenuBar = 'none';
             obj.fh.ToolBar = 'none';
             obj.fh.DockControls = 'off';
