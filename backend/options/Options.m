@@ -5,15 +5,15 @@ classdef (Sealed) Options < dynamicprops
         function obj = Options( option_defaults_path, varargin )
             
             if ~isempty( option_defaults_path )
-                Options.update_values( option_defaults_path, @obj.assign_default );
+                Options.update_values( option_defaults_path, @obj.assign_properties );
             end
             
             if nargin == 2
-                Options.update_values( varargin{ 1 }, @obj.assign_user );
+                Options.update_values( varargin{ 1 }, @obj.assign_properties );
             elseif nargin == 4
-                Options.update_values( varargin{ 1 }, @obj.assign_user );
-                obj.assign_user( 'input_stl_path', varargin{ 2 } );
-                obj.assign_user( 'output_path', varargin{ 3 } );
+                Options.update_values( varargin{ 1 }, @obj.assign_properties );
+                obj.assign_properties( 'input_stl_path', varargin{ 2 } );
+                obj.assign_properties( 'output_path', varargin{ 3 } );
             else
                 error( 'Incorrect arguments' );
             end
@@ -25,7 +25,7 @@ classdef (Sealed) Options < dynamicprops
     
     methods ( Access = private )
         
-        function assign_default( obj, key, value )
+        function assign_properties( obj, key, value )
             
             obj.add_property( key );
             obj.(key) = value;
@@ -33,21 +33,12 @@ classdef (Sealed) Options < dynamicprops
         end
         
         
-        function assign_user( obj, key, value )
-            
-            if ~isprop( obj, key )
-                %warning( '%s is not a default option\n', key );
-                obj.add_property( key );
-            end
-            obj.(key) = value;
-            
-        end
-        
-        
         function add_property( obj, key )
             
-            P = addprop( obj, key );
-            P.Access = 'public';
+            if ~isprop( obj, key )
+                P = addprop( obj, key );
+                P.Access = 'public';
+            end
             
         end
         

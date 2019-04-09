@@ -19,13 +19,6 @@ classdef (Sealed) Results < handle
         end
         
         
-        function keyset = get_keys( obj )
-            
-            keyset = keys( obj.results );
-            
-        end
-        
-        
         function add( obj, key, result )
             
             obj.results( key ) = result;
@@ -43,6 +36,20 @@ classdef (Sealed) Results < handle
         function result = get( obj, key )
             
             result = obj.results( key );
+            
+        end
+        
+        
+        function keyset = get_keys( obj )
+            
+            keyset = keys( obj.results );
+            
+        end
+        
+        
+        function count = get_count( obj )
+            
+            count = numel( obj.get_keys() );
             
         end
         

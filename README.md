@@ -29,7 +29,7 @@ Added on 28 Nov 2018 is an orientation plotting tool. The tool plots casting ori
 - [CDF Quantiles](https://www.mathworks.com/matlabcentral/fileexchange/70274-cdf-quantiles) (matlab_quantiles, UNLICENSE)
 - [Mesh voxelization](https://www.mathworks.com/matlabcentral/fileexchange/27390-mesh-voxelisation) (Mesh_voxelization, BSD)
 - [A suite of minimal bounding objects](https://www.mathworks.com/matlabcentral/fileexchange/34767-a-suite-of-minimal-bounding-objects) (MinBoundSuite, BSD)
-- [Perceptually uniform colormaps](https://www.mathworks.com/matlabcentral/fileexchange/51986-perceptually-uniform-colormaps) (perceptually_uniform_colormaps, BSD)
+- [Perceptually uniform colormaps](https://www.mathworks.com/matlabcentral/fileexchange/51986-perceptually-uniform-colormaps) (perceptually_uniform_colormaps, [custom license](https://github.com/matplotlib/matplotlib/blob/master/LICENSE/LICENSE))
 - [PrettyAxes3DMatlab](https://www.mathworks.com/matlabcentral/fileexchange/69552-prettyaxes3dmatlab) (PrettyAxes3DMatlab, UNLICENSE)
 - [stlwrite - write ASCII or Binary STL files](https://www.mathworks.com/matlabcentral/fileexchange/20922-stlwrite-write-ascii-or-binary-stl-files) (stlwrite, BSD)
 - [subtightplot](https://www.mathworks.com/matlabcentral/fileexchange/39664-subtightplot) (subtightplot, BSD)

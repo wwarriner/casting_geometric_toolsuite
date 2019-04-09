@@ -1,14 +1,14 @@
 classdef ( Sealed ) Mesh < Process
     
     properties ( GetAccess = public, SetAccess = private )
-        %% inputs
+        % inputs
         component
         desired_element_count
         desired_envelope
         
-        %% outputs
+        % outputs
         element
-        scale
+        scale % mm
         
         interior
         surface
@@ -108,6 +108,17 @@ classdef ( Sealed ) Mesh < Process
         end
         
         
+        function fdm_mesh = get_fdm_mesh( obj, padding_in_mm, mold_id, melt_id )
+            
+            fdm_mesh = double( obj.interior );
+            fdm_mesh( obj.interior == 0 ) = mold_id;
+            fdm_mesh( obj.interior == 1 ) = melt_id;
+            pad_count = round( obj.to_mesh_units( padding_in_mm ) );
+            fdm_mesh = padarray( fdm_mesh, pad_count .* ones( 3, 1 ), mold_id, 'both' );
+            
+        end
+        
+        
         function element_area = get_element_area( obj )
             
             element_area = obj.element.area;
@@ -150,6 +161,20 @@ classdef ( Sealed ) Mesh < Process
         function values_mesh_units = to_mesh_units( obj, values_stl_units )
             
             values_mesh_units = values_stl_units ./ obj.scale;
+            
+        end
+        
+        
+        function values_mesh_units = to_mesh_area( obj, values_stl_units )
+            
+            values_mesh_units = values_stl_units ./ obj.get_element_area();
+            
+        end
+        
+        
+        function values_mesh_units = to_mesh_volume( obj, values_stl_units )
+            
+            values_mesh_units = values_stl_units ./ obj.get_element_volume();
             
         end
         

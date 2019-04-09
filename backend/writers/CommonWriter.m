@@ -21,9 +21,11 @@ classdef (Sealed) CommonWriter < handle
         function obj = CommonWriter( output_path, name, varargin )
             
             if numel( varargin ) == 1
+                % Mesh
                 obj.spacing = varargin{ 1 }.spacing;
                 obj.origin = varargin{ 1 }.origin;
             elseif numel( varargin ) == 2
+                % spacing, origin directly
                 obj.spacing = varargin{ 1 };
                 obj.origin = varargin{ 2 };
             else

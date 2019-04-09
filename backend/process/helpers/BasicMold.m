@@ -8,14 +8,14 @@ classdef (Sealed) BasicMold < handle & PrettyAxes3D
             
         end
         
-        function draw( obj, axes_handle )
+        function handles = draw( obj, axes_handle )
             
             state_restorer = obj.hold_if_not_held( axes_handle ); %#ok<NASGU>
             
             extrema = obj.get_extrema( axes_handle );
             [ min_point, max_point ] = obj.extend_extrema( extrema, obj.MOLD_SCALING_FACTOR );
-            obj.plot_box( axes_handle, min_point, max_point, min_point, obj.DRAG_COLOR );
-            obj.plot_box( axes_handle, min_point, max_point, max_point, obj.COPE_COLOR );
+            handles( 1 ) = obj.plot_box( axes_handle, min_point, max_point, min_point, obj.DRAG_COLOR );
+            handles( 2 ) = obj.plot_box( axes_handle, min_point, max_point, max_point, obj.COPE_COLOR );
             
         end
         
@@ -33,7 +33,7 @@ classdef (Sealed) BasicMold < handle & PrettyAxes3D
     
     methods ( Access = private )
         
-        function plot_box( obj, axes_handle, min_point, max_point, extreme, color )
+        function ph = plot_box( obj, axes_handle, min_point, max_point, extreme, color )
             
             origin = obj.get_origin();
             box.vertices = [ ...

@@ -140,7 +140,9 @@ classdef ThinWall < Process
             obj.mesh = mesh;
             obj.profile = profile;
             obj.threshold_in_component_units = threshold_in_component_units;
-            obj.region = region;
+            if isempty( obj.region )
+                obj.region = region;
+            end
             obj.sweep_coefficient = sweep_coefficient;
             obj.run();
             

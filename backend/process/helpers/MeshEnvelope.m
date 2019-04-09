@@ -1,4 +1,4 @@
-classdef ( Sealed ) MeshEnvelope < ProcessHelper
+classdef ( Sealed ) MeshEnvelope < ProcessHelper & matlab.mixin.Copyable
     
     properties ( GetAccess = public, SetAccess = private )
         
@@ -58,20 +58,26 @@ classdef ( Sealed ) MeshEnvelope < ProcessHelper
         end
         
         
-        function add_uniform_padding( obj, padding )
+        function volume = get_volume( obj )
             
-            obj.min_point = obj.min_point - padding;
-            obj.max_point = obj.max_point + padding;
-            obj.recompute();
+            volume = prod( obj.lengths );
             
         end
         
         
-        function add_padding( obj, pre_padding, post_padding )
+        function clone = clone_uniform_padding( obj, padding )
             
-            obj.min_point = obj.min_point - pre_padding;
-            obj.max_point = obj.max_point + post_padding;
-            obj.recompute();
+            clone = obj.clone_padding( padding, padding );
+            
+        end
+        
+        
+        function clone = clone_padding( obj, pre_padding, post_padding )
+            
+            clone = obj.copy();
+            clone.min_point = clone.min_point - pre_padding;
+            clone.max_point = clone.max_point + post_padding;
+            clone.recompute();
             
         end
         

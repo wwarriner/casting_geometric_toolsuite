@@ -7,15 +7,14 @@ classdef (Sealed) CavityThinWall < ThinWall
     end
     
     
-    methods ( Access = public, Static )
+    methods ( Access = public )
         
         function obj = CavityThinWall( varargin )
             
             obj = obj@ThinWall( varargin{ : } );
+            obj.set_region( 'cavity' );
             
             if nargin == 0; return; end
-            
-            obj.set_region( 'cavity' );
             
         end
         

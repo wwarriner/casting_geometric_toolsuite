@@ -1,27 +1,30 @@
 classdef (Sealed) Component < Process & matlab.mixin.Copyable
     
     properties ( GetAccess = public, SetAccess = private )
-        %% inputs
+        % inputs
         stl_path
         
-        %% outputs
+        % outputs
         path
         name
         
-        % rotated
+        % affected by rigid transformations
         fv
         normals
         envelope
         draft_angles
         draft_metric
+        reduced_draft_metric
         convex_hull_fv
         
-        % invariant
+        % affected by scaling transformations
         centroid
         convex_hull_volume
         triangle_areas
         surface_area
         volume
+        
+        % transformation invariant
         hole_count
         flatness
         ranginess
@@ -48,7 +51,7 @@ classdef (Sealed) Component < Process & matlab.mixin.Copyable
         
         function run( obj )
             
-            if ~isempty(obj.options)
+            if ~isempty( obj.options )
                 obj.stl_path = obj.options.input_stl_path;
                 assert( ~isempty( obj.stl_path ) );
             end
@@ -62,26 +65,10 @@ classdef (Sealed) Component < Process & matlab.mixin.Copyable
                 Component.determine_convex_hull( obj.fv.vertices );
             
             obj.printf( '  Computing statistics...\n' );
-            obj.triangle_areas = ...
-                Component.compute_triangle_areas( obj.fv );
-            obj.surface_area = sum( obj.triangle_areas( : ) );
-            [ obj.volume, obj.centroid ] = Component.compute_volume( obj.fv );
-            obj.hole_count = Component.count_holes( obj.fv );
-            obj.flatness = Component.compute_flatness( ...
-                obj.fv.vertices, ...
-                obj.convex_hull_fv, ...
-                obj.convex_hull_volume ...
-                );
-            obj.ranginess = Component.compute_ranginess( ...
-                obj.surface_area, ...
-                obj.volume ...
-                );
-            obj.solidity = Component.compute_solidity( ...
-                obj.volume, ...
-                obj.convex_hull_volume ...
-                );
             
-            obj.update();
+            obj.update_scaling_transformation_values();
+            obj.update_rigid_transformation_values();
+            obj.compute_transformation_invariants();
             
         end
         
@@ -93,9 +80,13 @@ classdef (Sealed) Component < Process & matlab.mixin.Copyable
         function legacy_run( obj, varargin )
             
             if nargin == 2
+                % stl_path
                 obj.stl_path = varargin{ 1 };
             elseif nargin == 3
+                % name, fv
                 obj.copy_from_fv( varargin{ 1 }, varargin{ 2 } );
+            else
+                assert( false );
             end
             obj.run();
             
@@ -108,7 +99,19 @@ classdef (Sealed) Component < Process & matlab.mixin.Copyable
             clone.fv.vertices = rotator.rotate( clone.fv.vertices );
             clone.normals = rotator.rotate( clone.normals );
             clone.convex_hull_fv.vertices = rotator.rotate( clone.convex_hull_fv.vertices );
-            clone.update();
+            clone.update_rigid_transformation_values();
+            
+        end
+        
+        
+        function clone = scale( obj, factor )
+            
+            clone = obj.copy();
+            clone.fv.vertices = clone.fv.vertices .* factor;
+            clone.convex_hull_fv.vertices = clone.convex_hull_fv.vertices .* factor;
+            clone.convex_hull_volume = clone.convex_hull_volume .* ( factor .^ 3 );
+            clone.surface_area = clone.surface_area .* ( factor .^ 2 );
+            clone.update_scaling_transformation_values();
             
         end
         
@@ -190,11 +193,49 @@ classdef (Sealed) Component < Process & matlab.mixin.Copyable
     
     methods ( Access = private )
         
-        function update( obj )
+        function update_rigid_transformation_values( obj )
             
-            obj.envelope = MeshEnvelope( obj.fv );
             obj.draft_angles = Component.compute_draft_angles( obj.normals );
             obj.draft_metric = obj.compute_draft_metric();
+            obj.reduced_draft_metric = obj.compute_reduced_draft_metric( obj.draft_metric );
+            obj.update_all_transformation_values();
+            
+        end
+        
+        
+        function update_scaling_transformation_values( obj )
+            
+            obj.triangle_areas = ...
+                Component.compute_triangle_areas( obj.fv );
+            obj.surface_area = sum( obj.triangle_areas( : ) );
+            [ obj.volume, obj.centroid ] = Component.compute_volume( obj.fv );
+            obj.update_all_transformation_values();
+            
+        end
+        
+        
+        function update_all_transformation_values( obj )
+            
+            obj.envelope = MeshEnvelope( obj.fv );
+            
+        end
+        
+        function compute_transformation_invariants( obj )
+            
+            obj.hole_count = Component.count_holes( obj.fv );
+            obj.flatness = Component.compute_flatness( ...
+                obj.fv.vertices, ...
+                obj.convex_hull_fv, ...
+                obj.convex_hull_volume ...
+                );
+            obj.ranginess = Component.compute_ranginess( ...
+                obj.surface_area, ...
+                obj.volume ...
+                );
+            obj.solidity = Component.compute_solidity( ...
+                obj.volume, ...
+                obj.convex_hull_volume ...
+                );
             
         end
         
@@ -324,6 +365,15 @@ classdef (Sealed) Component < Process & matlab.mixin.Copyable
         function solidity = compute_solidity( volume, convex_hull_volume )
             
             solidity = volume ./ convex_hull_volume;
+            
+        end
+        
+        
+        function reduced_draft_metric = compute_reduced_draft_metric( draft_metric )
+            
+            reduced_draft_metric = draft_metric;
+            reduced_draft_metric( draft_metric > 0 ) = ...
+                1 ./ ( -log10( reduced_draft_metric( draft_metric > 0 ) ) );
             
         end
         

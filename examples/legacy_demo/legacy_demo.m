@@ -1,4 +1,4 @@
-function legacy_demo( input_path, output_path )
+function data = legacy_demo( input_path, output_path )
 %% RESOURCES
 this_path = fileparts( mfilename( 'fullpath' ) );
 res_path = fullfile( this_path, 'res' );
@@ -18,25 +18,40 @@ end
 %% ANALYSES
 input_count = numel( stl_paths );
 data = cell( input_count, 1 );
-parfor i = 1 : input_count
+summaries = cell( input_count, 1 );
+for i = 1 : input_count
     
     options = Options( '', option_path, stl_paths{ i }, output_path );
     try
         data{ i } = legacy_run( options );
-        [ ~, name, ~ ] = fileparts( stl_paths{ i } );
-        data{ i }.Properties.RowNames = { name };
     catch e
         fprintf( 1, '%s\n', getReport( e ) );
         fprintf( 1, '%s\n', stl_paths{ i } );
+        break;
     end
+
+    %% CREATE TABLE
+    count = data{ i }.get_count();
+    summary = table;
+    keys = data{ i }.get_keys();
+    for j = 1 : count
+        result = data{ i }.get( keys{ j } );
+        values = result.to_summary( result.NAME );
+        summary = [ summary values ];
+    end
+    [ ~, name, ~ ] = fileparts( stl_paths{ i } );
+    summary.Properties.RowNames = { name };
+    summaries{ i } = summary;
     
 end
 
-%% DATA
+%% MERGE TABLES
 tbl = table;
 for i = 1 : input_count
     
-    tbl = [ tbl; data{ i } ];
+    if ~isempty( summaries{ i } )
+        tbl = [ tbl; summaries{ i } ];
+    end
     
 end
 

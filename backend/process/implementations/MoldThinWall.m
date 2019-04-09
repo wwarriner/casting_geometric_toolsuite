@@ -7,15 +7,14 @@ classdef (Sealed) MoldThinWall < ThinWall
     end
     
     
-    methods ( Access = public, Static )
+    methods ( Access = public )
         
         function obj = MoldThinWall( varargin )
             
             obj = obj@ThinWall( varargin{ : } );
+            obj.set_region( 'mold' );
             
             if nargin == 0; return; end
-            
-            obj.set_region( 'mold' );
             
         end
         
