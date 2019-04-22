@@ -28,7 +28,7 @@ classdef Core < Process
             
             if ~isempty( obj.results )
                 obj.mesh = obj.results.get( Mesh.NAME );
-                obj.undercuts = obj.results.get( Undercuts.NAME );
+                obj.undercuts = obj.results.get( [ Undercuts.NAME '_' num2str( obj.parting_dimension ) ] );
             end
             
             if ~isempty( obj.options )
@@ -86,6 +86,20 @@ classdef Core < Process
                 Mesh.NAME, ...
                 Undercuts.NAME ...
                 };
+            
+        end
+        
+        
+        function orientation_dependent = is_orientation_dependent()
+            
+            orientation_dependent = true;
+            
+        end
+        
+        
+        function gravity_direction = has_gravity_direction()
+            
+            gravity_direction = false;
             
         end
         

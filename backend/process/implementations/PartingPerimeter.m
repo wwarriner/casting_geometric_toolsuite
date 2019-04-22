@@ -140,7 +140,7 @@ classdef (Sealed) PartingPerimeter < Process
                 path_height( loop_indices ) = round( pl.parting_line );
                 unprojected_parting_line = obj.unproject_perimeter( ...
                     rotated_interior, ...
-                    outer_perimeter, ...
+                    ~isnan( path_height ), ...
                     path_height, ...
                     path_height ...
                     );
@@ -445,6 +445,21 @@ classdef (Sealed) PartingPerimeter < Process
         
         function [ loop_indices, right_side_distances ] = ...
                 order_indices_by_loop( outer_perimeter )
+            %% Empty case
+            if ~any( outer_perimeter, 'all' )
+                loop_indices = 1;
+                right_side_distances = 0;
+                return;
+            end
+            
+            %% Fix image
+            im = imfill( outer_perimeter, 'holes' );
+            im = imopen( im, conndef( 2, 'maximal' ) );
+            im = bwareafilt( im, 1 );
+            im = bwperim( im );
+            im = bwmorph( im, 'skel', inf );
+            outer_perimeter = im;
+            
             %% Setup
             loop_indices = zeros( 1, sum( outer_perimeter( : ) ) + 1 );
             right_side_distances = zeros( 1, sum( outer_perimeter( : ) ) );
