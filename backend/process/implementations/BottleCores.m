@@ -14,13 +14,6 @@ classdef (Sealed) BottleCores < Process
     end
     
     
-    properties ( Access = public, Constant )
-        
-        NAME = 'bottle_cores'
-        
-    end
-    
-    
     methods ( Access = public )
         
         function obj = BottleCores( varargin )
@@ -88,6 +81,13 @@ classdef (Sealed) BottleCores < Process
                 Mesh.NAME, ...
                 EdtProfile.NAME ...
                 };
+            
+        end
+        
+        
+        function name = NAME()
+            
+            name = mfilename( 'class' );
             
         end
         

@@ -25,13 +25,6 @@ classdef ( Sealed ) Mesh < Process
     end
     
     
-    properties ( Access = public, Constant )
-        
-        NAME = 'mesh'
-        
-    end
-    
-    
     methods ( Access = public )
         
         % envelope is optional, if present, will use that envelope instead
@@ -240,6 +233,13 @@ classdef ( Sealed ) Mesh < Process
             dependencies = { ...
                 Component.NAME ...
                 };
+            
+        end
+        
+        
+        function name = NAME()
+            
+            name = mfilename( 'class' );
             
         end
         

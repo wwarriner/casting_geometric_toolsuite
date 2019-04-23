@@ -1,12 +1,5 @@
 classdef (Sealed) CavityThinWall < ThinWall
     
-    properties ( Access = public, Constant )
-        
-        NAME = 'cavity_thin_wall';
-        
-    end
-    
-    
     methods ( Access = public )
         
         function obj = CavityThinWall( varargin )
@@ -15,6 +8,17 @@ classdef (Sealed) CavityThinWall < ThinWall
             obj.set_region( 'cavity' );
             
             if nargin == 0; return; end
+            
+        end
+        
+    end
+    
+    
+    methods ( Access = private, Static )
+        
+        function name = NAME()
+            
+            name = mfilename( 'class' );
             
         end
         

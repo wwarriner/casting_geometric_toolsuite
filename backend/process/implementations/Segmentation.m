@@ -15,7 +15,6 @@ classdef (Sealed) Segmentation < Process
     
     properties ( Access = public, Constant )
         
-        NAME = 'segmentation'
         BOUNDARY_VALUE = -1;
         
     end
@@ -165,6 +164,13 @@ classdef (Sealed) Segmentation < Process
                 Mesh.NAME, ...
                 EdtProfile.NAME ...
                 };
+            
+        end
+        
+        
+        function name = NAME()
+            
+            name = mfilename( 'class' );
             
         end
         

@@ -15,13 +15,6 @@ classdef (Sealed) Undercuts < Process
     end
     
     
-    properties ( Access = public, Constant )
-        
-        NAME = 'undercuts'
-        
-    end
-    
-    
     methods ( Access = public )
         
         function obj = Undercuts( varargin )
@@ -92,6 +85,13 @@ classdef (Sealed) Undercuts < Process
             dependencies = { ...
                 Mesh.NAME ...
                 };
+            
+        end
+        
+        
+        function name = NAME()
+            
+            name = mfilename( 'class' );
             
         end
         

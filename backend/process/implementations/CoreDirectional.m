@@ -1,17 +1,21 @@
-classdef (Sealed) CoreDirectional < Core    
-    
-    properties ( Access = public, Constant )
-        
-        NAME = 'core_directional'
-        
-    end
-    
+classdef (Sealed) CoreDirectional < Core
     
     methods ( Access = public )
         
         function obj = CoreDirectional( varargin )
             
             obj = obj@Core( varargin{ : } );
+            
+        end
+        
+    end
+    
+    
+    methods ( Access = public, Static )
+        
+        function name = NAME()
+            
+            name = mfilename( 'class' );
             
         end
         

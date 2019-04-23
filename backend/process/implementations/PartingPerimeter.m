@@ -29,13 +29,6 @@ classdef (Sealed) PartingPerimeter < Process
     end
     
     
-    properties ( Access = public, Constant )
-        
-        NAME = 'parting_perimeter'
-        
-    end
-    
-    
     methods ( Access = public )
         
         function obj = PartingPerimeter( varargin )
@@ -232,6 +225,13 @@ classdef (Sealed) PartingPerimeter < Process
             dependencies = { ...
                 Mesh.NAME ...
                 };
+            
+        end
+        
+        
+        function name = NAME()
+            
+            name = mfilename( 'class' );
             
         end
         

@@ -11,13 +11,6 @@ classdef ThermalProfile < Process
     end
     
     
-    properties ( Access = public, Constant )
-        
-        NAME = 'thermal_profile'
-        
-    end
-    
-    
     methods ( Access = public )
         
         function obj = ThermalProfile( varargin )
@@ -105,6 +98,13 @@ classdef ThermalProfile < Process
             dependencies = { ...
                 Mesh.NAME ...
                 };
+            
+        end
+        
+        
+        function name = NAME()
+            
+            name = mfilename( 'class' );
             
         end
         

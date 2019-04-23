@@ -1,12 +1,5 @@
 classdef Process < UserInterface & Output & OrientationDependent & handle
     
-    properties ( Access = public, Constant, Abstract )
-        
-        NAME
-        
-    end
-    
-    
     methods ( Access = public, Abstract )
         
         run( obj );
@@ -44,6 +37,14 @@ classdef Process < UserInterface & Output & OrientationDependent & handle
     methods ( Access = public, Static, Abstract )
         
         dependencies = get_dependencies();
+        name = NAME(); % implement as
+        %{
+        function name = NAME()
+            
+            [ ~, name ] = fileparts( mfilename( 'full' ) );
+            
+        end
+        %}
         
     end
     

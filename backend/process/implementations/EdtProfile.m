@@ -16,13 +16,6 @@ classdef (Sealed) EdtProfile < Process
     end
     
     
-    properties ( Access = public, Constant )
-        
-        NAME = 'solidification_profile'
-        
-    end
-    
-    
     methods ( Access = public )
         
         function obj = EdtProfile( varargin )
@@ -101,6 +94,13 @@ classdef (Sealed) EdtProfile < Process
             dependencies = { ...
                 Mesh.NAME ...
                 };
+            
+        end
+        
+        
+        function name = NAME()
+            
+            name = mfilename( 'class' );
             
         end
         

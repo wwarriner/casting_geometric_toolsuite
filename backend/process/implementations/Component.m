@@ -33,13 +33,6 @@ classdef (Sealed) Component < Process & matlab.mixin.Copyable
     end
     
     
-    properties ( Access = public, Constant )
-        
-        NAME = 'component'
-        
-    end
-    
-    
     methods ( Access = public )
         
         function obj = Component( varargin )
@@ -149,6 +142,13 @@ classdef (Sealed) Component < Process & matlab.mixin.Copyable
         function dependencies = get_dependencies()
             
             dependencies = {};
+            
+        end
+        
+        
+        function name = NAME()
+            
+            name = mfilename( 'class' );
             
         end
         

@@ -13,13 +13,6 @@ classdef Waterfall < Process
     end
     
     
-    properties ( Access = public, Constant )
-        
-        NAME = 'waterfall'
-        
-    end
-    
-    
     methods ( Access = public )
         
         % gravity_direction must be "up" or "down"
@@ -150,6 +143,13 @@ classdef Waterfall < Process
                 Mesh.NAME, ...
                 PartingPerimeter.NAME ...
                 };
+            
+        end
+        
+        
+        function name = NAME()
+            
+            name = mfilename( 'class' );
             
         end
         

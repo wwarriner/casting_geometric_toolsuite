@@ -1,17 +1,21 @@
 classdef (Sealed) CoreIsotropic < Core
     
-    properties ( Access = public, Constant )
-        
-        NAME = 'core_isotropic'
-        
-    end
-    
-    
     methods ( Access = public )
         
         function obj = CoreIsotropic( varargin )
             
             obj = obj@Core( varargin{ : } );
+            
+        end
+        
+    end
+    
+    
+    methods ( Access = public, Static )
+        
+        function name = NAME()
+            
+            name = mfilename( 'class' );
             
         end
         
