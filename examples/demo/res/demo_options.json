@@ -7,7 +7,7 @@
 "thin_wall_cavity_sweep_coefficient":2.0,
 "thin_wall_mold_threshold":5.0,
 "thin_wall_mold_sweep_coefficient":2.0,
-"user_needs":["cavity_thin_wall", "mold_thin_wall", "waterfall", "feeders", "undercuts", "bottle_cores"],
+"user_needs":["CavityThinWall", "MoldThinWall", "Waterfall", "Feeders", "Undercuts", "BottleCores"],
 "parting_dimensions":[3],
 "gravity_directions":["down"],
 "do_optimize_parting_line": true
