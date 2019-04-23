@@ -26,14 +26,13 @@ classdef (Sealed) Undercuts < Process
         
         function run( obj )
             
-            if ~isempty( obj.results )
-                
-                obj.mesh = obj.results.get( Mesh.NAME );
-                
-            end
-            
-            assert( ~isempty( obj.mesh ) );
             assert( ~isempty( obj.parting_dimension ) );
+            
+            if ~isempty( obj.results )
+                mesh_key = ProcessKey( Mesh.NAME );
+                obj.mesh = obj.results.get( mesh_key );
+            end
+            assert( ~isempty( obj.mesh ) );
             
             obj.printf( ...
                 'Locating undercuts for axis %d...\n', ...

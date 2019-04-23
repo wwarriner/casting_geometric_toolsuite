@@ -14,7 +14,7 @@ classdef (Sealed) MoldThinWall < ThinWall
     end
     
     
-    methods ( Access = private )
+    methods ( Access = public, Static )
         
         function name = NAME()
             

@@ -39,18 +39,18 @@ classdef ( Sealed ) Mesh < Process
         function run( obj )
             
             if ~isempty( obj.results )
-                obj.component = obj.results.get( Component.NAME );
+                component_key = ProcessKey( Component.NAME );
+                obj.component = obj.results.get( component_key );
                 % todo: way to get arbitrary envelope in here
                 obj.desired_envelope = obj.component.envelope;
             end
+            assert( ~isempty( obj.component ) );
+            assert( ~isempty( obj.desired_envelope ) );
             
             if ~isempty( obj.options )
                 obj.desired_element_count = obj.options.element_count;
             end
-            
-            assert( ~isempty( obj.component ) );
             assert( ~isempty( obj.desired_element_count ) );
-            assert( ~isempty( obj.desired_envelope ) );
             
             obj.printf( 'Meshing...\n' );
             obj.element = MeshElement( ...

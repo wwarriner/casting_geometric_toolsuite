@@ -14,7 +14,7 @@ classdef (Sealed) CavityThinWall < ThinWall
     end
     
     
-    methods ( Access = private, Static )
+    methods ( Access = public, Static )
         
         function name = NAME()
             

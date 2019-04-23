@@ -62,7 +62,7 @@ classdef Cancelable < handle
     
     methods ( Access = protected )
         
-        function cancelable_loop( obj )
+        function run_cancelable_loop( obj )
             
             obj.reset_do_cancel();
             while obj.keep_iterating()

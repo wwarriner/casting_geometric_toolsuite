@@ -32,10 +32,12 @@ classdef (Sealed) Segmentation < Process
         function run( obj )
             
             if ~isempty( obj.results )
-                obj.mesh = obj.results.get( Mesh.NAME );
-                obj.profile = obj.results.get( EdtProfile.NAME );
+                mesh_key = ProcessKey( Mesh.NAME );
+                obj.mesh = obj.results.get( mesh_key );
+                
+                edt_profile_key = ProcessKey( EdtProfile.NAME );
+                obj.profile = obj.results.get( edt_profile_key );
             end
-            
             assert( ~isempty( obj.mesh ) );
             assert( ~isempty( obj.profile ) );
             

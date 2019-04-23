@@ -23,8 +23,10 @@ classdef ThermalProfile < Process
         function run( obj )
             
             if ~isempty( obj.results )
-                obj.mesh = obj.results.get( Mesh.NAME );
+                mesh_key = ProcessKey( Mesh.NAME );
+                obj.mesh = obj.results.get( mesh_key );
             end
+            assert( ~isempty( obj.mesh ) );
             
             if ~isempty( obj.options )
                 obj.physical_properties = obj.options.generate_physical_properties();
@@ -43,8 +45,8 @@ classdef ThermalProfile < Process
                 obj.mesh.scale / 1000 ...
                 );
             
-            assert( ~isempty( obj.mesh ) );
             assert( ~isempty( obj.physical_properties ) );
+            assert( obj.physical_properties.is_ready() );
             
             obj.printf( 'Computing thermal profile...\n' );
             

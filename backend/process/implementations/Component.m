@@ -52,13 +52,15 @@ classdef (Sealed) Component < Process & matlab.mixin.Copyable
             obj.printf( 'Preparing component...\n' );
             if ~isempty( obj.stl_path )
                 obj.read_from_path( obj.stl_path );
+            else
+                % must have copied an fv if no path
+                assert( ~isempty( obj.fv ) );
             end
-            obj.printf( '\b %s\n', obj.name );
+            obj.printf( ' %s\n', obj.name );
             [ obj.convex_hull_fv, obj.convex_hull_volume ] = ...
                 Component.determine_convex_hull( obj.fv.vertices );
             
             obj.printf( '  Computing statistics...\n' );
-            
             obj.update_scaling_transformation_values();
             obj.update_rigid_transformation_values();
             obj.compute_transformation_invariants();
@@ -244,7 +246,7 @@ classdef (Sealed) Component < Process & matlab.mixin.Copyable
             
             obj.stl_path = stl_path;
             [ obj.path, obj.name, ~ ] = fileparts( stl_path );
-            obj.printf( '  Reading STL...\n' );
+            obj.printf( '  Reading STL...' );
             [ coordinates, obj.normals ] = READ_stl( stl_path );
             [ faces, vertices ] = CONVERT_meshformat( coordinates );
             obj.fv = create_fv( faces, vertices );

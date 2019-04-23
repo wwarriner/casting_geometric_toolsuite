@@ -2,6 +2,7 @@ classdef (Sealed) Results < handle
     
     properties ( Access = private )
         
+        options
         results
         
     end
@@ -9,38 +10,75 @@ classdef (Sealed) Results < handle
     
     methods ( Access = public )
         
-        function obj = Results()
+        function obj = Results( options )
             
             obj.results = containers.Map( ...
                 'keytype', 'char', ...
                 'valuetype', 'any' ...
                 );
             
-        end
-        
-        
-        function add( obj, key, result )
-            
-            obj.results( key ) = result;
+            if 1 <= nargin
+                obj.options = options;
+            end
             
         end
         
         
-        function exist = exists( obj, key )
+        function add( obj, process_key, result )
             
-            exist = isKey( obj.results, key );
-            
-        end
-        
-        
-        function result = get( obj, key )
-            
-            result = obj.results( key );
+            obj.results( process_key.get_key() ) = result;
             
         end
         
         
-        function keyset = get_keys( obj )
+        function exist = exists( obj, process_key )
+            
+            exist = isKey( obj.results, process_key.get_key() );
+            
+        end
+        
+        
+        function result = get( obj, process_key )
+            
+            key = process_key.get_key();
+            if obj.exists( process_key )
+                result = obj.results( key );
+            else
+                assert( ~isempty( obj.options ) );
+                result = process_key.create_instance( obj, obj.options );
+                result.run();
+                obj.results( key ) = result;
+            end
+            
+        end
+        
+        
+        function results = get_all( obj )
+            
+            results = obj.results.values();
+            
+        end
+        
+    end
+    
+    
+    methods ( Access = private )
+        
+        function exist = exists_raw_key( obj, raw_key )
+            
+            exist = isKey( obj.results, raw_key );
+            
+        end
+        
+        
+        function result = get_by_raw_key( obj, raw_key )
+            
+            result = obj.results( raw_key );
+            
+        end
+        
+        
+        function keyset = get_raw_keys( obj )
             
             keyset = keys( obj.results );
             
@@ -49,7 +87,7 @@ classdef (Sealed) Results < handle
         
         function count = get_count( obj )
             
-            count = numel( obj.get_keys() );
+            count = obj.results.Count;
             
         end
         

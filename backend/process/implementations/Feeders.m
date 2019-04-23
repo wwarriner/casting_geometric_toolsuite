@@ -15,13 +15,6 @@ classdef (Sealed) Feeders < Process & matlab.mixin.Copyable
     end
     
     
-    properties ( Access = public, Constant )
-        
-        NAME = 'feeders'
-        
-    end
-    
-    
     methods ( Access = public )
         
         function obj = Feeders( varargin )
@@ -34,10 +27,12 @@ classdef (Sealed) Feeders < Process & matlab.mixin.Copyable
         function run( obj )
             
             if ~isempty( obj.results )
-                obj.mesh = obj.results.get( Mesh.NAME );
-                obj.segmentation = obj.results.get( Segmentation.NAME );
+                mesh_key = ProcessKey( Mesh.NAME );
+                obj.mesh = obj.results.get( mesh_key );
+                
+                segmentation_key = ProcessKey( Segmentation.NAME );
+                obj.segmentation = obj.results.get( segmentation_key );
             end
-            
             assert( ~isempty( obj.mesh ) );
             assert( ~isempty( obj.segmentation ) );
             
@@ -156,6 +151,13 @@ classdef (Sealed) Feeders < Process & matlab.mixin.Copyable
                 Mesh.NAME, ...
                 Segmentation.NAME ...
                 };
+            
+        end
+        
+        
+        function name = NAME()
+            
+            [ ~, name ] = fileparts( mfilename( 'full' ) );
             
         end
         

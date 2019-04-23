@@ -28,15 +28,9 @@ classdef (Sealed) EdtProfile < Process
         function run( obj )
             
             if ~isempty( obj.results )
-                obj.mesh = obj.results.get( Mesh.NAME );
-                % todo rename to solidification_profile
-                % todo make strategy-based
-                %  - geometric/edt
-                %  - tds solver
-                %  - magma, etc, someday??
-                % options controls choice of strategy
+                mesh_key = ProcessKey( Mesh.NAME );
+                obj.mesh = obj.results.get( mesh_key );
             end
-            
             assert( ~isempty( obj.mesh ) );
             
             obj.printf( 'Computing EDT profile...\n' );

@@ -25,21 +25,24 @@ classdef Waterfall < Process
         
         function run( obj )
             
+            assert( ~isempty( obj.parting_dimension ) );
+            assert( ~isempty( obj.gravity_direction ) );
+            
             if ~isempty( obj.results )
-            
-                obj.mesh = obj.results.get( Mesh.NAME );
-            
+                mesh_key = ProcessKey( Mesh.NAME );
+                obj.mesh = obj.results.get( mesh_key );
             end
-            
             assert( ~isempty( obj.mesh ) );
             
             if isempty( obj.parting_perimeter )
-                obj.parting_perimeter = obj.results.get( [ PartingPerimeter.NAME '_' num2str( obj.parting_dimension ) ] );
+                parting_perimeter_key = ProcessKey( ...
+                    PartingPerimeter.NAME, ...
+                    obj.parting_dimension, ...
+                    obj.gravity_direction ...
+                    );
+                obj.parting_perimeter = obj.results.get( parting_perimeter_key );
             end
-            
             assert( ~isempty( obj.parting_perimeter ) );
-            assert( ~isempty( obj.parting_dimension ) );
-            assert( ~isempty( obj.gravity_direction ) );
             
             obj.printf( ...
                 'Identifying waterfalls for axis %d and gravity %s...\n', ...
