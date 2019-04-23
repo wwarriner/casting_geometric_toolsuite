@@ -146,21 +146,6 @@ classdef ThinWall < Process
     end
     
     
-    methods ( Access = public, Static )
-        
-        function dependencies = get_dependencies()
-            
-            dependencies = { ...
-                Component.NAME, ...
-                Mesh.NAME, ...
-                EdtProfile.NAME ...
-                };
-            
-        end
-        
-    end
-    
-    
     methods ( Access = protected )
         
         function names = get_table_names( ~ )

@@ -145,16 +145,6 @@ classdef (Sealed) Feeders < Process & matlab.mixin.Copyable
     
     methods ( Access = public, Static )
         
-        function dependencies = get_dependencies()
-            
-            dependencies = { ...
-                Mesh.NAME, ...
-                Segmentation.NAME ...
-                };
-            
-        end
-        
-        
         function name = NAME()
             
             [ ~, name ] = fileparts( mfilename( 'full' ) );

@@ -228,15 +228,6 @@ classdef ( Sealed ) Mesh < Process
     
     methods ( Access = public, Static )
         
-        function dependencies = get_dependencies()
-            
-            dependencies = { ...
-                Component.NAME ...
-                };
-            
-        end
-        
-        
         function name = NAME()
             
             name = mfilename( 'class' );

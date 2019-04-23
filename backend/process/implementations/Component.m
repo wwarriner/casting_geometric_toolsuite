@@ -141,13 +141,6 @@ classdef (Sealed) Component < Process & matlab.mixin.Copyable
     
     methods ( Access = public, Static )
         
-        function dependencies = get_dependencies()
-            
-            dependencies = {};
-            
-        end
-        
-        
         function name = NAME()
             
             name = mfilename( 'class' );

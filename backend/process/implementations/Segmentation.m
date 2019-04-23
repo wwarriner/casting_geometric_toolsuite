@@ -77,7 +77,6 @@ classdef (Sealed) Segmentation < Process
         
         function neighbor_pairs = get_neighbor_pairs( obj, EdtProfile, Mesh )
             
-            
             if obj.count == 1
                 neighbor_pairs = SegmentPair.empty( 0 );
                 return;
@@ -159,16 +158,6 @@ classdef (Sealed) Segmentation < Process
     
     
     methods ( Access = public, Static )
-        
-        function dependencies = get_dependencies()
-            
-            dependencies = { ...
-                Mesh.NAME, ...
-                EdtProfile.NAME ...
-                };
-            
-        end
-        
         
         function name = NAME()
             

@@ -220,15 +220,6 @@ classdef (Sealed) PartingPerimeter < Process
     
     methods ( Access = public, Static )
         
-        function dependencies = get_dependencies()
-            
-            dependencies = { ...
-                Mesh.NAME ...
-                };
-            
-        end
-        
-        
         function name = NAME()
             
             name = mfilename( 'class' );

@@ -34,7 +34,6 @@ classdef Process < UserInterface & Output & OrientationDependent & handle
     
     methods ( Access = public, Static, Abstract )
         
-        dependencies = get_dependencies();
         name = NAME(); % implement as
         %{
         function name = NAME()

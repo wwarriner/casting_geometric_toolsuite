@@ -82,16 +82,6 @@ classdef Core < Process
     
     methods ( Access = public, Static )
         
-        function dependencies = get_dependencies()
-            
-            dependencies = { ...
-                Mesh.NAME, ...
-                Undercuts.NAME ...
-                };
-            
-        end
-        
-        
         function orientation_dependent = is_orientation_dependent()
             
             orientation_dependent = true;
