@@ -7,11 +7,14 @@ classdef FdmSolver < handle
         pcg_count
         computation_times
         simulation_time
-        solidification_time
+        overall_solidification_time
         
         temperature_initial
         temperature_final
         solidification_times
+        
+        times
+        temperatures
         
     end
     
@@ -45,6 +48,14 @@ classdef FdmSolver < handle
         function turn_live_plotting_on( obj )
             
             obj.live_plotting = true;
+            
+        end
+        
+        
+        % warning! memory intensive!
+        function turn_full_data_storage_on( obj )
+            
+            obj.data_storage = true;
             
         end
         
@@ -123,6 +134,7 @@ classdef FdmSolver < handle
         % CONFIGURATION
         printing
         live_plotting
+        data_storage
         
         solidification_stop_fraction
         
@@ -185,7 +197,7 @@ classdef FdmSolver < handle
             obj.pcg_count = 0;
             obj.computation_times = containers.Map( 'keytype', 'char', 'valuetype', 'double' );
             obj.simulation_time = 0;
-            obj.solidification_time = 0;
+            obj.overall_solidification_time = 0;
             
             % SIMULATION TIME
             obj.simulation_time = 0;
@@ -293,6 +305,12 @@ classdef FdmSolver < handle
                 obj.simulation_time, ...
                 obj.time_step ...
                 );
+            
+            if obj.data_storage
+                obj.times( end + 1 ) = obj.simulation_time;
+                obj.temperatures{ end + 1 } = obj.u_curr;
+            end
+            
             obj.update_dashboard();
             obj.print_update();
             
@@ -441,7 +459,7 @@ classdef FdmSolver < handle
                     obj.pcg_count ...
                     sum( cell2mat( obj.computation_times.values() ) ) ...
                     obj.simulation_time, ...
-                    obj.solidification_time ...
+                    obj.overall_solidification_time ...
                     ];
             end
             
@@ -461,7 +479,7 @@ classdef FdmSolver < handle
         function prepare_results( obj )
             
             obj.temperature_final = obj.u_curr;
-            obj.solidification_time = obj.solidification_times.get_final_time();
+            obj.overall_solidification_time = obj.solidification_times.get_final_time();
             
         end
         
