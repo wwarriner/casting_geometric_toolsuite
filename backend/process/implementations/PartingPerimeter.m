@@ -438,7 +438,7 @@ classdef (Sealed) PartingPerimeter < Process
                 order_indices_by_loop( outer_perimeter )
             
             % Empty case
-            if ~any( outer_perimeter, 'all' )
+            if ~any( outer_perimeter( : ) )
                 loop_indices = 1;
                 right_side_distances = 0;
                 return;

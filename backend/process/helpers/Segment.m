@@ -129,7 +129,7 @@ classdef (Sealed) Segment < ProcessHelper
                 threshold ...
                 )
             
-            max_val = max( array( segment_binary_array ), [], 'all' );
+            max_val = max( array( segment_binary_array( : ) ) );
             segment_binary_array( array < ( max_val - threshold ) ) = 0;
             hotspot_index_list = find( segment_binary_array( : ) ).';
             

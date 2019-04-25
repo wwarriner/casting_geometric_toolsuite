@@ -83,8 +83,8 @@ classdef ThermalProfile < Process
                 );
             
             obj.thermal_modulus = sqrt( obj.solidification_times );
-            max_mod = max( obj.thermal_modulus, [], 'all' );
-            min_mod = min( obj.thermal_modulus( obj.thermal_modulus > 0 ), [], 'all' );
+            max_mod = max( obj.thermal_modulus( : ) );
+            min_mod = min( obj.thermal_modulus( obj.thermal_modulus( : ) > 0 ) );
             obj.thermal_modulus_filter_threshold = 0.01 * ( max_mod - min_mod );
             obj.thermal_modulus_filtered = max_mod .* imhmax( ...
                 obj.thermal_modulus ./ max_mod, ...
