@@ -3,9 +3,14 @@
 "output_path":"",
 "element_count":1e6,
 "component_count":1,
+"core_distance_threshold_in_stl_units":25.4,
 "thin_wall_cavity_threshold":1.0,
+"thin_wall_cavity_sweep_coefficient":2.0,
 "thin_wall_mold_threshold":2.35,
-"user_needs":["cavity_thin_wall", "mold_thin_wall", "waterfall", "feeders", "undercuts", "bottle_cores"],
+"thin_wall_mold_sweep_coefficient":2.0,
+"user_needs":["CavityThinWall", "MoldThinWall", "Waterfall", "Feeders", "Undercuts", "BottleCores", "CoreIsotropic"],
 "parting_dimensions":[1,2,3],
-"gravity_directions":["up","down"]
+"gravity_directions":["up","down"],
+"do_optimize_parting_line": true,
+"use_thermal_profile":true
 }
