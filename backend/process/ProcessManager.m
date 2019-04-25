@@ -17,7 +17,7 @@ classdef (Sealed) ProcessManager < Cancelable & Notifier & handle
     
     methods ( Access = public )
         
-        function obj = ProcessManager( ~, options )
+        function obj = ProcessManager( options )
             
             obj.options = options;
             obj.results = Results( options );
@@ -127,9 +127,13 @@ classdef (Sealed) ProcessManager < Cancelable & Notifier & handle
         function do_next_iteration( obj )
             
             process_key = obj.process_keys{ obj.iteration };
-            process = obj.build_process( process_key );
-            process.run();
-            obj.results.add( process_key, process );
+            if ~obj.results.exists( process_key )
+                process = obj.build_process( process_key );
+                process.run();
+                obj.results.add( process_key, process );
+            else
+                % already run as a dependency
+            end
             obj.iteration = obj.iteration + 1;
             
         end
