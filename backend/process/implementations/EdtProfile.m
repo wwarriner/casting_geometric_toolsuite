@@ -9,6 +9,7 @@ classdef (Sealed) EdtProfile < Process
         scaled_interior
         filtered
         filtered_interior
+        filter_threshold_interior
         minimum_thickness
         maximum_thickness
         thickness_ratio
@@ -49,6 +50,8 @@ classdef (Sealed) EdtProfile < Process
                 );
             obj.filtered_interior = obj.filtered;
             obj.filtered_interior( obj.mesh.exterior ) = 0;
+            obj.filter_threshold_interior = ...
+                obj.get_threshold( max( obj.scaled_interior, [], 'all' ) );
             
         end
         
@@ -137,7 +140,7 @@ classdef (Sealed) EdtProfile < Process
         function array = filter_masked( array, mask, mesh_scale )
             
             array( ~mask ) = 0;
-            max_value = max( array( : ) );
+            max_value = max( array, [], 'all' );
             array = max_value .* imhmax( ...
                 array ./ max_value, ...
                 EdtProfile.get_height( max_value, mesh_scale ) ...
@@ -148,8 +151,15 @@ classdef (Sealed) EdtProfile < Process
         
         function height = get_height( max_value, mesh_scale )
             
+            height = EdtProfile.get_threshold( mesh_scale ) / max_value;
+            
+        end
+        
+        
+        function threshold = get_threshold( mesh_scale )
+            
             TOLERANCE = 1e-4;
-            height = ( mesh_scale * ( 1 + TOLERANCE ) ) / max_value;
+            threshold = mesh_scale * ( 1 + TOLERANCE );
             
         end
         
