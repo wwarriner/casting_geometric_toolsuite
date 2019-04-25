@@ -193,8 +193,10 @@ classdef LinearSystemSolver < handle
             TIME_STEP_CHANGE_TOL = 1e-2; % refactor to client parameter
             time_step_change_ratio = inf;
             % refactor loop condition
+            u = inf( size( u_curr ) );
             while solver_it <= MAX_IT && ...
-                    TIME_STEP_CHANGE_TOL < time_step_change_ratio 
+                    TIME_STEP_CHANGE_TOL < time_step_change_ratio && ...
+                    obj.pp.get_solidus_temperature( 2 ) < max( u( obj.fdm_mesh == 2 ), [], 'all' )
                 
                 % set up linear system
                 tic;
