@@ -106,8 +106,20 @@ classdef ( Sealed ) Mesh < Process
             fdm_mesh = double( obj.interior );
             fdm_mesh( obj.interior == 0 ) = mold_id;
             fdm_mesh( obj.interior == 1 ) = melt_id;
-            pad_count = round( obj.to_mesh_units( padding_in_mm ) );
+            pad_count = obj.get_pad_count( padding_in_mm );
             fdm_mesh = padarray( fdm_mesh, pad_count .* ones( 3, 1 ), mold_id, 'both' );
+            
+        end
+        
+        
+        function unpadded_result = unpad_fdm_result( obj, padding_in_mm, result )
+            
+            pad_count = obj.get_pad_count( padding_in_mm );
+            unpadded_result = result( ...
+                pad_count + 1 : end - pad_count, ...
+                pad_count + 1 : end - pad_count, ...
+                pad_count + 1 : end - pad_count ...
+                );
             
         end
         
@@ -262,6 +274,17 @@ classdef ( Sealed ) Mesh < Process
                 obj.envelope.to_table_row() ...
                 obj.element.to_table_row() ...
                 ];
+            
+        end
+        
+    end
+    
+    
+    methods ( Access = private )
+        
+        function pad_count = get_pad_count( obj, pad_length_in_mm )
+            
+            pad_count = round( obj.to_mesh_units( pad_length_in_mm ) );
             
         end
         
