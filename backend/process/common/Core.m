@@ -27,16 +27,18 @@ classdef Core < Process
         function run( obj )
             
             if ~isempty( obj.results )
-                obj.mesh = obj.results.get( Mesh.NAME );
-                obj.undercuts = obj.results.get( Undercuts.NAME );
+                mesh_key = ProcessKey( Mesh.NAME );
+                obj.mesh = obj.results.get( mesh_key );
+                
+                undercuts_key = ProcessKey( Undercuts.NAME, obj.parting_dimension );
+                obj.undercuts = obj.results.get( undercuts_key );
             end
+            assert( ~isempty( obj.mesh ) );
+            assert( ~isempty( obj.undercuts ) );
             
             if ~isempty( obj.options )
                 obj.distance_threshold_in_stl_units = obj.options.core_distance_threshold_in_stl_units;
             end
-            
-            assert( ~isempty( obj.mesh ) );
-            assert( ~isempty( obj.undercuts ) );
             assert( ~isempty( obj.distance_threshold_in_stl_units ) );
             
             obj.printf( 'Evaluating orientation-independent cores...\n' );
@@ -80,12 +82,16 @@ classdef Core < Process
     
     methods ( Access = public, Static )
         
-        function dependencies = get_dependencies()
+        function orientation_dependent = is_orientation_dependent()
             
-            dependencies = { ...
-                Mesh.NAME, ...
-                Undercuts.NAME ...
-                };
+            orientation_dependent = true;
+            
+        end
+        
+        
+        function gravity_direction = has_gravity_direction()
+            
+            gravity_direction = false;
             
         end
         

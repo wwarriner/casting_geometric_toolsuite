@@ -15,13 +15,6 @@ classdef (Sealed) Undercuts < Process
     end
     
     
-    properties ( Access = public, Constant )
-        
-        NAME = 'undercuts'
-        
-    end
-    
-    
     methods ( Access = public )
         
         function obj = Undercuts( varargin )
@@ -33,14 +26,13 @@ classdef (Sealed) Undercuts < Process
         
         function run( obj )
             
-            if ~isempty( obj.results )
-                
-                obj.mesh = obj.results.get( Mesh.NAME );
-                
-            end
-            
-            assert( ~isempty( obj.mesh ) );
             assert( ~isempty( obj.parting_dimension ) );
+            
+            if ~isempty( obj.results )
+                mesh_key = ProcessKey( Mesh.NAME );
+                obj.mesh = obj.results.get( mesh_key );
+            end
+            assert( ~isempty( obj.mesh ) );
             
             obj.printf( ...
                 'Locating undercuts for axis %d...\n', ...
@@ -87,11 +79,9 @@ classdef (Sealed) Undercuts < Process
     
     methods ( Access = public, Static )
         
-        function dependencies = get_dependencies()
+        function name = NAME()
             
-            dependencies = { ...
-                Mesh.NAME ...
-                };
+            name = mfilename( 'class' );
             
         end
         

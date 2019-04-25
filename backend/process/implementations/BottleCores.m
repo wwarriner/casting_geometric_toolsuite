@@ -14,13 +14,6 @@ classdef (Sealed) BottleCores < Process
     end
     
     
-    properties ( Access = public, Constant )
-        
-        NAME = 'bottle_cores'
-        
-    end
-    
-    
     methods ( Access = public )
         
         function obj = BottleCores( varargin )
@@ -33,10 +26,12 @@ classdef (Sealed) BottleCores < Process
         function run( obj )
             
             if ~isempty( obj.results )
-                obj.mesh = obj.results.get( Mesh.NAME );
-                obj.profile = obj.results.get( EdtProfile.NAME );
+                mesh_key = ProcessKey( Mesh.NAME );
+                obj.mesh = obj.results.get( mesh_key );
+                
+                edt_profile_key = ProcessKey( EdtProfile.NAME );
+                obj.profile = obj.results.get( edt_profile_key );
             end
-            
             assert( ~isempty( obj.mesh ) );
             assert( ~isempty( obj.profile ) );
 
@@ -46,6 +41,7 @@ classdef (Sealed) BottleCores < Process
             obj.array = watershed( ext_filtered_profile );
             obj.array( ~obj.mesh.exterior ) = 0;
             obj.array = imclearborder( obj.array );
+            
             obj.printf( '  Computing statistics...\n' );
             obj.count = numel( unique( obj.array ) ) - 1;
             obj.volume = obj.mesh.to_stl_volume( sum( obj.array(:) > 0 ) );
@@ -82,12 +78,9 @@ classdef (Sealed) BottleCores < Process
     
     methods ( Access = public, Static )
         
-        function dependencies = get_dependencies()
+        function name = NAME()
             
-            dependencies = { ...
-                Mesh.NAME, ...
-                EdtProfile.NAME ...
-                };
+            name = mfilename( 'class' );
             
         end
         

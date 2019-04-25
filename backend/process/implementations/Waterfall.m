@@ -13,13 +13,6 @@ classdef Waterfall < Process
     end
     
     
-    properties ( Access = public, Constant )
-        
-        NAME = 'waterfall'
-        
-    end
-    
-    
     methods ( Access = public )
         
         % gravity_direction must be "up" or "down"
@@ -32,21 +25,23 @@ classdef Waterfall < Process
         
         function run( obj )
             
+            assert( ~isempty( obj.parting_dimension ) );
+            assert( ~isempty( obj.gravity_direction ) );
+            
             if ~isempty( obj.results )
-            
-                obj.mesh = obj.results.get( Mesh.NAME );
-            
+                mesh_key = ProcessKey( Mesh.NAME );
+                obj.mesh = obj.results.get( mesh_key );
             end
-            
             assert( ~isempty( obj.mesh ) );
             
             if isempty( obj.parting_perimeter )
-                obj.parting_perimeter = obj.results.get( [ PartingPerimeter.NAME '_' num2str( obj.parting_dimension ) ] );
+                parting_perimeter_key = ProcessKey( ...
+                    PartingPerimeter.NAME, ...
+                    obj.parting_dimension ...
+                    );
+                obj.parting_perimeter = obj.results.get( parting_perimeter_key );
             end
-            
             assert( ~isempty( obj.parting_perimeter ) );
-            assert( ~isempty( obj.parting_dimension ) );
-            assert( ~isempty( obj.gravity_direction ) );
             
             obj.printf( ...
                 'Identifying waterfalls for axis %d and gravity %s...\n', ...
@@ -144,12 +139,9 @@ classdef Waterfall < Process
     
     methods ( Access = public, Static )
         
-        function dependencies = get_dependencies()
+        function name = NAME()
             
-            dependencies = { ...
-                Mesh.NAME, ...
-                PartingPerimeter.NAME ...
-                };
+            name = mfilename( 'class' );
             
         end
         

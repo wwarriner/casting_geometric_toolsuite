@@ -25,13 +25,6 @@ classdef ( Sealed ) Mesh < Process
     end
     
     
-    properties ( Access = public, Constant )
-        
-        NAME = 'mesh'
-        
-    end
-    
-    
     methods ( Access = public )
         
         % envelope is optional, if present, will use that envelope instead
@@ -46,18 +39,18 @@ classdef ( Sealed ) Mesh < Process
         function run( obj )
             
             if ~isempty( obj.results )
-                obj.component = obj.results.get( Component.NAME );
+                component_key = ProcessKey( Component.NAME );
+                obj.component = obj.results.get( component_key );
                 % todo: way to get arbitrary envelope in here
                 obj.desired_envelope = obj.component.envelope;
             end
+            assert( ~isempty( obj.component ) );
+            assert( ~isempty( obj.desired_envelope ) );
             
             if ~isempty( obj.options )
                 obj.desired_element_count = obj.options.element_count;
             end
-            
-            assert( ~isempty( obj.component ) );
             assert( ~isempty( obj.desired_element_count ) );
-            assert( ~isempty( obj.desired_envelope ) );
             
             obj.printf( 'Meshing...\n' );
             obj.element = MeshElement( ...
@@ -113,8 +106,20 @@ classdef ( Sealed ) Mesh < Process
             fdm_mesh = double( obj.interior );
             fdm_mesh( obj.interior == 0 ) = mold_id;
             fdm_mesh( obj.interior == 1 ) = melt_id;
-            pad_count = round( obj.to_mesh_units( padding_in_mm ) );
+            pad_count = obj.get_pad_count( padding_in_mm );
             fdm_mesh = padarray( fdm_mesh, pad_count .* ones( 3, 1 ), mold_id, 'both' );
+            
+        end
+        
+        
+        function unpadded_result = unpad_fdm_result( obj, padding_in_mm, result )
+            
+            pad_count = obj.get_pad_count( padding_in_mm );
+            unpadded_result = result( ...
+                pad_count + 1 : end - pad_count, ...
+                pad_count + 1 : end - pad_count, ...
+                pad_count + 1 : end - pad_count ...
+                );
             
         end
         
@@ -235,11 +240,9 @@ classdef ( Sealed ) Mesh < Process
     
     methods ( Access = public, Static )
         
-        function dependencies = get_dependencies()
+        function name = NAME()
             
-            dependencies = { ...
-                Component.NAME ...
-                };
+            name = mfilename( 'class' );
             
         end
         
@@ -271,6 +274,17 @@ classdef ( Sealed ) Mesh < Process
                 obj.envelope.to_table_row() ...
                 obj.element.to_table_row() ...
                 ];
+            
+        end
+        
+    end
+    
+    
+    methods ( Access = private )
+        
+        function pad_count = get_pad_count( obj, pad_length_in_mm )
+            
+            pad_count = round( obj.to_mesh_units( pad_length_in_mm ) );
             
         end
         

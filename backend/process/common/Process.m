@@ -1,12 +1,5 @@
 classdef Process < UserInterface & Output & OrientationDependent & handle
     
-    properties ( Access = public, Constant, Abstract )
-        
-        NAME
-        
-    end
-    
-    
     methods ( Access = public, Abstract )
         
         run( obj );
@@ -27,14 +20,12 @@ classdef Process < UserInterface & Output & OrientationDependent & handle
         
         function name = get_storage_name( obj )
             
-            name = obj.NAME;
-            if obj.is_orientation_dependent()
-                parting_dimension_str = num2str( int64( obj.parting_dimension ), '%d' );
-                name = strjoin( { name, parting_dimension_str }, '_' );
-            end
-            if obj.has_gravity_direction()
-                name = strjoin( { name, obj.gravity_direction }, '_' );
-            end
+            pk = ProcessKey( ...
+                obj.NAME, ...
+                obj.parting_dimension, ...
+                obj.gravity_direction ...
+                );
+            name = pk.get_key();
             
         end
         
@@ -43,7 +34,14 @@ classdef Process < UserInterface & Output & OrientationDependent & handle
     
     methods ( Access = public, Static, Abstract )
         
-        dependencies = get_dependencies();
+        name = NAME(); % implement as
+        %{
+        function name = NAME()
+            
+            [ ~, name ] = fileparts( mfilename( 'full' ) );
+            
+        end
+        %}
         
     end
     

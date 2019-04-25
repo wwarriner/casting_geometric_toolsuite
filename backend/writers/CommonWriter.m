@@ -18,7 +18,7 @@ classdef (Sealed) CommonWriter < handle
     
     methods ( Access = public )
         
-        function obj = CommonWriter( output_path, name, varargin )
+        function obj = CommonWriter( output_file_path, varargin )
             
             if numel( varargin ) == 1
                 % Mesh
@@ -31,9 +31,7 @@ classdef (Sealed) CommonWriter < handle
             else
                 assert( false );
             end
-            
-            obj.path = output_path;
-            obj.name = name;
+            [ obj.path, obj.name, ~ ] = fileparts( output_file_path );
             
         end
         

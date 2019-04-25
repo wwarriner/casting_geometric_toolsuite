@@ -3,7 +3,9 @@ classdef (Sealed) Segmentation < Process
     properties ( GetAccess = public, SetAccess = private )
         %% inputs
         mesh
-        profile
+        edt_profile
+        use_thermal_profile
+        thermal_profile
         
         %% outputs
         array
@@ -15,7 +17,6 @@ classdef (Sealed) Segmentation < Process
     
     properties ( Access = public, Constant )
         
-        NAME = 'segmentation'
         BOUNDARY_VALUE = -1;
         
     end
@@ -33,34 +34,58 @@ classdef (Sealed) Segmentation < Process
         function run( obj )
             
             if ~isempty( obj.results )
-                obj.mesh = obj.results.get( Mesh.NAME );
-                obj.profile = obj.results.get( EdtProfile.NAME );
+                mesh_key = ProcessKey( Mesh.NAME );
+                obj.mesh = obj.results.get( mesh_key );
+                
+                edt_profile_key = ProcessKey( EdtProfile.NAME );
+                obj.edt_profile = obj.results.get( edt_profile_key );
+            end
+            assert( ~isempty( obj.mesh ) );
+            assert( ~isempty( obj.edt_profile ) );
+            
+            if ~isempty( obj.options )
+                obj.use_thermal_profile = obj.options.use_thermal_profile;
+            end
+            assert( ~isempty( obj.use_thermal_profile ) );
+            
+            if obj.use_thermal_profile
+                thermal_profile_key = ProcessKey( ThermalProfile.NAME );
+                obj.thermal_profile = obj.results.get( thermal_profile_key );
+                assert( ~isempty( obj.thermal_profile ) );
             end
             
-            assert( ~isempty( obj.mesh ) );
-            assert( ~isempty( obj.profile ) );
-            
             obj.printf( 'Segmenting...\n' );
-            obj.array = Segmentation.generate_array( ...
-                obj.profile.filtered_interior, ...
+            if obj.use_thermal_profile
+                segmentation_base = obj.thermal_profile.thermal_modulus_filtered; % modulus-like
+            else
+                segmentation_base = obj.edt_profile.filtered_interior;
+            end
+            segmentation_array = Segmentation.generate_array( ...
+                segmentation_base, ...
                 obj.mesh ...
                 );
-            obj.count = Segmentation.get_segment_count( obj.array );
+            obj.count = Segmentation.get_segment_count( segmentation_array );
             obj.printf( '  Computing statistics...\n' );
-            obj.segments = Segmentation.generate_segments( ...
-                obj.array, ...
-                obj.profile.scaled_interior, ...
+            obj.segments = obj.generate_segments( ...
+                segmentation_base, ...
+                segmentation_array, ...
+                obj.edt_profile.scaled_interior, ...
                 obj.mesh, ...
                 obj.count ...
                 );
+            obj.array = segmentation_array;
             
         end
         
         
-        function legacy_run( obj, profile, mesh )
+        function legacy_run( obj, edt_profile, mesh, thermal_profile )
             
             obj.mesh = mesh;
-            obj.profile = profile;
+            obj.edt_profile = edt_profile;
+            if 3 < nargin
+                obj.use_thermal_profile = true;
+                obj.thermal_profile = thermal_profile;
+            end
             obj.run();
             
         end
@@ -75,7 +100,6 @@ classdef (Sealed) Segmentation < Process
         
         
         function neighbor_pairs = get_neighbor_pairs( obj, EdtProfile, Mesh )
-            
             
             if obj.count == 1
                 neighbor_pairs = SegmentPair.empty( 0 );
@@ -159,12 +183,9 @@ classdef (Sealed) Segmentation < Process
     
     methods ( Access = public, Static )
         
-        function dependencies = get_dependencies()
+        function name = NAME()
             
-            dependencies = { ...
-                Mesh.NAME, ...
-                EdtProfile.NAME ...
-                };
+            name = mfilename( 'class' );
             
         end
         
@@ -205,12 +226,52 @@ classdef (Sealed) Segmentation < Process
     end
     
     
+    methods ( Access = private )
+        
+        function Segments = generate_segments( ...
+                obj, ...
+                base_array, ...
+                watershed_array, ...
+                edt_array, ...
+                mesh, ...
+                count ...
+                )
+            
+            Segments = Segment.empty( count, 0 );
+            for i = 1 : count
+                
+                segment_binary_array = ( watershed_array == i );
+                
+                if obj.use_thermal_profile
+                    base_threshold = ...
+                        obj.thermal_profile.thermal_modulus_filter_threshold;
+                else
+                    base_array = edt_array;
+                    base_threshold = ...
+                        obj.edt_profile.filter_threshold_interior;
+                end
+                
+                Segments( i ) = Segment( ...
+                    base_array, ...
+                    base_threshold, ...
+                    edt_array, ...
+                    segment_binary_array, ...
+                    mesh ...
+                    );
+                
+            end
+            
+        end
+        
+    end
+    
+    
     methods ( Access = private, Static )
         
-        function watershed_array = generate_array( edt_array, Mesh )
+        function watershed_array = generate_array( base_array, Mesh )
             %% INVERT
-            edt_array( ~Mesh.interior ) = -inf;
-            watershed_array = double( watershed( -edt_array ) );
+            base_array( ~Mesh.interior ) = -inf;
+            watershed_array = double( watershed( -base_array ) );
             
             %% WATERSHED
             watershed_array( ~Mesh.interior ) = 0;
@@ -224,27 +285,6 @@ classdef (Sealed) Segmentation < Process
         function count = get_segment_count( watershed_array )
             
             count = double( max( watershed_array( : ) ) );
-            
-        end
-        
-        
-        function Segments = generate_segments( ...
-                watershed_array, ...
-                edt_array, ...
-                mesh, ...
-                count ...
-                )
-            
-            Segments = Segment.empty( count, 0 );
-            for i = 1 : count
-                
-                Segments( i ) = Segment( ...
-                    edt_array, ...
-                    watershed_array == i, ...
-                    mesh ...
-                    );
-                
-            end
             
         end
         

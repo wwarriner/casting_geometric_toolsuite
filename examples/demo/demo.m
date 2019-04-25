@@ -3,7 +3,6 @@ function demo( input_path, output_path )
 res_path = build_demo();
 
 %% RESOURCES
-pd = ProcessDependencies( res_path );
 option_path = fullfile( res_path, 'demo_options.json' );
 
 %% INPUT FILE(S)
@@ -27,15 +26,14 @@ for i = 1 : input_count
     current_output_path = fullfile( output_path, stl_name );
     options = Options( '', option_path, stl_path, current_output_path );
     try
-        pm = ProcessManager( pd, options );
+        pm = ProcessManager( options );
         pm.run();
     catch e
         fprintf( 1, '%s\n', getReport( e ) );
         fprintf( 1, '%s\n', stl_paths{ i } );
     end
-    pm.write_all();
-    [ ~, name, ~ ] = fileparts( stl_paths{ i } );
-    data{ i } = pm.generate_summary( name );
+    pm.write();
+    data{ i } = pm.generate_summary();
     
 end
 

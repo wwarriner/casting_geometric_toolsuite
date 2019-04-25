@@ -34,8 +34,8 @@ classdef (Sealed) PartingLine < ProcessHelper
             assert( length( lower_bound ) == length( upper_bound ) );
             assert( length( upper_bound ) == length( right_side_distances ) );
             
-            obj.lower_bound = lower_bound;
-            obj.upper_bound = upper_bound;
+            obj.lower_bound = fillmissing( lower_bound, 'linear' );
+            obj.upper_bound = fillmissing( upper_bound, 'linear' );
             obj.right_side_distances = right_side_distances;
             obj.input_size = size( right_side_distances );
             obj.input_count = length( right_side_distances );

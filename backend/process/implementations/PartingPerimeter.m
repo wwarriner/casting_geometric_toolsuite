@@ -1,11 +1,11 @@
 classdef (Sealed) PartingPerimeter < Process
     
     properties ( GetAccess = public, SetAccess = private )
-        %% inputs
+        % inputs
         mesh
         do_optimize_parting_line
         
-        %% outputs
+        % outputs
         projected_area
         projected_perimeter
         perimeter
@@ -29,13 +29,6 @@ classdef (Sealed) PartingPerimeter < Process
     end
     
     
-    properties ( Access = public, Constant )
-        
-        NAME = 'parting_perimeter'
-        
-    end
-    
-    
     methods ( Access = public )
         
         function obj = PartingPerimeter( varargin )
@@ -46,24 +39,24 @@ classdef (Sealed) PartingPerimeter < Process
         
         
         function run( obj )
-            %% VALIDATION
+            
+            assert( ~isempty( obj.parting_dimension ) );
+            
             if ~isempty( obj.results )
-                obj.mesh = obj.results.get( Mesh.NAME );
+                mesh_key = ProcessKey( Mesh.NAME );
+                obj.mesh = obj.results.get( mesh_key );
             end
+            assert( ~isempty( obj.mesh ) );
             
             if ~isempty( obj.options )
                 obj.do_optimize_parting_line = obj.options.do_optimize_parting_line;
-            end
-            
+            end            
             if isempty( obj.do_optimize_parting_line )
                 obj.do_optimize_parting_line = false;
             end
-            
-            assert( ~isempty( obj.mesh ) );
-            assert( ~isempty( obj.parting_dimension ) );
             assert( ~isempty( obj.do_optimize_parting_line ) );
             
-            %% PARTING PERIMETER
+            % PARTING PERIMETER
             obj.printf( ...
                 'Locating parting perimeter for axis %d...\n', ...
                 obj.parting_dimension ...
@@ -99,7 +92,7 @@ classdef (Sealed) PartingPerimeter < Process
                 inverse ...
                 );
             
-            %% JOG FREE PERIMETER
+            % JOG FREE PERIMETER
             obj.printf( '  Finding jog-free perimeter...\n' );
             projected_cc = bwconncomp( obj.projected_perimeter );
             [ unprojected_jog_free, jog_height_voxel_units ] = ...
@@ -116,7 +109,7 @@ classdef (Sealed) PartingPerimeter < Process
             JOG_FREE_VALUE = 2;
             obj.perimeter( logical( unprojected_jog_free ) ) = JOG_FREE_VALUE;
             
-            %% PARTING LINE
+            % PARTING LINE
             %p = padarray( obj.projected_perimeter, [ 1 1 ], 0, 'both' );
             p = obj.projected_perimeter;
             a = imfill( p, 'holes' );
@@ -140,7 +133,7 @@ classdef (Sealed) PartingPerimeter < Process
                 path_height( loop_indices ) = round( pl.parting_line );
                 unprojected_parting_line = obj.unproject_perimeter( ...
                     rotated_interior, ...
-                    outer_perimeter, ...
+                    ~isnan( path_height ), ...
                     path_height, ...
                     path_height ...
                     );
@@ -161,7 +154,7 @@ classdef (Sealed) PartingPerimeter < Process
                 end
             end
             
-            %% STATISTICS
+            % STATISTICS
             obj.printf( '  Computing statistics...\n' );
             obj.heights = obj.mesh.to_stl_units( obj.max_slice - obj.min_slice + 1 );
             cc = bwconncomp( obj.projected_perimeter );
@@ -227,11 +220,9 @@ classdef (Sealed) PartingPerimeter < Process
     
     methods ( Access = public, Static )
         
-        function dependencies = get_dependencies()
+        function name = NAME()
             
-            dependencies = { ...
-                Mesh.NAME ...
-                };
+            name = mfilename( 'class' );
             
         end
         
@@ -445,24 +436,40 @@ classdef (Sealed) PartingPerimeter < Process
         
         function [ loop_indices, right_side_distances ] = ...
                 order_indices_by_loop( outer_perimeter )
-            %% Setup
+            
+            % Empty case
+            if ~any( outer_perimeter, 'all' )
+                loop_indices = 1;
+                right_side_distances = 0;
+                return;
+            end
+            
+            % Fix image
+            im = imfill( outer_perimeter, 'holes' );
+            im = imopen( im, conndef( 2, 'maximal' ) );
+            im = bwareafilt( im, 1 );
+            im = bwperim( im );
+            im = bwmorph( im, 'skel', inf );
+            outer_perimeter = im;
+            
+            % Setup
             loop_indices = zeros( 1, sum( outer_perimeter( : ) ) + 1 );
             right_side_distances = zeros( 1, sum( outer_perimeter( : ) ) );
             
-            %% Loop Constants
+            % Loop Constants
             INVALID_ELEMENT = 0;
             VALID_ELEMENT = 1;
             offsets = generate_neighbor_offsets( outer_perimeter );
             preferred_neighbors = [ 7 8 5 3 2 1 4 6 ];
             neighbor_distances = [ sqrt( 2 ) 1 sqrt( 2 ) 1 1 sqrt( 2) 1 sqrt( 2 ) ];
             
-            %% Special Case
+            % Special Case
             % first iteration is a special case so we end up with a closed loop
             itr = 1;
             loop_indices( itr ) = find( outer_perimeter, 1 );
             itr = itr + 1;
             
-            %% Identify Loop Indices
+            % Identify Loop Indices
             while true
                 
                 % get next index
@@ -486,7 +493,7 @@ classdef (Sealed) PartingPerimeter < Process
                 
             end
             
-            %% Prepare Output
+            % Prepare Output
             assert( loop_indices( 1 ) == loop_indices( end ) );
             loop_indices = loop_indices( 1 : end - 1 );
             

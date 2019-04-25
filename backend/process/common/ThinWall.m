@@ -21,7 +21,6 @@ classdef ThinWall < Process
     
     methods ( Access = public )
         
-        % region is: "cavity", "die" or "mold"
         function obj = ThinWall( varargin )
             
             obj = obj@Process( varargin{ : } );
@@ -31,32 +30,33 @@ classdef ThinWall < Process
         
         function run( obj )
             
+            assert( ~isempty( obj.region ) );
+            
             if ~isempty(obj.results)
-                obj.component = obj.results.get( Component.NAME );
-                obj.mesh = obj.results.get( Mesh.NAME );
-                obj.profile = obj.results.get( EdtProfile.NAME );
+                component_key = ProcessKey( Component.NAME );
+                obj.component = obj.results.get( component_key );
+                
+                mesh_key = ProcessKey( Mesh.NAME );
+                obj.mesh = obj.results.get( mesh_key );
+                
+                edt_profile_key = ProcessKey( EdtProfile.NAME );
+                obj.profile = obj.results.get( edt_profile_key );
             end
+            assert( ~isempty( obj.component ) );
+            assert( ~isempty( obj.mesh ) );
+            assert( ~isempty( obj.profile ) );
             
             if ~isempty(obj.options)
-%                 if isprop( obj.options, 'thin_wall_region' )
-%                     obj.region = obj.options.thin_wall_region;
-%                 else
-%                     obj.region = obj.DEFAULT_REGION;
-%                 end
-                obj.threshold_in_component_units = obj.select_threshold_from_options( obj.region, obj.options );
                 % have to halve the threshold, because EDT is half of thickness
-                obj.threshold_in_component_units = 0.5 * obj.threshold_in_component_units;
+                obj.threshold_in_component_units = 0.5 * ...
+                    obj.select_threshold_from_options( obj.region, obj.options );
+                
                 obj.sweep_coefficient = obj.select_sweep_coefficient_from_options( obj.region, obj.options );
                 if isprop( obj.options, 'sweep_coefficient' )
                     obj.sweep_coefficient = obj.options.sweep_coefficient;
                 end
             end
-            
-            assert( ~isempty( obj.component ) );
-            assert( ~isempty( obj.mesh ) );
-            assert( ~isempty( obj.profile ) );
             assert( ~isempty( obj.threshold_in_component_units ) );
-            assert( ~isempty( obj.region ) );
             assert( ~isempty( obj.sweep_coefficient ) );
             
             obj.printf( 'Locating thin wall sections...\n' );
@@ -109,29 +109,12 @@ classdef ThinWall < Process
         end
         
         
-        function set_cavity( obj, threshold )
-            
-            obj.region = obj.CAVITY;
-            obj.threshold_in_component_units = threshold;
-            
-        end
-        
-        
-        function set_mold( obj, threshold )
-            
-            obj.region = obj.MOLD;
-            obj.threshold_in_component_units = threshold;
-            
-        end
-        
-        
         function legacy_run( ...
                 obj, ...
                 component, ...
                 mesh, ...
                 profile, ...
                 threshold_in_component_units, ...
-                region, ...
                 sweep_coefficient ...
                 )
             
@@ -140,9 +123,6 @@ classdef ThinWall < Process
             obj.mesh = mesh;
             obj.profile = profile;
             obj.threshold_in_component_units = threshold_in_component_units;
-            if isempty( obj.region )
-                obj.region = region;
-            end
             obj.sweep_coefficient = sweep_coefficient;
             obj.run();
             
@@ -160,21 +140,6 @@ classdef ThinWall < Process
         function a = to_array( obj )
             
             a = obj.thin_wall;
-            
-        end
-        
-    end
-    
-    
-    methods ( Access = public, Static )
-        
-        function dependencies = get_dependencies()
-            
-            dependencies = { ...
-                Component.NAME, ...
-                Mesh.NAME, ...
-                EdtProfile.NAME ...
-                };
             
         end
         
