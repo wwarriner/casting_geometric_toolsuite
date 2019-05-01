@@ -101,13 +101,61 @@ classdef ( Sealed ) Mesh < Process
         end
         
         
-        function fdm_mesh = get_fdm_mesh( obj, padding_in_mm, mold_id, melt_id )
+        function fdm_mesh = get_fdm_mesh_by_stl_units( ...
+                obj, ...
+                padding_in_stl_units, ...
+                mold_id, ...
+                melt_id ...
+                )
+            
+            pad_count = round( obj.to_mesh_units( padding_in_stl_units ) );
+            fdm_mesh = obj.get_fdm_mesh_by_count( ...
+                pad_count, ...
+                mold_id, ...
+                melt_id ...
+                );
+            
+        end
+        
+        
+        % if scalar, computes padding from ratio along largest dimension
+        % if vector, computes padding for each dimension independently
+        function fdm_mesh = get_fdm_mesh_by_ratio( ...
+                obj, ...
+                pad_ratio, ...
+                mold_id, ...
+                melt_id ...
+                )
+            
+            if isscalar( pad_ratio )
+                largest_dim = obj.get_largest_length();
+                padding_in_stl_units = pad_ratio .* largest_dim;
+            else
+                padding_in_stl_units = pad_ratio .* obj.get_lengths();
+            end
+            fdm_mesh = obj.get_fdm_mesh_by_stl_units( ...
+                padding_in_stl_units, ...
+                mold_id, ...
+                melt_id ...
+                );
+            
+        end
+        
+        
+        function fdm_mesh = get_fdm_mesh_by_count( ...
+                obj, ...
+                pad_count, ...
+                mold_id, ...
+                melt_id ...
+                )
             
             fdm_mesh = double( obj.interior );
             fdm_mesh( obj.interior == 0 ) = mold_id;
             fdm_mesh( obj.interior == 1 ) = melt_id;
-            pad_count = obj.get_pad_count( padding_in_mm );
-            fdm_mesh = padarray( fdm_mesh, pad_count .* ones( 3, 1 ), mold_id, 'both' );
+            if isscalar( pad_count )
+                pad_count = pad_count .* ones( 3, 1 );
+            end
+            fdm_mesh = padarray( fdm_mesh, pad_count, mold_id, 'both' );
             
         end
         
@@ -213,6 +261,13 @@ classdef ( Sealed ) Mesh < Process
         end
         
         
+        function lengths = get_lengths( obj )
+            
+            lengths = obj.envelope.lengths;
+            
+        end
+        
+        
         function max_length = get_largest_length( obj )
             
             max_length = max( obj.envelope.lengths );
@@ -274,17 +329,6 @@ classdef ( Sealed ) Mesh < Process
                 obj.envelope.to_table_row() ...
                 obj.element.to_table_row() ...
                 ];
-            
-        end
-        
-    end
-    
-    
-    methods ( Access = private )
-        
-        function pad_count = get_pad_count( obj, pad_length_in_mm )
-            
-            pad_count = round( obj.to_mesh_units( pad_length_in_mm ) );
             
         end
         

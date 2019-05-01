@@ -62,8 +62,12 @@ classdef ThermalProfile < Process
             
             obj.printf( 'Computing thermal profile...\n' );
             
-            padding_in_mm = 25;
-            fdm_mesh = obj.mesh.get_fdm_mesh( padding_in_mm, mold_id, melt_id );
+            pad_ratio = 0.125;
+            fdm_mesh = obj.mesh.get_fdm_mesh_by_ratio( ...
+                pad_ratio, ...
+                mold_id, ...
+                melt_id ...
+                );
             
             obj.physical_properties.prepare_for_solver();
             lss = LinearSystemSolver( fdm_mesh, obj.physical_properties );
