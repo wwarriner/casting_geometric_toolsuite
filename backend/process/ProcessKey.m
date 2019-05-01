@@ -8,17 +8,17 @@ classdef ProcessKey < handle
                 gravity_direction ...
                 )
             
+            if nargin < 3
+                gravity_direction = [];
+            end
+            
+            if nargin < 2
+                parting_dimension = [];
+            end
+            
             obj.name = class_name;
-            obj.parting_dimension = [];
-            obj.gravity_direction = [];
-            
-            if 2 <= nargin
-                obj.parting_dimension = parting_dimension;
-            end
-            
-            if 3 <= nargin
-                obj.gravity_direction = gravity_direction;
-            end
+            obj.parting_dimension = parting_dimension;
+            obj.gravity_direction = gravity_direction;
             
         end
         
