@@ -25,6 +25,19 @@ classdef ThermalProfile < Process
         
         function run( obj )
             
+            % TODO options
+            % FDM Solver needs its own entire optionset, maybe
+            % probably have a separate options file, and have fdm read that
+            % that option would include mold material, melt material, mold/melt
+            % htc
+            % AUTOMATE initial temperature somehow
+            %   either direct user supply OR some multiple of liquidus (1.1?)
+            % 
+            % 
+            % this method also needs options hooked up
+            % FDM Mesh method (count, stl_units, ratio)
+            % 
+            
             if ~isempty( obj.results )
                 mesh_key = ProcessKey( Mesh.NAME );
                 obj.mesh = obj.results.get( mesh_key );
