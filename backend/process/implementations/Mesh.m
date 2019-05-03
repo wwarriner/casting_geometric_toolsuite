@@ -278,7 +278,7 @@ classdef ( Sealed ) Mesh < Process
             
             relevant_lengths = obj.envelope.lengths;
             relevant_lengths( dimension ) = [];
-            cross_section_area = prod( relevant_lengths );
+            cross_section_area = obj.to_mesh_area( prod( relevant_lengths ) );
             
         end
         
