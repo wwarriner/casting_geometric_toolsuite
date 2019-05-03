@@ -30,6 +30,7 @@ classdef FdmSolver < handle
             % CONFIGURATION DEFAULTS
             obj.printing = false;
             obj.live_plotting = false;
+            obj.data_storage = false;
             
             % temp!
             obj.solidification_stop_fraction = 1.0;
