@@ -11,6 +11,7 @@ end
 try
     pm = ProcessManager( options );
     pm.run();
+    pm.write();
 catch e
     fprintf( 1, '%s\n', getReport( e ) );
     fprintf( 1, '%s\n', stl_path );
