@@ -142,6 +142,7 @@ classdef (Sealed) PartingPerimeter < Process
                     inverse ...
                     );
                 PARTING_LINE_VALUE = 3;
+                % TODO add verticals when unprojecting somehow
                 obj.perimeter( unprojected_parting_line > 0 ) = PARTING_LINE_VALUE;
                 obj.flatness = pl.flatness;
             else
