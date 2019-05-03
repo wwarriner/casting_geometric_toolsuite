@@ -18,8 +18,9 @@ classdef (Sealed) CommonWriter < handle
     
     methods ( Access = public )
         
-        function obj = CommonWriter( output_file_path, varargin )
+        function obj = CommonWriter( output_folder, name, varargin )
             
+            assert( ~isfile( output_folder ) );
             if numel( varargin ) == 1
                 % Mesh
                 obj.spacing = varargin{ 1 }.spacing;
@@ -31,14 +32,15 @@ classdef (Sealed) CommonWriter < handle
             else
                 assert( false );
             end
-            [ obj.path, obj.name, ~ ] = fileparts( output_file_path );
+            obj.path = output_folder;
+            obj.name = name;
             
         end
         
         
         function prepare_output_path( obj )
 
-            if ~exist( obj.path, 'dir' )
+            if ~isfolder( obj.path )
                 mkdir( obj.path );
             end
             
