@@ -128,8 +128,8 @@ classdef ( Sealed ) Mesh < Process
                 )
             
             if isscalar( pad_ratio )
-                largest_dim = obj.get_largest_length();
-                padding_in_stl_units = pad_ratio .* largest_dim;
+                smallest_dim = obj.get_smallest_length();
+                padding_in_stl_units = pad_ratio .* smallest_dim;
             else
                 padding_in_stl_units = pad_ratio .* obj.get_lengths();
             end
@@ -270,6 +270,13 @@ classdef ( Sealed ) Mesh < Process
         function max_length = get_largest_length( obj )
             
             max_length = max( obj.envelope.lengths );
+            
+        end
+        
+        
+        function min_length = get_smallest_length( obj )
+            
+            min_length = min( obj.envelope.lengths );
             
         end
         
