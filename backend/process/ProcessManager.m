@@ -27,7 +27,10 @@ classdef (Sealed) ProcessManager < Cancelable & Notifier & handle
             obj.results = results;
             
             input_dir = fileparts( obj.options.input_stl_path );
-            assert( ~strcmpi( obj.options.output_path, input_dir ) );
+            assert( ...
+                ~strcmpi( obj.options.output_path, input_dir ) || ...
+                ( isempty( input_dir ) && isempty( obj.options.output_path ) ) ...
+                );
             
             if isprop( options, 'user_needs' )
                 obj.set_user_needs( options.user_needs );
