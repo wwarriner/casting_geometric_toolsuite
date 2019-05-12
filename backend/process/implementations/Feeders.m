@@ -85,9 +85,9 @@ classdef (Sealed) Feeders < Process & matlab.mixin.Copyable
         end
         
         
-        function height = get_total_rigged_height( obj, dimension )
+        function height = get_total_rigged_height( obj )
             
-            height = obj.envelope.lengths( dimension );
+            height = obj.envelope.lengths( obj.DEFAULT_PARTING_DIMENSION );
             
         end
         
