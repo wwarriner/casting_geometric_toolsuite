@@ -182,7 +182,7 @@ classdef (Sealed) ProcessManager < Cancelable & Notifier & handle
         
         function dimensions = get_parting_dimensions( obj, class_name )
             
-            if eval( [ class_name '.is_orientation_dependent()' ] )
+            if ProcessKey.use_parting_dimensions( class_name )
                 dimensions = obj.parting_dimensions;
             else
                 dimensions = [];
@@ -194,7 +194,7 @@ classdef (Sealed) ProcessManager < Cancelable & Notifier & handle
         
         function directions = get_gravity_directions( obj, class_name )
             
-            if eval( [ class_name '.has_gravity_direction()' ] )
+            if ProcessKey.use_gravity_directions( class_name )
                 directions = obj.gravity_directions;
             else
                 directions = [];

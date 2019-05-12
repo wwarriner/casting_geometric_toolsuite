@@ -8,11 +8,11 @@ classdef ProcessKey < handle
                 gravity_direction ...
                 )
             
-            if nargin < 3
+            if nargin < 3 || ~obj.use_gravity_directions( class_name )
                 gravity_direction = [];
             end
             
-            if nargin < 2
+            if nargin < 2 || ~obj.use_parting_dimensions( class_name )
                 parting_dimension = [];
             end
             
@@ -48,6 +48,24 @@ classdef ProcessKey < handle
                 parts = [ parts, obj.gravity_direction ];
             end
             key = strjoin( parts, '_' );
+            
+        end
+        
+    end
+    
+    
+    methods ( Access = public, Static )
+        
+        function use = use_parting_dimensions( class_name )
+            
+            use = eval( [ class_name '.is_orientation_dependent()' ] );
+            
+        end
+        
+        
+        function use = use_gravity_directions( class_name )
+            
+            use = eval( [ class_name '.has_gravity_direction()' ] );
             
         end
         
