@@ -26,21 +26,21 @@ classdef (Sealed) Results < handle
         
         function add( obj, process_key, result )
             
-            obj.results( process_key.get_key() ) = result;
+            obj.results( process_key.to_string() ) = result;
             
         end
         
         
         function exist = exists( obj, process_key )
             
-            exist = isKey( obj.results, process_key.get_key() );
+            exist = isKey( obj.results, process_key.to_string() );
             
         end
         
         
         function result = get( obj, process_key )
             
-            key = process_key.get_key();
+            key = process_key.to_string();
             if obj.exists( process_key )
                 result = obj.results( key );
             else

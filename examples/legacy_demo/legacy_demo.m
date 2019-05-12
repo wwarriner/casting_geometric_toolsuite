@@ -33,7 +33,7 @@ for i = 1 : input_count
     %% CREATE TABLE
     count = data{ i }.get_count();
     summary = table;
-    keys = data{ i }.get_keys();
+    keys = data{ i }.to_string();
     for j = 1 : count
         result = data{ i }.get( keys{ j } );
         values = result.to_summary( result.NAME );

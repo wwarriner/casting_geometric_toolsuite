@@ -227,7 +227,7 @@ classdef (Sealed) ProcessManager < Cancelable & Notifier & handle
                 obj.notify_observer( 'Writing :%s', process_key );
             end
             result = obj.results.get( process_key );
-            result.write( process_key.get_key(), writer );
+            result.write( process_key.to_string(), writer );
             
         end
         

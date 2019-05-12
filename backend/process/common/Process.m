@@ -36,7 +36,7 @@ classdef Process < UserInterface & Output & OrientationDependent & handle
                     obj.NAME ...
                     );
             end
-            name = pk.get_key();
+            name = pk.to_string();
             
         end
         

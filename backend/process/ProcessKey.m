@@ -38,7 +38,7 @@ classdef ProcessKey < handle
         end
         
         
-        function key = get_key( obj )
+        function key = to_string( obj )
             
             parts = { obj.name };
             if ~isempty( obj.parting_dimension )
