@@ -4,6 +4,10 @@ classdef Saveable < handle
         
         function save_obj( obj, path, name )
             
+            if nargin < 3
+                name = [];
+            end
+            
             save( fullfile( path, name ), 'obj' );
             
         end
