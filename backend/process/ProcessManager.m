@@ -17,10 +17,14 @@ classdef (Sealed) ProcessManager < Cancelable & Notifier & handle
     
     methods ( Access = public )
         
-        function obj = ProcessManager( options )
+        function obj = ProcessManager( options, results )
+            
+            if nargin < 2
+                results = Results( options );
+            end
             
             obj.options = options;
-            obj.results = Results( options );
+            obj.results = results;
             
             input_dir = fileparts( obj.options.input_stl_path );
             assert( ~strcmpi( obj.options.output_path, input_dir ) );
