@@ -8,6 +8,7 @@ classdef Saveable < handle
                 name = [];
             end
             
+            % TODO saves all handles by deep copy, need saveobj() in each class
             save( fullfile( path, name ), 'obj' );
             
         end
