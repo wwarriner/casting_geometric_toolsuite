@@ -110,143 +110,30 @@ classdef LinearSystemSolver < handle
         end
         
         
-        function [ u, q, time_step, dkdu_term ] = solve( ...
+        function [ u, q, time_step ] = solve( ...
                 obj, ...
-                mesh, ...
                 q_prev, ...
                 u_prev, ...
                 u_curr, ...
                 time_step_prev ...
                 )
             
+            % setup
             q_prev = q_prev( : );
             u_prev = u_prev( : );
             u_curr = u_curr( : );
             
-            dx = obj.pp.get_space_step();
+            rho_cp = obj.compute_rho_cp( u_prev, u_curr );
+            [ boundary_heat_flow, m_internal_heat_flow ] = obj.compute_heat_flow( u_curr );
             
-            % PRE TIME STEP
-            
-            % look up properties
-            tic;
-            rho_cp = obj.property_lookup( Material.RHO, u_curr ) .* ...
-                obj.compute_cp( u_prev, u_curr ); % refactor precompute
-            k = obj.property_lookup( Material.K, u_curr );
-            obj.times( obj.LOOKUP_TIME ) = toc;
-            
-            % compute boundary resistances
-            tic;
-            boundary_indices = obj.determine_ambient_boundary_indices();
-            boundary_resistances = obj.compute_boundary_heat_flow( ...
-                dx, ...
-                u_curr, ...
-                k, ...
-                boundary_indices ...
+            [ time_step, u, q ] = obj.determine_time_step( ...
+                rho_cp, ...
+                boundary_heat_flow, ...
+                m_internal_heat_flow, ...
+                time_step_prev, ...
+                q_prev, ...
+                u_curr ...
                 );
-            obj.times( obj.BC_TIME ) = toc;
-            boundary_heat_flow = 1 ./ boundary_resistances;
-            boundary_heat_flow( ~isfinite( boundary_heat_flow ) ) = 0;
-            
-            % construct internal heat flow matrix
-            tic;
-            internal_resistance_bands = zeros( obj.element_count, obj.DIM_COUNT );
-            for i = 1 : obj.DIM_COUNT
-                
-                internal_resistance_bands( :, i ) = ...
-                    obj.compute_resistance_band( dx, u_curr, k, obj.strides( i ) );
-                internal_resistance_bands( boundary_indices{ i }, i ) = 0;
-                
-            end
-            obj.times( obj.BAND_TIME ) = toc;
-            tic; 
-            m_internal_heat_flow = obj.construct_internal_heat_flow_matrix( internal_resistance_bands );
-            obj.times( obj.KDDU_TIME ) = toc;
-            
-            % construct dkdu term
-            % TODO MAKE OPTIONAL
-            tic;
-%             dkdu_term = obj.construct_dkdu_term( ...
-%                 dx, ...
-%                 u_curr, ...
-%                 k, ...
-%                 boundary_indices ...
-%                 );
-            dkdu_term = zeros( obj.element_count, 1 );
-            obj.times( obj.DKDU_TIME ) = toc;
-            
-            % DETERMINE TIME STEP
-            % uses bisection method
-            
-            % setup
-            setup_time = 0;
-            solve_time = 0;
-            check_time = 0;
-            solver_it = 1;
-            pcg_it = 0;
-            
-            best_u = u_curr;
-            best_quality_ratio = inf;
-            TIME_STEP_INDEX = 2;
-            time_step_range = [ 0 time_step_prev inf ];
-            
-            MAX_IT = 20; % refactor to client parameter
-            TIME_STEP_CHANGE_TOL = 1e-2; % refactor to client parameter
-            time_step_change_ratio = inf;
-            % refactor loop condition
-            u = inf( size( u_curr ) );
-            while solver_it <= MAX_IT && ...
-                    TIME_STEP_CHANGE_TOL < time_step_change_ratio && ...
-                    obj.pp.get_solidus_temperature( 2 ) < max( u( obj.fdm_mesh == 2 ), [], 'all' )
-                
-                % set up linear system
-                tic;
-                [ lhs, rhs ] = obj.setup_linear_system( ...
-                    dx, ...
-                    time_step_range( TIME_STEP_INDEX ), ...
-                    rho_cp, ...
-                    m_internal_heat_flow, ...
-                    boundary_heat_flow, ...
-                    dkdu_term, ...
-                    u_curr ...
-                    );
-                setup_time = setup_time + toc;
-                
-                % solve linear system
-                tic;
-                [ u, pcg_it_curr ] = obj.solve_system_of_equations( lhs, rhs, best_u );
-                pcg_it = pcg_it + pcg_it_curr;
-                solve_time = solve_time + toc;
-                
-                % check solution
-                tic;
-                q = obj.pp.compute_melt_enthalpies( mesh, u ); % todo refactor mesh
-                quality_ratio = obj.determine_solution_quality_ratio( q_prev, q );
-                if abs( quality_ratio ) < best_quality_ratio
-                    best_u = u;
-                end
-                check_time = check_time + toc;
-                
-                % preferred end condition
-                if obj.is_quality_ratio_sufficient( quality_ratio )
-                    break;
-                end
-                [ time_step_range, time_step_change_ratio ] = obj.update_time_step_range( ...
-                    quality_ratio, ...
-                    time_step_range ...
-                    );
-                
-                % update loop
-                solver_it = solver_it + 1;
-                
-            end
-            
-            % store computation times
-            time_step = time_step_range( TIME_STEP_INDEX );
-            obj.times( obj.SETUP_TIME ) = setup_time;
-            obj.times( obj.SOLVE_TIME ) = solve_time;
-            obj.times( obj.CHECK_TIME ) = check_time;
-            obj.solver_count = solver_it;
-            obj.pcg_count = pcg_it;
             
         end
         
@@ -330,6 +217,167 @@ classdef LinearSystemSolver < handle
     
     methods ( Access = private )
         
+        function rho_cp = compute_rho_cp( obj, u_prev, u_curr )
+            
+            rho_cp = obj.property_lookup( Material.RHO, u_curr ) .* ...
+                obj.compute_cp( u_prev, u_curr ); % TODO refactor precompute
+            
+        end
+        
+        
+        function [ boundary, internal ] = compute_heat_flow( obj, u_curr )
+            
+            k = obj.property_lookup( Material.K, u_curr );
+            [ boundary, indices ] = obj.compute_boundary_heat_flow( u_curr, k );
+            internal = obj.compute_internal_heat_flow( u_curr, k, indices );
+            % dkdu = obj.compute_dkdu_term( u_curr, k, indices );
+            
+        end
+        
+        
+        function [ heat_flow, boundary_indices ] = compute_boundary_heat_flow( obj, u_curr, k )
+            
+            tic;
+            
+            dx = obj.pp.get_space_step();
+            boundary_indices = obj.determine_ambient_boundary_indices();
+            resistances = obj.compute_boundary_resistances( ...
+                dx, ...
+                u_curr, ...
+                k, ...
+                boundary_indices ...
+                );
+            heat_flow = 1 ./ resistances;
+            heat_flow( ~isfinite( heat_flow ) ) = 0;
+            
+            obj.times( obj.BC_TIME ) = toc;
+            
+        end
+        
+        
+        function m_heat_flow = compute_internal_heat_flow( obj, u_curr, k, boundary_indices )
+            
+            tic;
+            
+            dx = obj.pp.get_space_step();
+            resistance_bands = zeros( obj.element_count, obj.DIM_COUNT );
+            for i = 1 : obj.DIM_COUNT
+                
+                resistance_bands( :, i ) = ...
+                    obj.compute_resistance_band( dx, u_curr, k, obj.strides( i ) );
+                resistance_bands( boundary_indices{ i }, i ) = 0;
+                
+            end
+            
+            obj.times( obj.BAND_TIME ) = toc;
+            
+            tic;
+            
+            heat_flow_bands = 1 ./ resistance_bands;
+            m_heat_flow = obj.construct_internal_heat_flow_matrix( heat_flow_bands );
+            
+            obj.times( obj.KDDU_TIME ) = toc;
+            
+        end
+        
+        
+        function dkdu = compute_dkdu_term( obj, u_curr, k, boundary_indices )
+            
+            tic;
+            
+            dx = obj.pp.get_space_step();
+            dkdu = obj.construct_dkdu_term( ...
+                dx, ...
+                u_curr, ...
+                k, ...
+                boundary_indices ...
+                );
+            
+            obj.times( obj.DKDU_TIME ) = toc;
+            
+        end
+        
+        
+        function [ time_step, u, q ] = determine_time_step( ...
+                obj, ...
+                rho_cp, ...
+                boundary_heat_flow, ...
+                m_internal_heat_flow, ...
+                time_step_prev, ...
+                q_prev, ...
+                u_curr ...
+                )
+            
+            % setup
+            setup_time = 0;
+            solve_time = 0;
+            check_time = 0;
+            solver_it = 1;
+            pcg_it = 0;
+            
+            u_best_so_far = u_curr;
+            best_quality_ratio = inf;
+            TIME_STEP_INDEX = 2;
+            time_step_range = [ 0 time_step_prev inf ];
+            
+            MAX_IT = 20; % refactor to client parameter
+            TIME_STEP_CHANGE_TOL = 1e-2; % refactor to client parameter
+            time_step_change_ratio = inf;
+            % refactor loop condition
+            u = inf( size( u_curr ) );
+            while solver_it <= MAX_IT && ...
+                    TIME_STEP_CHANGE_TOL < time_step_change_ratio && ...
+                    obj.pp.get_solidus_temperature( 2 ) < max( u( obj.fdm_mesh == 2 ), [], 'all' )
+                
+                % set up linear system
+                tic;
+                [ lhs, rhs ] = obj.setup_linear_system( ...
+                    time_step_range( TIME_STEP_INDEX ), ...
+                    rho_cp, ...
+                    m_internal_heat_flow, ...
+                    boundary_heat_flow, ...
+                    u_curr ...
+                    );
+                setup_time = setup_time + toc;
+                
+                % solve linear system
+                tic;
+                [ u, pcg_it_curr ] = obj.solve_system_of_equations( lhs, rhs, u_best_so_far );
+                pcg_it = pcg_it + pcg_it_curr;
+                solve_time = solve_time + toc;
+                
+                % check solution
+                tic;
+                [ quality_ratio, q ] = obj.determine_solution_quality_ratio( q_prev, u );
+                if abs( quality_ratio ) < best_quality_ratio
+                    u_best_so_far = u;
+                end
+                check_time = check_time + toc;
+                
+                % preferred end condition
+                if obj.is_quality_ratio_sufficient( quality_ratio )
+                    break;
+                end
+                [ time_step_range, time_step_change_ratio ] = obj.update_time_step_range( ...
+                    quality_ratio, ...
+                    time_step_range ...
+                    );
+                
+                % update loop
+                solver_it = solver_it + 1;
+                
+            end
+            
+            time_step = time_step_range( TIME_STEP_INDEX );
+            obj.times( obj.SETUP_TIME ) = setup_time;
+            obj.times( obj.SOLVE_TIME ) = solve_time;
+            obj.times( obj.CHECK_TIME ) = check_time;
+            obj.solver_count = solver_it;
+            obj.pcg_count = pcg_it;
+            
+        end
+        
+        
         % lhs - Left Hand Side of linear system
         % rhs - Right Hand Side
         % amb - ambient, i.e. global boundary
@@ -339,16 +387,16 @@ classdef LinearSystemSolver < handle
         % third output arg is for record keeping only
         function [ lhs, rhs ] = setup_linear_system( ...
                 obj, ...
-                dx, ...
                 dt, ...
                 rho_cp, ...
                 m_heat_flow, ...
                 boundary_heat_flow, ...
-                dkdu_term, ...
-                u ...
+                u ..., ...
+                ...dkdu_term ...
                 )
             
             % apply time step
+            dx = obj.pp.get_space_step();
             m_flow = dt .* m_heat_flow ./ dx;
             boundary_flow = dt .* sum( boundary_heat_flow, 2 ) ./ dx;
             
@@ -403,12 +451,13 @@ classdef LinearSystemSolver < handle
         end
         
         
-        function quality_ratio = determine_solution_quality_ratio( ...
+        function [ quality_ratio, q ] = determine_solution_quality_ratio( ...
                 obj, ...
                 q_prev, ...
-                q ...
+                u ...
                 )
             
+            q = obj.pp.compute_melt_enthalpies( obj.fdm_mesh( : ), u ); % todo refactor mesh
             max_delta_q = max( q_prev( : ) - q( : ) );
             [ latent_heat, sensible_heat ] = obj.pp.get_min_latent_heat();
             % if latent heat very small, use sensible heat over freezing range instead
@@ -454,7 +503,7 @@ classdef LinearSystemSolver < handle
         
         function cp = compute_cp( obj, u_prev, u_next )
             
-			% refactor into cp class
+            % refactor into cp class
             % direct calculation of cp
             cp_direct = obj.property_lookup( Material.CP, u_next );
             
@@ -498,7 +547,7 @@ classdef LinearSystemSolver < handle
         end
         
         
-        function resistances = compute_boundary_heat_flow( ...
+        function resistances = compute_boundary_resistances( ...
                 obj, ...
                 dx, ...
                 u, ...
@@ -538,10 +587,9 @@ classdef LinearSystemSolver < handle
         
         function m_heat_flow = construct_internal_heat_flow_matrix( ...
                 obj, ...
-                resistance_bands ...
+                heat_flow_bands ...
                 )
             
-            heat_flow_bands = 1 ./ resistance_bands;
             heat_flow_bands( ~isfinite( heat_flow_bands ) ) = 0;
             m_heat_flow = spdiags2( ...
                 heat_flow_bands, ...
