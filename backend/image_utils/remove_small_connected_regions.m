@@ -14,11 +14,11 @@ segment_count = connected_regions.NumObjects;
 
 %% COMPUTE RATIOS
 segment_element_counts = arrayfun( @(y)sum( segments( : ) == y ), 1 : segment_count );
-segment_element_ratios = segment_element_counts ./ prod( size( binary_image ) );
+segment_element_ratios = segment_element_counts ./ numel( binary_image );
 
 %% THRESHOLD REGIONS BY RATIO
 indices_to_remove = ...
-    isoutlier( 1 ./ segment_element_counts, 'quartiles' ) ...
+    isoutlier( 1 ./ segment_element_counts, 'grubbs' ) ...
     | segment_element_ratios < 1e-4;
 adjusted_image = segments;
 for i = 1 : segment_count
