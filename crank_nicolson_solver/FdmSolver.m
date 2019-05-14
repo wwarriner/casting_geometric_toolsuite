@@ -46,6 +46,13 @@ classdef FdmSolver < handle
         end
         
         
+        function set_live_plotting( obj, on )
+            
+            obj.live_plotting = on;
+            
+        end
+        
+        
         function turn_live_plotting_on( obj )
             
             obj.live_plotting = true;
