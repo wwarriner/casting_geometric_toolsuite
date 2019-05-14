@@ -1,0 +1,23 @@
+{
+"input_stl_path":"",
+"output_path":"",
+"element_count":1e6,
+"component_count":1,
+"core_distance_threshold_in_stl_units":5,
+"thin_wall_cavity_threshold":1.0,
+"thin_wall_cavity_sweep_coefficient":2.0,
+"thin_wall_mold_threshold":2.35,
+"thin_wall_mold_sweep_coefficient":2.0,
+"user_needs":["ThermalProfile"],
+"parting_dimensions":[1,2,3],
+"gravity_directions":["up","down"],
+"do_optimize_parting_line": true,
+"use_thermal_profile":true,
+"mold_material":"silica_dry.txt",
+"melt_material":"cf3mn.txt",
+"mold_melt_convection":"steel_sand_htc.txt",
+"melt_initial_temperature_C":1600,
+"mold_pad_type":"ratio",
+"mold_pad_amounts":[0.125],
+"show_thermal_profile_dashboard":false
+}
