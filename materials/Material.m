@@ -77,7 +77,11 @@ classdef (Abstract) Material < handle & matlab.mixin.Heterogeneous
         
         function material_property = get( obj, index )
             
-            assert( obj.prepared );
+            if ~obj.prepared
+                assert( strcmpi( index, obj.FS ) );
+                assert( obj.properties_set.isKey( obj.FS ) );
+            end 
+            
             material_property = obj.material_properties( index );
             
         end
