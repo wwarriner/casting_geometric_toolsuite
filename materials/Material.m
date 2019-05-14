@@ -13,7 +13,6 @@ classdef (Abstract) Material < handle & matlab.mixin.Heterogeneous
         CP = 'cp';
         K = 'k';
         FS = 'fs';
-        K_INV = 'k_inv'; % DO NOT SET DIRECTLY
         Q = 'q'; % DO NOT SET DIRECTLY
         
     end
@@ -21,7 +20,7 @@ classdef (Abstract) Material < handle & matlab.mixin.Heterogeneous
     
     methods ( Access = public )
         
-        % DO NOT SET K_INV OR Q DIRECTLY
+        % DO NOT SET Q DIRECTLY
         function set( obj, material_property )
             
             assert( ~obj.prepared );
@@ -61,12 +60,11 @@ classdef (Abstract) Material < handle & matlab.mixin.Heterogeneous
         end
         
         
-        function prepare_for_solver( obj, space_step, temperature_range )
+        function prepare_for_solver( obj, temperature_range )
             
+            assert( ~obj.prepared );
             assert( obj.is_ready() );
             
-            obj.material_properties( obj.K_INV ) = ...
-                obj.material_properties( obj.K ).compute_k_half_space_step_inverse_property( space_step );
             obj.material_properties( obj.Q ) = ...
                 obj.material_properties( obj.CP ).compute_q_property( temperature_range );
             
