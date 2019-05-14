@@ -20,7 +20,7 @@ classdef Saveable < handle
         
         function obj = load_obj( path )
             
-            s = load( path );
+            s = load( path, '-mat' );
             obj = s.obj;
             
         end
