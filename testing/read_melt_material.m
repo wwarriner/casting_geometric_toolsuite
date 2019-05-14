@@ -11,7 +11,9 @@ melt.set( CpProperty( cp_t, cp ) );
 melt.set( KProperty( k_t, k ) );
 [ fs_t, fs ] = remove_nans( data.fs_t, data.fs );
 melt.set( FsProperty( fs_t, fs ) );
-melt.set_initial_temperature( 2000 );
+initial_temp = compute_default_initial_melt_temperature( melt );
+melt.set_initial_temperature( initial_temp );
+melt.set_feeding_effectivity( 0.5 );
 
 end
 
