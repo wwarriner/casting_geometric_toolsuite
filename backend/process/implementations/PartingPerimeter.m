@@ -3,7 +3,7 @@ classdef (Sealed) PartingPerimeter < Process
     properties ( GetAccess = public, SetAccess = private )
         % inputs
         mesh
-        do_optimize_parting_line
+        optimize
         
         % outputs
         projected_area
@@ -50,12 +50,12 @@ classdef (Sealed) PartingPerimeter < Process
             
             if ~isempty( obj.options )
                 FALLBACK_DO_OPTIMIZE = true;
-                obj.do_optimize_parting_line = obj.options.get( ...
-                    'processes.parting_line.do_optimize_parting_line', ...
+                obj.optimize = obj.options.get( ...
+                    'processes.parting_line.optimize', ...
                     FALLBACK_DO_OPTIMIZE ...
                     );
             end        
-            assert( ~isempty( obj.do_optimize_parting_line ) );
+            assert( ~isempty( obj.optimize ) );
             
             % PARTING PERIMETER
             obj.printf( ...
@@ -123,7 +123,7 @@ classdef (Sealed) PartingPerimeter < Process
             %outer_perimeter = f( 2 : end, 2 : end );
             [ loop_indices, right_side_distances ] = ...
                 obj.order_indices_by_loop( outer_perimeter );
-            if obj.do_optimize_parting_line
+            if obj.optimize
                 obj.printf( '  Optimizing parting line...\n' );
                 pl = PartingLine( ...
                     obj.min_slice( loop_indices ), ...
@@ -183,14 +183,14 @@ classdef (Sealed) PartingPerimeter < Process
         end
         
         
-        function legacy_run( obj, mesh, parting_dimension, do_optimize_parting_line )
+        function legacy_run( obj, mesh, parting_dimension, optimize )
             
             if nargin < 4
-                do_optimize_parting_line = false;
+                optimize = false;
             end
             obj.mesh = mesh;
             obj.parting_dimension = parting_dimension;
-            obj.do_optimize_parting_line = do_optimize_parting_line;
+            obj.optimize = optimize;
             obj.run();
             
         end
@@ -249,7 +249,7 @@ classdef (Sealed) PartingPerimeter < Process
                 'count', ...
                 'jog_free_count', ...
                 };
-            if obj.do_optimize_parting_line
+            if obj.optimize
                 names = [ names 'flatness' ];
             end
             
@@ -265,7 +265,7 @@ classdef (Sealed) PartingPerimeter < Process
                 obj.count, ...
                 obj.jog_free_count ...
                 };
-            if obj.do_optimize_parting_line
+            if obj.optimize
                 values = [ values 'flatness' ];
             end
             
