@@ -10,7 +10,7 @@ classdef (Sealed) Options < Property
             end
             obj.create( OPTION_DEFAULTS_PATH );
             
-            if nargin >= 2
+            if nargin >= 1
                 obj.update( varargin{ 1 } );
             end
             
