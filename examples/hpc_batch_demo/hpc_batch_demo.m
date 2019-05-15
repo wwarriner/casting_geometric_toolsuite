@@ -1,26 +1,26 @@
-function hpc_batch_demo( stl_path, output_path, option_path, solver_path )
+function hpc_batch_demo( stl_file, output_folder, option_file )
 %% RESOURCES
-options = Options( '', option_path, stl_path, output_path );
-[ ~, name, ~ ] = fileparts( stl_path );
-
-if options.use_thermal_profile
-    addpath( genpath( solver_path ) );
-end
+options = Options( option_file );
+options.set( 'manager.stl_file', stl_file );
+options.set( 'manager.output_folder', output_folder ); % needs output path defined
+[ ~, name, ~ ] = fileparts( stl_file );
 
 %% ANALYSIS
 try
     pm = ProcessManager( options );
     pm.run();
-    pm.write();
 catch e
+    fprintf( 1, '%s\n', stl_file );
     fprintf( 1, '%s\n', getReport( e ) );
-    fprintf( 1, '%s\n', stl_path );
+    assert( false );
 end
+pm.write();
 tbl = pm.generate_summary();
 
 %% OUTPUT
 csv_name = sprintf( '%s.csv', name );
-output_file = fullfile( output_path, csv_name );
+output_file = fullfile( output_folder, csv_name );
 writetable( tbl, output_file );
 
 end
+
