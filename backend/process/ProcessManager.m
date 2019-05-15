@@ -26,27 +26,22 @@ classdef (Sealed) ProcessManager < Cancelable & Notifier & handle
             obj.options = options;
             obj.results = results;
             
-            input_dir = fileparts( obj.options.input_stl_path );
+            input_folder = fileparts( obj.options.get( 'manager.stl_file' ) );
+            output_folder = fileparts( obj.options.get( 'manager.output_folder' ) );
             assert( ...
-                ~strcmpi( obj.options.output_path, input_dir ) || ...
-                ( isempty( input_dir ) && isempty( obj.options.output_path ) ) ...
+                ~strcmpi( input_folder, output_folder ) || ...
+                ( isempty( input_folder ) && isempty( output_folder ) ) ...
                 );
             
-            if isprop( options, 'user_needs' )
-                obj.set_user_needs( options.user_needs );
-            end
-            
-            if isprop( options, 'parting_dimensions' )
-                obj.set_parting_dimensions( options.parting_dimensions );
-            else
-                obj.set_parting_dimensions( 3 );
-            end
-            
-            if isprop( options, 'gravity_directions' )
-                obj.set_gravity_directions( options.gravity_directions );
-            else
-                obj.set_gravity_directions( { 'down' } );
-            end
+            obj.user_needs = obj.options.get( 'manager.user_needs' );
+            obj.parting_dimensions = obj.options.get( ...
+                'manager.parting_dimensions', ...
+                Process.DEFAULT_PARTING_DIMENSION ...
+                );
+            obj.gravity_directions = obj.options.get( ...
+                'manager.gravity_directions', ...
+                Process.DEFAULT_GRAVITY_DIRECTION ...
+                );
             
         end
         

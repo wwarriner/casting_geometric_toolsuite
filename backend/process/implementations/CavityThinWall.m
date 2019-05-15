@@ -5,7 +5,7 @@ classdef (Sealed) CavityThinWall < ThinWall
         function obj = CavityThinWall( varargin )
             
             obj = obj@ThinWall( varargin{ : } );
-            obj.set_region( 'cavity' );
+            obj.set_region( ThinWall.CAVITY );
             
             if nargin == 0; return; end
             

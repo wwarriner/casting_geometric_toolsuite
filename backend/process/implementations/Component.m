@@ -45,7 +45,7 @@ classdef (Sealed) Component < Process & matlab.mixin.Copyable
         function run( obj )
             
             if ~isempty( obj.options )
-                obj.stl_path = obj.options.input_stl_path;
+                obj.stl_path = obj.options.get( 'manager.stl_file' );
                 assert( ~isempty( obj.stl_path ) );
             end
             

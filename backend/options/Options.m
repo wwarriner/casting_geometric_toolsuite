@@ -2,23 +2,24 @@ classdef (Sealed) Options < Property
     
     methods ( Access = public )
         
-        function obj = Options( option_defaults_path, varargin )
+        function obj = Options( varargin )
             
-            if ~isempty( option_defaults_path )
-                obj.create( option_defaults_path );
+            OPTION_DEFAULTS_PATH = which( 'option_defaults.json' );
+            if ~isfile( OPTION_DEFAULTS_PATH )
+                assert( false );
             end
+            obj.create( OPTION_DEFAULTS_PATH );
             
             if nargin >= 2
                 obj.update( varargin{ 1 } );
             end
             
-            if nargin >= 3
-                obj.stl_path.set( varargin{ 2 } );
-            end
+        end
+        
+        
+        function keys = list( obj )
             
-            if nargin >= 4
-                obj.output_path.set( varargin{ 3 } );
-            end
+            keys = obj.list_props( obj, {}, {} );
             
         end
         
@@ -26,6 +27,29 @@ classdef (Sealed) Options < Property
     
     
     methods ( Access = private )
+        
+        function keys = list_props( obj, value, ancestry, keys )
+            
+            fields = fieldnames( value );
+            for i = 1 : numel( fields )
+
+                field = fields{ i };
+                current_keys = [ ancestry field ];
+                if isa( value.(field), 'Property' )
+                    keys = obj.list_props( ...
+                        value.(field), ...
+                        current_keys, ...
+                        keys ...
+                        );
+                else
+                    key = strjoin( current_keys, '.' );
+                    keys{ end + 1, 1 } = key;
+                end
+
+            end
+            
+        end
+        
         
         function create( obj, path )
             

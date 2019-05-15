@@ -48,7 +48,7 @@ classdef ( Sealed ) Mesh < Process
             assert( ~isempty( obj.desired_envelope ) );
             
             if ~isempty( obj.options )
-                obj.desired_element_count = obj.options.element_count;
+                obj.desired_element_count = obj.options.get( 'processes.mesh.element_count' );
             end
             assert( ~isempty( obj.desired_element_count ) );
             

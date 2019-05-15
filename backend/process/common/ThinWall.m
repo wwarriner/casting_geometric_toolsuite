@@ -32,7 +32,7 @@ classdef ThinWall < Process
             
             assert( ~isempty( obj.region ) );
             
-            if ~isempty(obj.results)
+            if ~isempty( obj.results )
                 component_key = ProcessKey( Component.NAME );
                 obj.component = obj.results.get( component_key );
                 
@@ -46,15 +46,11 @@ classdef ThinWall < Process
             assert( ~isempty( obj.mesh ) );
             assert( ~isempty( obj.profile ) );
             
-            if ~isempty(obj.options)
+            if ~isempty( obj.options )
                 % have to halve the threshold, because EDT is half of thickness
                 obj.threshold_in_component_units = 0.5 * ...
                     obj.select_threshold_from_options( obj.region, obj.options );
-                
                 obj.sweep_coefficient = obj.select_sweep_coefficient_from_options( obj.region, obj.options );
-                if isprop( obj.options, 'sweep_coefficient' )
-                    obj.sweep_coefficient = obj.options.sweep_coefficient;
-                end
             end
             assert( ~isempty( obj.threshold_in_component_units ) );
             assert( ~isempty( obj.sweep_coefficient ) );
@@ -146,6 +142,15 @@ classdef ThinWall < Process
     end
     
     
+    properties( Access = protected, Constant )
+        
+        CAVITY = "cavity";
+        DIE = "die";
+        MOLD = "mold";
+        
+    end
+    
+    
     methods ( Access = protected )
         
         function names = get_table_names( ~ )
@@ -170,19 +175,6 @@ classdef ThinWall < Process
     end
     
     
-    properties( Access = private, Constant )
-        
-        CAVITY = "cavity";
-        DIE = "die";
-        MOLD = "mold";
-        
-        DEFAULT_SWEEP_COEFFICIENT = 1;
-        DEFAULT_THRESHOLD = inf;
-        DEFAULT_REGION = 'cavity';
-        
-    end
-    
-    
     methods ( Access = private, Static )
         
         function mask = select_mask( Mesh, region )
@@ -192,7 +184,7 @@ classdef ThinWall < Process
             elseif strcmpi( region, ThinWall.DIE ) || strcmpi( region, ThinWall.MOLD )
                 mask = Mesh.exterior;
             else
-                error( "incorrect region\n" );
+                assert( false );
             end
             
         end
@@ -206,7 +198,7 @@ classdef ThinWall < Process
             elseif strcmpi( region, ThinWall.DIE ) || strcmpi( region, ThinWall.MOLD )
                 edt = -edt;
             else
-                error( "incorrect region\n" );
+                assert( false );
             end
             edt( edt < 0 ) = 0;
             
@@ -228,10 +220,12 @@ classdef ThinWall < Process
         
         function threshold = select_threshold_from_options( region, options )
             
+            FALLBACK_VALUE = 1; % mm
+            base = 'processes.thin_wall';
             if strcmpi( region, ThinWall.CAVITY )
-                threshold = options.thin_wall_cavity_threshold;
+                threshold = options.get( [ base '.cavity_threshold_stl_units' ], FALLBACK_VALUE );
             elseif strcmpi( region, ThinWall.DIE ) || strcmpi( region, ThinWall.MOLD )
-                threshold = options.thin_wall_mold_threshold;
+                threshold = options.get( [ base '.mold_threshold_stl_units' ], FALLBACK_VALUE );
             else
                 error( "incorrect region\n" );
             end
@@ -241,10 +235,12 @@ classdef ThinWall < Process
         
         function threshold = select_sweep_coefficient_from_options( region, options )
             
+            FALLBACK_VALUE = 2;
+            base = 'processes.thin_wall';
             if strcmpi( region, ThinWall.CAVITY )
-                threshold = options.thin_wall_cavity_sweep_coefficient;
+                threshold = options.get( [ base '.cavity_sweep_coefficient' ], FALLBACK_VALUE );
             elseif strcmpi( region, ThinWall.DIE ) || strcmpi( region, ThinWall.MOLD )
-                threshold = options.thin_wall_cavity_sweep_coefficient;
+                threshold = options.get( [ base '.mold_sweep_coefficient' ], FALLBACK_VALUE );
             else
                 error( "incorrect region\n" );
             end

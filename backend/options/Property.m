@@ -87,6 +87,7 @@ classdef Property < dynamicprops
             [ first, rest ] = obj.split( key );
             if ~isprop( obj, first )
                 warning( 'Cannot get unknown key: %s\n', full_key );
+                value = [];
                 return;
             end
             

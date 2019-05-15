@@ -4,7 +4,7 @@ classdef Core < Process
         %% input
         mesh
         undercuts
-        distance_threshold_in_stl_units
+        threshold_stl_units
         
         %% output
         array
@@ -37,9 +37,13 @@ classdef Core < Process
             assert( ~isempty( obj.undercuts ) );
             
             if ~isempty( obj.options )
-                obj.distance_threshold_in_stl_units = obj.options.core_distance_threshold_in_stl_units;
+                FALLBACK_THRESHOLD_STL_UNITS = 25; % mm;
+                obj.threshold_stl_units = obj.options.get( ...
+                    'processes.core.threshold_stl_units', ...
+                    FALLBACK_THRESHOLD_STL_UNITS ...
+                    );
             end
-            assert( ~isempty( obj.distance_threshold_in_stl_units ) );
+            assert( ~isempty( obj.threshold_stl_units ) );
             
             obj.printf( 'Evaluating orientation-independent cores...\n' );
             cc = bwconncomp( obj.create_array(), conndef( 3, 'minimal' ) );
@@ -53,11 +57,11 @@ classdef Core < Process
         end
         
         
-        function legacy_run( obj, mesh, undercuts, distance_threshold_in_stl_units )
+        function legacy_run( obj, mesh, undercuts, threshold_stl_units )
             
             obj.mesh = mesh;
             obj.undercuts = undercuts;
-            obj.distance_threshold_in_stl_units = distance_threshold_in_stl_units;
+            obj.threshold_stl_units = threshold_stl_units;
             obj.run();
             
         end
@@ -133,7 +137,7 @@ classdef Core < Process
         
         function threshold = get_threshold( obj )
             
-            threshold = obj.mesh.to_mesh_units( obj.distance_threshold_in_stl_units );
+            threshold = obj.mesh.to_mesh_units( obj.threshold_stl_units );
             
         end
         

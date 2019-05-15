@@ -46,10 +46,6 @@ classdef ThermalProfile < Process
             % this method also needs options hooked up
             % FDM Mesh method (count, stl_units, ratio)
             
-            obj.mold_pad_type = obj.MOLD_PAD_RATIO;
-            obj.mold_pad_amounts = 0.125;
-            obj.show_thermal_profile_dashboard = false;
-            
             if ~isempty( obj.results )
                 mesh_key = ProcessKey( Mesh.NAME );
                 obj.mesh = obj.results.get( mesh_key );
@@ -57,27 +53,35 @@ classdef ThermalProfile < Process
             assert( ~isempty( obj.mesh ) );
             
             if ~isempty( obj.options )
-                obj.mold_material_name = obj.options.mold_material;
-                obj.melt_material_name = obj.options.melt_material;
-                obj.mold_melt_convection_name = obj.options.mold_melt_convection;
-                if isprop( obj.options, 'mold_pad_type' )
-                    obj.mold_pad_type = obj.options.mold_pad_type;
-                end
-                if isprop( obj.options, 'mold_pad_amounts' )
-                    obj.mold_pad_amounts = obj.options.mold_pad_amounts;
-                end
-                if isprop( obj.options, 'show_thermal_profile_dashboard' )
-                    obj.show_thermal_profile_dashboard = obj.options.show_thermal_profile_dashboard;
-                end
+                base = 'processes.thermal_profile';
+                obj.mold_material_filename = obj.options.get( [ base '.mold_material' ] );
+                obj.melt_material_filename = obj.options.get( [ base '.melt_material' ] );
+                obj.mold_melt_convection_filename = obj.options.get( [ base '.mold_melt_convection' ] );
+                FALLBACK_MELT_INITIAL_TEMPERATURE_C = nan;
+                obj.melt_initial_temperature_c = obj.options.get( ...
+                    [ base '.melt_initial_temperature_c' ], ...
+                    FALLBACK_MELT_INITIAL_TEMPERATURE_C ...
+                    );
+                obj.mold_pad_type = obj.options.get( ...
+                    [ base '.mold_pad_type' ], ...
+                    obj.FALLBACK_MOLD_PAD_TYPE ...
+                    );
+                obj.mold_pad_amounts = obj.options.get( ...
+                    [ base '.mold_pad_amounts' ], ...
+                    obj.FALLBACK_MOLD_PAD_AMOUNTS ...
+                    );
+                obj.show_thermal_profile_dashboard = obj.options.get( ...
+                    [ base '.show_thermal_profile_dashboard' ], ...
+                    obj.FALLBACK_SHOW_THERMAL_PROFILE_DASHBOARD ...
+                    );
             end
-            assert( ~isempty( obj.mold_material_name ) );
-            assert( ~isempty( obj.melt_material_name ) );
-            assert( ~isempty( obj.mold_melt_convection_name ) );
+            assert( ~isempty( obj.mold_material_filename ) );
+            assert( ~isempty( obj.melt_material_filename ) );
+            assert( ~isempty( obj.mold_melt_convection_filename ) );
             assert( ~isempty( obj.mold_pad_type ) );
             assert( ~isempty( obj.mold_pad_amounts ) );
             assert( ~isempty( obj.show_thermal_profile_dashboard ) );
             
-            % TODO REMOVE
             ambient_id = 0;
             mold_id = 1;
             melt_id = 2;
@@ -85,18 +89,21 @@ classdef ThermalProfile < Process
             space_step_in_m = obj.mesh.scale / 1000; % mm -> m
             pp = PhysicalProperties( space_step_in_m ); % mm -> m
             pp.add_ambient_material( generate_air_properties( ambient_id ) );
-            pp.add_material( read_mold_material( mold_id, which( obj.mold_material_name ) ) );
-            pp.add_melt_material( read_melt_material( melt_id, which( obj.melt_material_name ) ) );
+            pp.add_material( read_mold_material( mold_id, which( obj.mold_material_filename ) ) );
+            melt = read_melt_material( melt_id, which( obj.melt_material_filename ) );
+            if ~isnan( obj.melt_initial_temperature_c )
+                melt.set_initial_temperature( obj.melt_initial_temperature_c );
+            end
+            pp.add_melt_material( melt );
             
             conv = ConvectionProperties( ambient_id );
             conv.set_ambient( mold_id, generate_air_convection() );
             conv.set_ambient( melt_id, generate_air_convection() );
-            conv.set( mold_id, melt_id, read_convection( which( obj.mold_melt_convection_name ) ) );
+            conv.set( mold_id, melt_id, read_convection( which( obj.mold_melt_convection_filename ) ) );
             pp.set_convection( conv );
             
             obj.physical_properties = pp;
             
-            % KEEP
             assert( ~isempty( obj.physical_properties ) );
             assert( obj.physical_properties.is_ready() );
             
@@ -157,15 +164,18 @@ classdef ThermalProfile < Process
         function legacy_run( ...
                 obj, ...
                 mesh, ...
-                mold_material_name, ...
-                melt_material_name, ...
-                mold_melt_convection_name ...
+                mold_material_filename, ...
+                melt_material_filename, ...
+                mold_melt_convection_filename ...
                 )
             
             obj.mesh = mesh;
-            obj.mold_material_name = mold_material_name;
-            obj.melt_material_name = melt_material_name;
-            obj.mold_melt_convection_name = mold_melt_convection_name;
+            obj.mold_material_filename = mold_material_filename;
+            obj.melt_material_filename = melt_material_filename;
+            obj.mold_melt_convection_filename = mold_melt_convection_filename;
+            obj.mold_pad_type = obj.FALLBACK_MOLD_PAD_TYPE;
+            obj.mold_pad_amounts = obj.FALLBACK_MOLD_PAD_AMOUNTS;
+            obj.show_thermal_profile_dashboard = obj.FALLBACK_SHOW_THERMAL_PROFILE_DASHBOARD;
             obj.run();
             
         end
@@ -220,12 +230,22 @@ classdef ThermalProfile < Process
     
     properties ( Access = private )
         
-        mold_material_name
-        melt_material_name
-        mold_melt_convection_name
+        mold_material_filename
+        melt_material_filename
+        mold_melt_convection_filename
+        melt_initial_temperature_c
         mold_pad_type
         mold_pad_amounts
         show_thermal_profile_dashboard
+        
+    end
+    
+    
+    properties ( Access = private, Constant )
+        
+        FALLBACK_MOLD_PAD_TYPE = 'ratio';
+        FALLBACK_MOLD_PAD_AMOUNTS = 0.125;
+        FALLBACK_SHOW_THERMAL_PROFILE_DASHBOARD = false;
         
     end
     

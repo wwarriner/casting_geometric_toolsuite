@@ -49,11 +49,12 @@ classdef (Sealed) PartingPerimeter < Process
             assert( ~isempty( obj.mesh ) );
             
             if ~isempty( obj.options )
-                obj.do_optimize_parting_line = obj.options.do_optimize_parting_line;
-            end            
-            if isempty( obj.do_optimize_parting_line )
-                obj.do_optimize_parting_line = false;
-            end
+                FALLBACK_DO_OPTIMIZE = true;
+                obj.do_optimize_parting_line = obj.options.get( ...
+                    'processes.parting_line.do_optimize_parting_line', ...
+                    FALLBACK_DO_OPTIMIZE ...
+                    );
+            end        
             assert( ~isempty( obj.do_optimize_parting_line ) );
             
             % PARTING PERIMETER

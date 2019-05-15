@@ -44,11 +44,11 @@ classdef (Sealed) Segmentation < Process
             assert( ~isempty( obj.edt_profile ) );
             
             if ~isempty( obj.options )
-                if isprop( obj.options, 'use_thermal_profile' )
-                    obj.use_thermal_profile = obj.options.use_thermal_profile;
-                else
-                    obj.use_thermal_profile = false;
-                end
+                FALLBACK_USE_THERMAL_PROFILE = false;
+                obj.use_thermal_profile = obj.options.get( ...
+                    'processes.thermal_profile.use', ...
+                    FALLBACK_USE_THERMAL_PROFILE ...
+                    );
             end
             assert( ~isempty( obj.use_thermal_profile ) );
             
