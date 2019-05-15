@@ -93,7 +93,6 @@ classdef ThinWall < Process
         function name = get_storage_name( obj )
             
             name = get_storage_name@Process( obj );
-            name = strjoin( { name, obj.region }, '_' );
             
         end
         
