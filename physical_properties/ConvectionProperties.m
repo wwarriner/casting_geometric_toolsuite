@@ -28,7 +28,7 @@ classdef (Sealed) ConvectionProperties < handle
                 obj.convection( first ) = containers.Map( 'keytype', 'double', 'valuetype', 'any' );
             end
             m = obj.convection( first );
-            m( second ) = h; %#ok<NASGU>
+            m( second ) = h; %#ok<NASGU> assigning to a handle is ok
             
         end
         
