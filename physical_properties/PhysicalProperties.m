@@ -15,10 +15,12 @@ classdef (Sealed) PhysicalProperties < handle
             obj.ambient_id = [];
             obj.melt_ids = [];
             
+            obj.primary_melt_id = [];
+            obj.primary_melt_id_set = false;
+            
             obj.convection = ConvectionProperties.empty();
             
             obj.ambient_material_set = false;
-            % TODO at least one other material set?
             
             obj.prepared = false;
             
@@ -73,7 +75,20 @@ classdef (Sealed) PhysicalProperties < handle
             assert( ~obj.materials.isKey( material.mesh_id ) );
             
             obj.melt_ids( end + 1 ) = material.mesh_id;
+            if isempty( obj.primary_melt_id )
+                obj.assign_primary_melt_id( material.mesh_id );
+            end
             obj.materials( material.mesh_id ) = material;
+            
+        end
+        
+        
+        function assign_primary_melt_id( obj, melt_id )
+            
+            assert( ismember( melt_id, obj.melt_ids ) );
+            
+            obj.primary_melt_id = melt_id;
+            obj.primary_melt_id_set = true;
             
         end
         
@@ -99,6 +114,7 @@ classdef (Sealed) PhysicalProperties < handle
             end
             ready = ready & obj.convection.is_ready( cell2mat( obj.materials.keys() ) );
             ready = ready & obj.ambient_material_set;
+            ready = ready & obj.primary_melt_id_set;
             
         end
         
@@ -131,13 +147,13 @@ classdef (Sealed) PhysicalProperties < handle
         end
         
         
-        function initial_time_step = compute_initial_time_step( obj, primary_melt_id )
+        function initial_time_step = compute_initial_time_step( obj )
             
             % based on p421 of Ozisik _Heat Conduction_ 2e, originally from
             % Gupta and Kumar ref 79
             % Int J Heat Mass Transfer, 24, 251-259, 1981
             % see if there are improvements since?
-            rho = max( obj.materials( primary_melt_id ).get( Material.RHO ).values );
+            rho = max( obj.materials( obj.primary_melt_id ).get( Material.RHO ).values );
             [ L, S ] = obj.get_min_latent_heat();
             L = max( L, S ); % if latent heat very small, use sensible heat over freezing range instead
             dx = obj.get_space_step();
@@ -146,12 +162,12 @@ classdef (Sealed) PhysicalProperties < handle
             for i = 1 : obj.materials.Count
                 
                 id = ids{ i };
-                if id == primary_melt_id; continue; end
-                h = max( h, max( obj.convection.get( primary_melt_id, id ).values ) );
+                if id == obj.primary_melt_id; continue; end
+                h = max( h, max( obj.convection.get( obj.primary_melt_id, id ).values ) );
                 
             end
-            k = min( obj.materials( primary_melt_id ).get( Material.K ).values );
-            Tm = obj.get_feeding_effectivity_temperature( primary_melt_id );
+            k = min( obj.materials( obj.primary_melt_id ).get( Material.K ).values );
+            Tm = obj.get_feeding_effectivity_temperature( obj.primary_melt_id );
             Tinf = obj.temperature_range( 1 );
             H = h / k;
             numerator = rho * L * dx ^ 2 * ( 1 + H );
@@ -194,6 +210,10 @@ classdef (Sealed) PhysicalProperties < handle
             
             assert( obj.prepared );
             
+            if nargin < 2
+                melt_id = obj.primary_melt_id;
+            end
+            
             assert( ismember( melt_id, obj.melt_ids ) );
             
             freezing_range = [ ...
@@ -208,6 +228,10 @@ classdef (Sealed) PhysicalProperties < handle
             
             assert( obj.prepared );
             
+            if nargin < 2
+                melt_id = obj.primary_melt_id;
+            end
+            
             assert( ismember( melt_id, obj.melt_ids ) );
             
             m = obj.materials( melt_id );
@@ -219,6 +243,10 @@ classdef (Sealed) PhysicalProperties < handle
         function temperature = get_solidus_temperature( obj, melt_id )
             
             assert( obj.prepared );
+            
+            if nargin < 2
+                melt_id = obj.primary_melt_id;
+            end
             
             assert( ismember( melt_id, obj.melt_ids ) );
             
@@ -307,6 +335,11 @@ classdef (Sealed) PhysicalProperties < handle
         function fe = get_feeding_effectivity( obj, melt_id )
             
             assert( obj.prepared );
+            
+            if nargin < 2
+                melt_id = obj.primary_melt_id;
+            end
+            
             assert( ismember( melt_id, obj.melt_ids ) )
             
             fe = obj.materials( melt_id ).get_feeding_effectivity();
@@ -317,6 +350,11 @@ classdef (Sealed) PhysicalProperties < handle
         function temperature = get_feeding_effectivity_temperature( obj, melt_id )
             
             assert( obj.prepared );
+            
+            if nargin < 2
+                melt_id = obj.primary_melt_id;
+            end
+            
             assert( ismember( melt_id, obj.melt_ids ) )
             
             temperature = obj.materials( melt_id ).get_feeding_effectivity_temperature();
@@ -324,21 +362,19 @@ classdef (Sealed) PhysicalProperties < handle
         end
         
         
-        function q = compute_melt_enthalpies( obj, mesh, temperatures )
+        function q = compute_melt_enthalpies( obj, mesh, temperatures, melt_id )
             
             assert( obj.prepared );
+            
+            if nargin < 4
+                melt_id = obj.primary_melt_id;
+            end
             
             assert( numel( mesh ) == numel( temperatures ) );
             
             q = zeros( size( mesh ) );
-            for material_id = 1 : obj.materials.Count
-                
-                if ismember( material_id, obj.melt_ids )
-                    q( mesh == material_id ) = ...
-                        obj.lookup_values( material_id, Material.Q, temperatures( mesh == material_id ) );
-                end
-                
-            end
+            q( mesh == melt_id ) = ...
+                obj.lookup_values( melt_id, Material.Q, temperatures( mesh == melt_id ) );
             
         end
         
@@ -354,6 +390,9 @@ classdef (Sealed) PhysicalProperties < handle
         materials
         ambient_id
         melt_ids
+        
+        primary_melt_id
+        primary_melt_id_set
         
         convection
         

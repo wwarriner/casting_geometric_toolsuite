@@ -6,7 +6,7 @@ element_size_in_mm = 0.4*40; % mm
 space_step_in_m = element_size_in_mm / 1000; % m
 
 %% TEST MESH GENERATION
-side_length = 50;
+side_length = 25;
 shape = [ ...
     side_length ...
     side_length ...
@@ -36,18 +36,24 @@ pp.set_convection( conv );
 
 pp.prepare_for_solver();
 
-%% MATRIX GENERATOR
-lss = LinearSystemSolver( fdm_mesh, pp );
-lss.set_implicitness( 1 );
-lss.set_solver_tolerance( 1e-4 );
-lss.set_solver_max_iteration_count( 100 );
-lss.set_latent_heat_target_fraction( 0.05 );
-lss.set_quality_ratio_tolerance( 0.2 );
+%% LINEAR SYSTEM SOLVER
+solver = LinearSystemSolver();
+solver.set_tolerance( 1e-4 );
+solver.set_maximum_iterations( 100 );
 
-%% SOLVER
-solver = FdmSolver( fdm_mesh, pp, lss );
-solver.turn_printing_on( @fprintf );
-solver.turn_live_plotting_on();
-solver.turn_full_data_storage_on(); % testing!
-solver.solve( melt_id );
-solver.display_computation_time_summary();
+%% SOLIDIFICATION PROBLEM
+problem = SolidificationProblem( fdm_mesh, pp, solver );
+problem.set_implicitness( 1 );
+problem.set_latent_heat_target_ratio( 0.25 );
+
+%% ITERATOR
+iterator = QualityBisectionIterator( problem );
+iterator.set_maximum_iteration_count( 20 );
+iterator.set_quality_ratio_tolerance( 0.2 );
+iterator.set_time_step_stagnation_tolerance( 0.01 );
+iterator.set_initial_time_step( pp.compute_initial_time_step() );
+iterator.iterate();
+
+%% WRAPPER
+manager = FdmManager( solver, problem, iterator );
+manager.solve();
