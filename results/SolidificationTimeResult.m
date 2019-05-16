@@ -28,7 +28,7 @@ classdef SolidificationTimeResult < Result
             % setup
             u = problem.get_temperature();
             u_prev = problem.get_previous_temperature();
-            times = iterator.get_times();
+            times = iterator.get_simulation_times();
             t = times.get_time( 1 );
             t_prev = times.get_time( 2 );
             

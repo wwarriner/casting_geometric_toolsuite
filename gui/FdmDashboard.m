@@ -3,16 +3,23 @@ classdef FdmDashboard < handle
     methods ( Access = public )
         
         function obj = FdmDashboard( ...
-                temperature_range, ...
-                freezing_range, ...
-                feeding_effectivity_temperature ...
+                fdm_mesh, ...
+                physical_properties, ...
+                solver, ...
+                problem, ...
+                iterator, ...
+                results, ...
+                indices_of_interest ...
                 )
             
-            obj.compute_subplot_locations();
+            obj.mesh = fdm_mesh;
+            obj.pp = physical_properties;
+            obj.solver = solver;
+            obj.problem = problem;
+            obj.iterator = iterator;
+            obj.results = results;
             
-            obj.temperature_range = temperature_range;
-            obj.freezing_range = freezing_range;
-            obj.feeding_effectivity_temperature = feeding_effectivity_temperature;
+            obj.compute_subplot_locations();
             
             obj.fh = figure();
             obj.fh.Position = [ 50 50 1200 800 ];
@@ -29,129 +36,118 @@ classdef FdmDashboard < handle
             obj.histogram_axhs = gobjects( obj.HISTOGRAM_COUNT, 1 );
             obj.histogram_phs = gobjects( obj.HISTOGRAM_COUNT, 1 );
             
-        end
-        
-        
-        function setup_temperature_profiles( obj, ...
-                x_bounds, ...
-                shape, ...
-                center, ...
-                initial_temperatures ...
-                )
+            obj.setup_temperature_profiles( indices_of_interest );
             
-            for i = 1 : obj.PROFILE_COUNT
-                
-                obj.profile_axhs( i ) = subplot( ...
-                    obj.SUBPLOT_HEIGHT, ...
-                    obj.SUBPLOT_WIDTH, ...
-                    obj.SUBPLOT_PROFILES( i ) ...
-                    );
-                hold( obj.profile_axhs( i ), 'on' );
-            
-                obj.profile_indices{ i } = { center( 1 ) center( 2 ) center( 3 ) };
-                obj.profile_indices{ i }{ i } = 1 : shape( i );
-                
-                range = x_bounds( :, i );
-                obj.profile_axhs( i ).XLim = range;
-                obj.profile_axhs( i ).YLim = obj.temperature_range;
-                obj.profile_xs{ i } = ...
-                    linspace( range( 1 ), range( 2 ), shape( i ) );
-                
-                obj.profile_phs( i ) = obj.null_plot( obj.profile_axhs( i ) );
-                obj.profile_phs( i ).Color = 'k';
-                obj.profile_phs( i ).LineStyle = '-';
-                
-                obj.draw_temperature_markers( obj.profile_axhs( i ) );
-                
-            end
-            obj.update_temperature_profiles( initial_temperatures );
-            for i = 1 : obj.PROFILE_COUNT
-                
-                obj.profile_init_phs( i ) = obj.profile_phs( i );
-                obj.profile_phs( i ) = obj.null_plot( obj.profile_axhs( i ) );
-                obj.profile_phs( i ).Color = 'r';
-                obj.profile_phs( i ).LineStyle = '-';
-                
-            end
-            drawnow();
-            
-        end
-        
-        
-        function setup_time_temperature_curves( ...
-                obj, ...
-                first_time_step, ...
-                initial_temperatures, ...
-                colors ...
-                )
-            
-            obj.curve_count = numel( initial_temperatures );
-            obj.curve_axh = subplot( ...
-                obj.SUBPLOT_HEIGHT, ...
-                obj.SUBPLOT_WIDTH, ...
-                obj.SUBPLOT_CURVES ...
+            stats = obj.get_temperature_field_statistics( ...
+                obj.mesh, ...
+                obj.pp, ...
+                obj.pp.generate_initial_temperature_field( obj.mesh )...
                 );
-            obj.curve_colors = colors;
-            obj.curve_axh.YLim = obj.temperature_range;
-            hold( obj.curve_axh, 'on' );
-            obj.update_time_temperature_curves( 0, initial_temperatures );
-            obj.curve_axh.XLim = [ 0 first_time_step ];
-            obj.curve_marked_temperature_phs = obj.draw_temperature_markers( obj.curve_axh );
-            drawnow();
-            
-        end
-        
-        
-        function setup_histogram( obj, histogram_id, element_count )
-            
-            assert( histogram_id <= obj.HISTOGRAM_COUNT );
-            h = subplot( ...
-                obj.SUBPLOT_HEIGHT, ...
-                obj.SUBPLOT_WIDTH, ...
-                obj.SUBPLOT_HISTOGRAMS{ histogram_id } ...
+            obj.setup_time_temperature_curves( ...
+                1, ...
+                stats, ...
+                obj.get_temperature_field_statistics() ...
                 );
-            obj.set_histogram_axh( histogram_id, h );
-            obj.element_count = element_count;
-            obj.histogram_extremes( histogram_id ) = eps;
-            obj.histogram_phs( histogram_id ) = obj.null_plot( h );
-            obj.histogram_phs( histogram_id ).Color = 'k';
+            
+            obj.setup_histogram( 1 );
+            obj.setup_histogram( 2 );
+            
+            obj.setup_labels( ...
+                obj.get_label_values( 'label' ), ...
+                obj.get_label_values( 'formatspec' ), ...
+                obj.get_label_values( '', iterator ) ...
+                );
             
         end
         
         
-        function setup_labels( obj, labels, formatspecs, initial_values )
+        function update( obj )
             
-            assert( numel( labels ) == numel( initial_values ) );
+            temps = obj.problem.get_temperature();
+            obj.update_temperature_profiles( temps );
             
-            obj.label_count = numel( labels );
-            obj.labels = labels;
-            obj.label_formatspecs = formatspecs;
-            obj.label_hs = gobjects( obj.label_count, 1 );
+            stats = obj.get_temperature_field_statistics( ...
+                obj.mesh, ...
+                obj.pp, ...
+                temps ...
+                );
+            obj.update_time_temperature_curves( ...
+                obj.iterator.get_elapsed_simulation_time(), ...
+                stats ...
+                );
             
-            WIDTH = obj.fh.Position( 3 ) ./ obj.SUBPLOT_WIDTH;
-            X_BUFFER = 10;
-            X = obj.fh.Position( 3 ) - WIDTH + X_BUFFER;
-            HEIGHT = 30;
-            Y_BUFFER = 50;
-            Y_SPACING = 10;
-            Y_START = obj.fh.Position( 4 ) - Y_BUFFER;
-            for i = 1 : obj.label_count
-                
-                Y = Y_START - i * ( HEIGHT + Y_SPACING );
-                obj.label_hs( i ) = uicontrol( ...
-                    obj.fh, ...
-                    'style', 'text', ...
-                    'string', '', ...
-                    'horizontalalignment', 'left', ...
-                    'fontsize', 20, ...
-                    'position', [ X Y WIDTH HEIGHT ] ...
-                    );
-                
-            end
-            obj.update_labels( initial_values );
+            obj.update_histogram( ...
+                1, ...
+                temps - obj.problem.get_previous_temperature() ...
+                );
+            
+            obj.update_histogram( ...
+                2, ...
+                temps ...
+                );
+            
+            obj.update_labels( ...
+                obj.get_label_values( '', obj.iterator ) ...
+                );
             
         end
         
+    end
+    
+    
+    properties ( Access = private )
+        
+        mesh
+        pp
+        solver
+        problem
+        iterator
+        results
+        
+        fh
+        
+        profile_axhs
+        profile_init_phs
+        profile_phs
+        profile_indices
+        profile_xs
+        profile_ys
+        
+        curve_count
+        curve_axh
+        curve_colors
+        curve_marked_temperature_phs
+        
+        histogram_axhs
+        histogram_extremes
+        histogram_phs
+        
+        label_count
+        labels
+        label_formatspecs
+        label_hs
+        
+        SUBPLOT_PROFILES
+        SUBPLOT_CURVES
+        SUBPLOT_HISTOGRAMS
+        
+    end
+    
+    
+    properties ( Access = private, Constant )
+        
+        SUBPLOT_WIDTH = 3
+        SUBPLOT_HEIGHT = 6
+        
+        PROFILE_COUNT = 3;
+        
+        HISTOGRAM_COUNT = 2;
+        HISTOGRAM_EDGE_COUNT = 50;
+        
+    end
+    
+    
+    methods ( Access = private )
         
         function update_temperature_profiles( obj, temperatures )
             
@@ -221,7 +217,7 @@ classdef FdmDashboard < handle
             edges = linspace( h.XLim( 1 ), h.XLim( 2 ), obj.HISTOGRAM_EDGE_COUNT );
             histogram( h, values( : ), edges );
             h.YScale = 'log';
-            h.YLim = [ 0.9 obj.element_count ];
+            h.YLim = [ 0.9 numel( obj.mesh ) ];
             drawnow();
             
         end
@@ -243,76 +239,141 @@ classdef FdmDashboard < handle
             
         end
         
-    end
-    
-    
-    properties ( Access = private )
         
-        temperature_range
-        freezing_range
-        feeding_effectivity_temperature
-        element_count
+        function setup_temperature_profiles( obj, center )
+            
+            shape = size( obj.mesh );
+            bb_lengths = padarray( shape, 1, 0, 'pre' ) .* obj.pp.get_space_step();
+            u_init = obj.pp.generate_initial_temperature_field( obj.mesh );
+            
+            for i = 1 : obj.PROFILE_COUNT
+                
+                obj.profile_axhs( i ) = subplot( ...
+                    obj.SUBPLOT_HEIGHT, ...
+                    obj.SUBPLOT_WIDTH, ...
+                    obj.SUBPLOT_PROFILES( i ) ...
+                    );
+                hold( obj.profile_axhs( i ), 'on' );
+            
+                obj.profile_indices{ i } = { center( 1 ) center( 2 ) center( 3 ) };
+                obj.profile_indices{ i }{ i } = 1 : shape( i );
+                
+                range = bb_lengths( :, i );
+                obj.profile_axhs( i ).XLim = range;
+                obj.profile_axhs( i ).YLim = obj.pp.get_temperature_range();
+                obj.profile_xs{ i } = ...
+                    linspace( range( 1 ), range( 2 ), shape( i ) );
+                
+                obj.profile_phs( i ) = obj.null_plot( obj.profile_axhs( i ) );
+                obj.profile_phs( i ).Color = 'k';
+                obj.profile_phs( i ).LineStyle = '-';
+                
+                obj.draw_temperature_markers( obj.profile_axhs( i ) );
+                
+            end
+            obj.update_temperature_profiles( u_init );
+            for i = 1 : obj.PROFILE_COUNT
+                
+                obj.profile_init_phs( i ) = obj.profile_phs( i );
+                obj.profile_phs( i ) = obj.null_plot( obj.profile_axhs( i ) );
+                obj.profile_phs( i ).Color = 'r';
+                obj.profile_phs( i ).LineStyle = '-';
+                
+            end
+            drawnow();
+            
+        end
         
-        fh
         
-        profile_axhs
-        profile_init_phs
-        profile_phs
-        profile_indices
-        profile_xs
-        profile_ys
+        function setup_time_temperature_curves( ...
+                obj, ...
+                first_time_step, ...
+                initial_temperatures, ...
+                colors ...
+                )
+            
+            obj.curve_count = numel( initial_temperatures );
+            obj.curve_axh = subplot( ...
+                obj.SUBPLOT_HEIGHT, ...
+                obj.SUBPLOT_WIDTH, ...
+                obj.SUBPLOT_CURVES ...
+                );
+            obj.curve_colors = colors;
+            obj.curve_axh.YLim = obj.pp.get_temperature_range();
+            hold( obj.curve_axh, 'on' );
+            obj.update_time_temperature_curves( 0, initial_temperatures );
+            obj.curve_axh.XLim = [ 0 first_time_step ];
+            obj.curve_marked_temperature_phs = obj.draw_temperature_markers( obj.curve_axh );
+            drawnow();
+            
+        end
         
-        curve_count
-        curve_axh
-        curve_colors
-        curve_marked_temperature_phs
         
-        histogram_axhs
-        histogram_extremes
-        histogram_phs
+        function setup_histogram( obj, histogram_id )
+            
+            assert( histogram_id <= obj.HISTOGRAM_COUNT );
+            h = subplot( ...
+                obj.SUBPLOT_HEIGHT, ...
+                obj.SUBPLOT_WIDTH, ...
+                obj.SUBPLOT_HISTOGRAMS{ histogram_id } ...
+                );
+            obj.set_histogram_axh( histogram_id, h );
+            obj.histogram_extremes( histogram_id ) = eps;
+            obj.histogram_phs( histogram_id ) = obj.null_plot( h );
+            obj.histogram_phs( histogram_id ).Color = 'k';
+            
+        end
         
-        label_count
-        labels
-        label_formatspecs
-        label_hs
         
-        SUBPLOT_PROFILES
-        SUBPLOT_CURVES
-        SUBPLOT_HISTOGRAMS
+        function setup_labels( obj, labels, formatspecs, initial_values )
+            
+            assert( numel( labels ) == numel( initial_values ) );
+            
+            obj.label_count = numel( labels );
+            obj.labels = labels;
+            obj.label_formatspecs = formatspecs;
+            obj.label_hs = gobjects( obj.label_count, 1 );
+            
+            WIDTH = obj.fh.Position( 3 ) ./ obj.SUBPLOT_WIDTH;
+            X_BUFFER = 10;
+            X = obj.fh.Position( 3 ) - WIDTH + X_BUFFER;
+            HEIGHT = 30;
+            Y_BUFFER = 50;
+            Y_SPACING = 10;
+            Y_START = obj.fh.Position( 4 ) - Y_BUFFER;
+            for i = 1 : obj.label_count
+                
+                Y = Y_START - i * ( HEIGHT + Y_SPACING );
+                obj.label_hs( i ) = uicontrol( ...
+                    obj.fh, ...
+                    'style', 'text', ...
+                    'string', '', ...
+                    'horizontalalignment', 'left', ...
+                    'fontsize', 20, ...
+                    'position', [ X Y WIDTH HEIGHT ] ...
+                    );
+                
+            end
+            obj.update_labels( initial_values );
+            
+        end
         
-    end
-    
-    
-    properties ( Access = private, Constant )
-        
-        SUBPLOT_WIDTH = 3
-        SUBPLOT_HEIGHT = 6
-        
-        PROFILE_COUNT = 3;
-        
-        HISTOGRAM_COUNT = 2;
-        HISTOGRAM_EDGE_COUNT = 50;
-        
-    end
-    
-    
-    methods ( Access = private )
         
         function phs = draw_temperature_markers( obj, axh )
             
             phs( 1 ) = obj.draw_horizontal_line( ...
                 axh, ...
-                obj.freezing_range( 1 ), ...
+                obj.pp.get_liquidus_temperature(), ...
                 'k', ':' ...
                 );
             phs( 2 ) = obj.draw_horizontal_line( ...
                 axh, ...
-                obj.freezing_range( 2 ), ...
+                obj.pp.get_solidus_temperature(), ...
                 'k', ':' ...
                 );
             phs( 3 ) = obj.draw_horizontal_line( ...
                 axh, ...
-                obj.feeding_effectivity_temperature, ...
+                obj.pp.get_feeding_effectivity_temperature(), ...
                 'r', ':' ...
                 );
             
@@ -341,6 +402,69 @@ classdef FdmDashboard < handle
         function h = get_histogram_axh( obj, id )
             
             h = obj.histogram_axhs( id );
+            
+        end
+        
+        
+        function values = get_temperature_field_statistics( ...
+                obj, ...
+                fdm_mesh, ...
+                physical_properties, ...
+                u ...
+                )
+            
+            % colors
+            COUNT = 3;
+            if nargin == 1
+                values = [ ...
+                    0 0 1; ...
+                    0 1 0; ...
+                    1 0 0 ...
+                    ];
+                assert( size( values, 1 ) == COUNT );
+            else
+                is_melt = physical_properties.is_primary_melt( fdm_mesh );
+                values = [ ...
+                    min( u( is_melt ) ), ...
+                    mean( u( is_melt ) ), ...
+                    max( u( is_melt ) ) ...
+                    ];
+                assert( numel( values ) == COUNT );
+            end
+            
+        end
+        
+        
+        function values = get_label_values( obj, return_indicator, iterator )
+            
+            if nargin > 1 && strcmpi( return_indicator, 'label' )
+                values = { ...
+                    'Step', ...
+                    'Iterations', ...
+                    'PCG Count', ...
+                    'Computation time (s)', ...
+                    'Simulation time (s)', ...
+                    'Solidification time (s)' ...
+                    };
+            elseif nargin > 1 && strcmpi( return_indicator, 'formatspec' )
+                values = { ...
+                    '%i', ...
+                    '%i', ...
+                    '%i', ...
+                    '%.2f', ...
+                    '%.2f', ...
+                    '%.2f' ...
+                    };
+            else
+                values = [ ...
+                    iterator.get_step_count() ...
+                    nan...obj.solver_count ...
+                    nan...obj.pcg_count ...
+                    iterator.get_elapsed_computation_time() ...
+                    iterator.get_elapsed_simulation_time(), ...
+                    nan...obj.overall_solidification_time ...
+                    ];
+            end
             
         end
         

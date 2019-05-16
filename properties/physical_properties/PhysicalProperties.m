@@ -350,9 +350,7 @@ classdef (Sealed) PhysicalProperties < handle
             
             assert( numel( mesh ) == numel( temperatures ) );
             
-            q = zeros( size( mesh ) );
-            q( mesh == melt_id ) = ...
-                obj.lookup_values( melt_id, Material.Q, temperatures( mesh == melt_id ) );
+            q = obj.lookup_values( melt_id, Material.Q, temperatures( mesh == melt_id ) );
             
         end
         

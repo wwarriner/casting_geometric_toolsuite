@@ -17,6 +17,7 @@ mold = 25;
 total = ( meltwall + mold * 2 );
 melt_ratio = meltwall ./ total;
 fdm_mesh = generate_test_mesh( mold_id, melt_id, shape, melt_ratio );
+center = ceil( shape ./ 2 );
 
 %% TEST PROPERTY GENERATION
 ambient = generate_air_properties( ambient_id );
@@ -50,8 +51,9 @@ problem.set_latent_heat_target_ratio( 0.05 );
 iterator = QualityBisectionIterator( problem );
 iterator.set_maximum_iteration_count( 20 );
 iterator.set_quality_ratio_tolerance( 0.2 );
-iterator.set_time_step_stagnation_tolerance( 0.01 );
+iterator.set_time_step_stagnation_tolerance( 1e-2 );
 iterator.set_initial_time_step( pp.compute_initial_time_step() );
+iterator.set_printer( @fprintf );
 
 %% RESULTS
 sol_temp = pp.get_fraction_solid_temperature( 1.0 );
@@ -61,6 +63,10 @@ results = containers.Map( ...
     { sol_time } ...
     );
 
+%% DASHBOARD
+dashboard = FdmDashboard( fdm_mesh, pp, solver, problem, iterator, results, center );
+
 %% WRAPPER
 manager = FdmManager( fdm_mesh, pp, solver, problem, iterator, results );
+manager.set_dashboard( dashboard );
 manager.solve();

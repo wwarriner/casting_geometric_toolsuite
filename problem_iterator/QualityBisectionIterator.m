@@ -1,26 +1,13 @@
 classdef QualityBisectionIterator < Iterator
     
-    properties ( Access = public, Constant )
-        
-        TOLERANCE_REASON = 'Tolerance met.';
-        ITERATION_REASON = 'Exceeded maximum iterations.';
-        STAGNATION_REASON = 'Time step stagnated.';
-        BELOW_CRITICAL_REASON = 'Solver field below critical value.';
-        INCOMPLETE_REASON = 'Incomplete, continuing.';
-        
-    end
-    
-    
     methods ( Access = public )
         
         function obj = QualityBisectionIterator( problem )
             
-            obj.problem = problem;
+            obj@Iterator( problem );
             obj.maximum_iteration_count = 20;
             obj.quality_tolerance = 0.2;
             obj.stagnation_tolerance = 0.01;
-            
-            obj.times = [];
             
         end
         
@@ -57,19 +44,12 @@ classdef QualityBisectionIterator < Iterator
             
         end
         
+    end
+    
+    
+    methods ( Access = protected )
         
-        function set_initial_time_step( obj, step )
-            
-            assert( isempty( obj.times ) );
-            
-            obj.times = TimeTracker( step );
-            
-        end
-        
-        
-        function iterate( obj )
-            
-            assert( obj.is_ready() );
+        function iterate_impl( obj )
             
             bisector = obj.create_bisector();
             while true
@@ -78,21 +58,14 @@ classdef QualityBisectionIterator < Iterator
                 if complete; break; end
                 
             end
-            obj.times.append_time_step( bisector.get() );
+            obj.append_time_step( bisector.get() );
             
         end
         
         
-        function time_step = get_previous_time_step( obj )
+        function ready = is_ready_impl( ~ )
             
-            time_step = obj.times.get_time_step();
-            
-        end
-        
-        
-        function times = get_times( obj )
-            
-            times = obj.times;
+            ready = true;
             
         end
         
@@ -101,25 +74,25 @@ classdef QualityBisectionIterator < Iterator
     
     properties ( Access = private )
         
-        problem
-        
         maximum_iteration_count
         quality_tolerance
         stagnation_tolerance
         
-        times
-        reason_previous
+    end
+    
+    
+    properties ( Access = private, Constant )
+        
+        TOLERANCE_STATUS = 'Tolerance met.';
+        ITERATION_STATUS = 'Exceeded maximum iterations.';
+        STAGNATION_STATUS = 'Time step stagnated.';
+        BELOW_CRITICAL_STATUS = 'Solver field below critical value.';
+        CONTINUING_STATUS = 'Continuing.';
         
     end
     
     
     methods ( Access = private )
-        
-        function ready = is_ready( obj )
-            
-            ready = ~isempty( obj.times );
-            
-        end
         
         
         function bisector = create_bisector( obj )
@@ -128,7 +101,7 @@ classdef QualityBisectionIterator < Iterator
             UPPER_BOUND = inf;
             TARGET_QUALITY = 0;
             bisector = BisectionTracker( ...
-                obj.get_previous_time_step(), ...
+                obj.get_candidate_time_step(), ...
                 LOWER_BOUND, ...
                 UPPER_BOUND, ...
                 @(t)obj.problem.solve(t), ...
@@ -144,21 +117,21 @@ classdef QualityBisectionIterator < Iterator
             within_tolerance = bisector.update();
             if within_tolerance
                 complete = true;
-                reason = obj.TOLERANCE_REASON;
+                status = obj.TOLERANCE_STATUS;
             elseif obj.exceeded_maximum_iterations( bisector.get_iterations() )
                 complete = true;
-                reason = obj.ITERATION_REASON;
+                status = obj.ITERATION_STATUS;
             elseif obj.stagnated( bisector.get(), bisector.get_previous() )
                 complete = true;
-                reason = obj.STAGNATION_REASON;
+                status = obj.STAGNATION_STATUS;
             elseif obj.was_below_critical()
                 complete = true;
-                reason = obj.BELOW_CRITICAL_REASON;
+                status = obj.BELOW_CRITICAL_STATUS;
             else
                 complete = false;
-                reason = obj.INCOMPLETE_REASON;
+                status = obj.CONTINUING_STATUS;
             end
-            obj.reason_previous = reason;
+            obj.set_status( status );
             
         end
         

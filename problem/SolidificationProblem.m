@@ -37,8 +37,9 @@ classdef SolidificationProblem < Problem
             
             obj.u_previous = obj.pp.generate_initial_temperature_field( obj.fdm_mesh );
             obj.u = obj.pp.generate_initial_temperature_field( obj.fdm_mesh );
-            obj.q_previous = obj.pp.compute_melt_enthalpies( obj.fdm_mesh, obj.u_previous );
+            obj.u_candidate = obj.pp.generate_initial_temperature_field( obj.fdm_mesh );
             obj.q = obj.pp.compute_melt_enthalpies( obj.fdm_mesh, obj.u );
+            obj.q_candidate = obj.pp.compute_melt_enthalpies( obj.fdm_mesh, obj.u_candidate );
             
             obj.finish_temperature = obj.pp.get_solidus_temperature();
             
@@ -94,35 +95,41 @@ classdef SolidificationProblem < Problem
         end
         
         
-        function quality = solve( obj, time_step )
+        function prepare( obj )
             
-            rho_cp = obj.compute_rho_cp( obj.u_previous( : ), obj.u( : ) );
-            [ boundary_heat_flow, m_internal_heat_flow ] = ...
+            obj.u_previous = obj.u;
+            obj.u = obj.u_candidate;
+            obj.q = obj.q_candidate;
+            obj.rho_cp = obj.compute_rho_cp( obj.u_previous( : ), obj.u( : ) );
+            [ obj.boundary_heat_flow, obj.internal_heat_flow ] = ...
                 obj.compute_heat_flow( obj.u( : ) );
+            
+        end
+        
+        
+        function quality = solve( obj, time_step )
             
             % set up linear system
             tic;
             [ lhs, rhs ] = obj.setup_linear_system( ...
                 time_step, ...
-                rho_cp, ...
-                m_internal_heat_flow, ...
-                boundary_heat_flow, ...
+                obj.rho_cp, ...
+                obj.internal_heat_flow, ...
+                obj.boundary_heat_flow, ...
                 obj.u( : ) ...
                 );
             obj.times( obj.SETUP_TIME ) = toc;
-
+            
             % solve linear system
-            obj.u_previous = obj.u;
-            obj.u = obj.linear_system_solver.solve( lhs, rhs, obj.u( : ) );
-            obj.u = reshape( obj.u, size( obj.u_previous ) );
+            obj.u_candidate = obj.linear_system_solver.solve( lhs, rhs, obj.u( : ) );
+            obj.u_candidate = reshape( obj.u_candidate, size( obj.u ) );
             obj.pcg_count = obj.linear_system_solver.get_previous_iterations();
             obj.times( obj.SOLVE_TIME ) = obj.linear_system_solver.get_previous_time();
-
+            
             % check solution
             tic;
-            obj.q_previous = obj.q;
-            [ quality, obj.q ] = ...
-                obj.determine_solution_quality( obj.q_previous, obj.u );
+            [ quality, obj.q_candidate ] = ...
+                obj.determine_solution_quality( obj.q, obj.u_candidate );
             obj.times( obj.CHECK_TIME ) = toc;
             
             obj.below_critical_previous = obj.is_finished();
@@ -139,21 +146,21 @@ classdef SolidificationProblem < Problem
         
         function u = get_temperature( obj )
             
-            u = obj.u;
+            u = obj.u_candidate;
             
         end
         
         
         function u = get_previous_temperature( obj )
             
-            u = obj.u_previous;
+            u = obj.u;
             
         end
         
         
         function q = get_enthalpy( obj )
             
-            q = obj.q;
+            q = obj.q_candidate;
             
         end
         
@@ -213,10 +220,16 @@ classdef SolidificationProblem < Problem
         
         linear_system_solver
         
+        rho_cp
+        boundary_heat_flow
+        internal_heat_flow
+        
         u
         u_previous
+        u_candidate
         q
         q_previous
+        q_candidate
         
         finish_temperature
         
@@ -322,7 +335,7 @@ classdef SolidificationProblem < Problem
             obj.times( obj.DKDU_TIME ) = toc;
             
         end
-                
+        
         
         % lhs - Left Hand Side of linear system
         % rhs - Right Hand Side

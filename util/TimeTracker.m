@@ -2,10 +2,10 @@ classdef (Sealed) TimeTracker < handle
     
     methods ( Access = public )
         
-        function obj = TimeTracker( initial_time_step )
+        function obj = TimeTracker()
             
-            obj.times = 0;
-            obj.time_steps = initial_time_step;
+            obj.times = [];
+            obj.time_steps = [];
             
         end
         
@@ -19,6 +19,7 @@ classdef (Sealed) TimeTracker < handle
         end
         
         
+        % i counts backward, i = 1 is most recent
         function time = get_time( obj, i )
             
             if nargin < 2
@@ -34,6 +35,21 @@ classdef (Sealed) TimeTracker < handle
         end
         
         
+        function times = get_times( obj )
+            
+            times = obj.times;
+            
+        end
+        
+        
+        function total = get_total_time( obj )
+            
+            total = obj.get_time();
+            
+        end
+        
+        
+        % i counts backward, i = 1 is most recent
         function step = get_time_step( obj, i )
             
             if nargin < 2
@@ -45,10 +61,21 @@ classdef (Sealed) TimeTracker < handle
         end
         
         
+        function time_steps = get_time_steps( obj )
+            
+            time_steps = obj.time_steps;
+            
+        end
+        
+        
         function append_time_step( obj, step )
             
             obj.time_steps( end + 1 ) = step;
-            obj.times( end + 1 ) = obj.times( end ) + step;
+            if isempty( obj.times )
+                obj.times( end + 1 ) = step;
+            else
+                obj.times( end + 1 ) = obj.times( end ) + step;
+            end
             
         end
         

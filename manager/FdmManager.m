@@ -18,7 +18,7 @@ classdef (Sealed) FdmManager < handle
             obj.iterator = iterator;
             obj.results = results;
             
-            obj.computation_times = containers.Map();
+            obj.dashboard = [];
             
         end
         
@@ -31,24 +31,9 @@ classdef (Sealed) FdmManager < handle
         end
         
         
-        function set_live_plotting( obj, on )
+        function set_dashboard( obj, dashboard )
             
-            obj.live_plotting = on;
-            
-        end
-        
-        
-        function turn_live_plotting_on( obj )
-            
-            obj.live_plotting = true;
-            
-        end
-        
-        
-        % warning! memory intensive!
-        function turn_full_data_storage_on( obj )
-            
-            obj.data_storage = true;
+            obj.dashboard = dashboard;
             
         end
         
@@ -59,6 +44,7 @@ classdef (Sealed) FdmManager < handle
                 
                 obj.iterator.iterate();
                 obj.update_results();
+                obj.update_dashboard();
                 
             end
             
@@ -137,10 +123,7 @@ classdef (Sealed) FdmManager < handle
         iterator
         results
         
-        linear_system_iteration_count
-        time_step_method_count
-        time_steps
-        computation_times
+        dashboard
         
     end
     
@@ -160,6 +143,15 @@ classdef (Sealed) FdmManager < handle
                     obj.problem ...
                     );
                 
+            end
+            
+        end
+        
+        
+        function update_dashboard( obj )
+            
+            if ~isempty( obj.dashboard )
+                obj.dashboard.update();
             end
             
         end
