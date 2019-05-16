@@ -280,6 +280,21 @@ classdef (Sealed) PhysicalProperties < handle
         end
         
         
+        function fs = get_fraction_solid( obj, temperatures, melt_id )
+            
+            assert( obj.prepared );
+            
+            if nargin < 3
+                melt_id = obj.primary_melt_id;
+            end
+            
+            assert( ismember( melt_id, obj.melt_ids ) );
+
+            fs = pp.lookup_values( melt_id, Material.FS, temperatures );
+            
+        end
+        
+        
         function values = lookup_ambient_values( obj, property_id, temperatures )
             
             assert( obj.prepared );
@@ -312,15 +327,6 @@ classdef (Sealed) PhysicalProperties < handle
             assert( obj.prepared );
             
             values = obj.convection.lookup_values( first_material_id, second_material_id, temperatures );
-            
-        end
-        
-        
-        function temperatures = lookup_temperatures( obj, material_id, property_id, values )
-            
-            assert( obj.prepared );
-            
-            temperatures = obj.materials( material_id ).get( property_id ).lookup_temperatures( values );
             
         end
         

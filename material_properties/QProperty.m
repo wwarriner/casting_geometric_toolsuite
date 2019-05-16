@@ -11,8 +11,6 @@ classdef (Sealed) QProperty < MaterialProperty
             
             obj.cp = cp;
             
-            assert( all( 0 < obj.values( end ) ) );
-            
         end
         
         

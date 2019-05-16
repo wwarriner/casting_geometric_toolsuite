@@ -14,15 +14,18 @@ classdef (Abstract) Material < handle & matlab.mixin.Heterogeneous
         K = 'k';
         FS = 'fs';
         Q = 'q'; % DO NOT SET DIRECTLY
+        RHO_CP = 'rho_cp'; % DO NOT SET DIRECTLY
         
     end
     
     
     methods ( Access = public )
         
-        % DO NOT SET Q DIRECTLY
+        % DO NOT SET Q OR RHO_CP DIRECTLY
         function set( obj, material_property )
             
+            assert( ~isa( material_property, 'QProperty' ) );
+            assert( ~isa( material_property, 'RhoCpProperty' ) );
             assert( ~obj.prepared );
             
             index = obj.get_type_index( material_property );
@@ -67,6 +70,10 @@ classdef (Abstract) Material < handle & matlab.mixin.Heterogeneous
             
             obj.material_properties( obj.Q ) = ...
                 obj.material_properties( obj.CP ).compute_q_property( temperature_range );
+            obj.material_properties( obj.RHO_CP ) = RhoCpProperty( ...
+                obj.material_properties( obj.RHO ), ...
+                obj.material_properties( obj.CP ) ...
+                );
             
             obj.prepared = true;
             

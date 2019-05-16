@@ -7,15 +7,30 @@ classdef (Sealed) FsProperty < MaterialProperty
             
             obj = obj@MaterialProperty( temperatures, fractions_solid );
             
-            if ~isnan( obj.temperatures )
-                first_liquid = find( obj.values == 0, 1, 'first' );
-                last_solid = find( obj.values == 1, 1, 'last' );
-                obj.temperatures = obj.temperatures( last_solid : first_liquid );
-                obj.values = obj.values( last_solid : first_liquid );
-            end
+            first_liquid = find( obj.values == 0, 1, 'first' );
+            last_solid = find( obj.values == 1, 1, 'last' );
+            obj.temperatures = obj.temperatures( last_solid : first_liquid );
+            obj.values = obj.values( last_solid : first_liquid );
             
             assert( obj.values( end ) == 0.0 ); % fully liquid at >= max temp
             assert( obj.values( 1 ) == 1.0 ); % fully solid at <= min temp
+            
+        end
+        
+        
+        function temperature = lookup_temperatures( obj, value )
+            
+            if numel( obj.temperatures ) == 1
+                assert( false );
+            else
+                temperature = interp1( ...
+                    obj.values, ...
+                    obj.temperatures, ...
+                    value, ...
+                    'linear', ...
+                    'extrap' ...
+                    );
+            end
             
         end
         
