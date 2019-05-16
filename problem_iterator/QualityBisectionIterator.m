@@ -20,6 +20,8 @@ classdef QualityBisectionIterator < Iterator
             obj.quality_tolerance = 0.2;
             obj.stagnation_tolerance = 0.01;
             
+            obj.times = [];
+            
         end
         
         
@@ -56,32 +58,41 @@ classdef QualityBisectionIterator < Iterator
         end
         
         
-        function set_initial_time_step( obj, time_step )
+        function set_initial_time_step( obj, step )
             
-            obj.time_step_previous = time_step;
+            assert( isempty( obj.times ) );
+            
+            obj.times = TimeTracker( step );
             
         end
         
         
         function iterate( obj )
             
-            assert( ~isempty( obj.time_step_previous ) );
+            assert( obj.is_ready() );
             
-            time_step_tracker = obj.create_tracker();
+            bisector = obj.create_bisector();
             while true
                 
-                complete = obj.update( time_step_tracker );
+                complete = obj.update( bisector );
                 if complete; break; end
                 
             end
-            obj.time_step_previous = time_step_tracker.get();
+            obj.times.append_time_step( bisector.get() );
             
         end
         
         
         function time_step = get_previous_time_step( obj )
             
-            time_step = obj.time_step_previous;
+            time_step = obj.times.get_time_step();
+            
+        end
+        
+        
+        function times = get_times( obj )
+            
+            times = obj.times;
             
         end
         
@@ -96,7 +107,7 @@ classdef QualityBisectionIterator < Iterator
         quality_tolerance
         stagnation_tolerance
         
-        time_step_previous
+        times
         reason_previous
         
     end
@@ -104,13 +115,20 @@ classdef QualityBisectionIterator < Iterator
     
     methods ( Access = private )
         
-        function tracker = create_tracker( obj )
+        function ready = is_ready( obj )
+            
+            ready = ~isempty( obj.times );
+            
+        end
+        
+        
+        function bisector = create_bisector( obj )
             
             LOWER_BOUND = 0;
             UPPER_BOUND = inf;
             TARGET_QUALITY = 0;
-            tracker = BisectionTracker( ...
-                obj.time_step_previous, ...
+            bisector = BisectionTracker( ...
+                obj.get_previous_time_step(), ...
                 LOWER_BOUND, ...
                 UPPER_BOUND, ...
                 @(t)obj.problem.solve(t), ...
@@ -121,16 +139,16 @@ classdef QualityBisectionIterator < Iterator
         end
         
         
-        function complete = update( obj, time_step_tracker )
+        function complete = update( obj, bisector )
             
-            within_tolerance = time_step_tracker.update();
+            within_tolerance = bisector.update();
             if within_tolerance
                 complete = true;
                 reason = obj.TOLERANCE_REASON;
-            elseif obj.exceeded_maximum_iterations( time_step_tracker.get_iterations() )
+            elseif obj.exceeded_maximum_iterations( bisector.get_iterations() )
                 complete = true;
                 reason = obj.ITERATION_REASON;
-            elseif obj.stagnated( time_step_tracker.get(), time_step_tracker.get_previous() )
+            elseif obj.stagnated( bisector.get(), bisector.get_previous() )
                 complete = true;
                 reason = obj.STAGNATION_REASON;
             elseif obj.was_below_critical()

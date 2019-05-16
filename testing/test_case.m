@@ -44,7 +44,7 @@ solver.set_maximum_iterations( 100 );
 %% SOLIDIFICATION PROBLEM
 problem = SolidificationProblem( fdm_mesh, pp, solver );
 problem.set_implicitness( 1 );
-problem.set_latent_heat_target_ratio( 0.25 );
+problem.set_latent_heat_target_ratio( 0.05 );
 
 %% ITERATOR
 iterator = QualityBisectionIterator( problem );
@@ -52,8 +52,15 @@ iterator.set_maximum_iteration_count( 20 );
 iterator.set_quality_ratio_tolerance( 0.2 );
 iterator.set_time_step_stagnation_tolerance( 0.01 );
 iterator.set_initial_time_step( pp.compute_initial_time_step() );
-iterator.iterate();
+
+%% RESULTS
+sol_temp = pp.get_fraction_solid_temperature( 1.0 );
+sol_time = SolidificationTimeResult( shape, sol_temp );
+results = containers.Map( ...
+    { 'solidification_times' }, ...
+    { sol_time } ...
+    );
 
 %% WRAPPER
-manager = FdmManager( solver, problem, iterator );
+manager = FdmManager( fdm_mesh, pp, solver, problem, iterator, results );
 manager.solve();

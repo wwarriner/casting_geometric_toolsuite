@@ -1,4 +1,4 @@
-classdef SolidificationProblem < handle
+classdef SolidificationProblem < Problem
     
     properties ( Access = public, Constant )
         
@@ -140,6 +140,13 @@ classdef SolidificationProblem < handle
         function u = get_temperature( obj )
             
             u = obj.u;
+            
+        end
+        
+        
+        function u = get_previous_temperature( obj )
+            
+            u = obj.u_previous;
             
         end
         

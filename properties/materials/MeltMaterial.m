@@ -49,8 +49,7 @@ classdef (Sealed) MeltMaterial < Material
         
         function temperature = get_feeding_effectivity_temperature( obj )
             
-            temperature = ...
-                obj.get( obj.FS ).lookup_temperatures( obj.feeding_effectivity );
+            temperature = obj.get_fraction_solid_temperature( obj.feeding_effectivity );
             
         end
         
@@ -58,6 +57,13 @@ classdef (Sealed) MeltMaterial < Material
         function temperature = get_solidus_temperature( obj )
             
             temperature = obj.get( obj.FS ).get_solidus();
+            
+        end
+        
+        
+        function temperature = get_fraction_solid_temperature( obj, fraction_solid )
+            
+            temperature = obj.get( obj.FS ).lookup_temperatures( fraction_solid );
             
         end
         

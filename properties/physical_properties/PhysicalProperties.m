@@ -286,6 +286,21 @@ classdef (Sealed) PhysicalProperties < handle
         end
         
         
+        function temperature = get_fraction_solid_temperature( obj, fraction_solid, melt_id )
+            
+            assert( obj.prepared );
+            
+            if nargin < 3
+                melt_id = obj.primary_melt_id;
+            end
+            
+            assert( ismember( melt_id, obj.melt_ids ) )
+            
+            temperature = obj.materials( melt_id ).get_fraction_solid_temperature( fraction_solid );
+            
+        end
+        
+        
         function [ latent_heat, sensible_heat ] = get_min_latent_heat( obj )
             
             assert( obj.prepared );
@@ -320,7 +335,7 @@ classdef (Sealed) PhysicalProperties < handle
             
             assert( ismember( melt_id, obj.melt_ids ) );
 
-            fs = pp.lookup_values( melt_id, Material.FS, temperatures );
+            fs = obj.lookup_values( melt_id, Material.FS, temperatures );
             
         end
         
@@ -338,6 +353,15 @@ classdef (Sealed) PhysicalProperties < handle
             q = zeros( size( mesh ) );
             q( mesh == melt_id ) = ...
                 obj.lookup_values( melt_id, Material.Q, temperatures( mesh == melt_id ) );
+            
+        end
+        
+        
+        function melt = is_primary_melt( obj, mesh )
+            
+            assert( obj.prepared );
+            
+            melt = mesh == obj.primary_melt_id;
             
         end
         

@@ -3,12 +3,16 @@ classdef (Sealed) FdmManager < handle
     methods ( Access = public )
         
         function obj = FdmManager( ...
+                fdm_mesh, ...
+                physical_properties, ...
                 solver, ...
                 problem, ...
                 iterator, ...
                 results ...
                 )
             
+            obj.mesh = fdm_mesh;
+            obj.physical_properties = physical_properties;
             obj.solver = solver;
             obj.problem = problem;
             obj.iterator = iterator;
@@ -61,6 +65,25 @@ classdef (Sealed) FdmManager < handle
         end
         
         
+        function keys = get_result_list( obj )
+            
+            keys = obj.results.keys();
+            
+        end
+        
+        
+        function result = get_scalar_field( obj, key, nan_val )
+            
+            if nargin < 3
+                nan_val = nan;
+            end
+            
+            result = obj.results( key ).get_scalar_field();
+            result( isnan( result ) ) = nan_val;
+            
+        end
+        
+        
         function display_computation_time_summary( obj )
             
             fh = figure();
@@ -107,6 +130,8 @@ classdef (Sealed) FdmManager < handle
     
     properties ( Access = private )
         
+        mesh
+        physical_properties
         solver
         problem
         iterator
@@ -124,7 +149,18 @@ classdef (Sealed) FdmManager < handle
         
         function update_results( obj )
             
-            % for each result, update it
+            r = obj.results.values();
+            for i = 1 : obj.results.Count()
+                
+                result = r{ i };
+                result.update( ...
+                    obj.mesh, ...
+                    obj.physical_properties, ...
+                    obj.iterator, ...
+                    obj.problem ...
+                    );
+                
+            end
             
         end
         
