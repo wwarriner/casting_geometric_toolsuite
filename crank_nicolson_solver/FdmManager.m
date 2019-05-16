@@ -5,12 +5,14 @@ classdef (Sealed) FdmManager < handle
         function obj = FdmManager( ...
                 solver, ...
                 problem, ...
-                iterator ...
+                iterator, ...
+                results ...
                 )
             
             obj.solver = solver;
             obj.problem = problem;
             obj.iterator = iterator;
+            obj.results = results;
             
             obj.computation_times = containers.Map();
             
@@ -52,6 +54,7 @@ classdef (Sealed) FdmManager < handle
             while ~obj.problem.is_finished()
                 
                 obj.iterator.iterate();
+                obj.update_results();
                 
             end
             
@@ -107,6 +110,7 @@ classdef (Sealed) FdmManager < handle
         solver
         problem
         iterator
+        results
         
         linear_system_iteration_count
         time_step_method_count
@@ -117,6 +121,12 @@ classdef (Sealed) FdmManager < handle
     
     
     methods ( Access = private )
+        
+        function update_results( obj )
+            
+            % for each result, update it
+            
+        end
         
     end
     
