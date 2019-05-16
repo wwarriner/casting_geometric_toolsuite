@@ -256,6 +256,36 @@ classdef (Sealed) PhysicalProperties < handle
         end
         
         
+        function fe = get_feeding_effectivity( obj, melt_id )
+            
+            assert( obj.prepared );
+            
+            if nargin < 2
+                melt_id = obj.primary_melt_id;
+            end
+            
+            assert( ismember( melt_id, obj.melt_ids ) )
+            
+            fe = obj.materials( melt_id ).get_feeding_effectivity();
+            
+        end
+        
+        
+        function temperature = get_feeding_effectivity_temperature( obj, melt_id )
+            
+            assert( obj.prepared );
+            
+            if nargin < 2
+                melt_id = obj.primary_melt_id;
+            end
+            
+            assert( ismember( melt_id, obj.melt_ids ) )
+            
+            temperature = obj.materials( melt_id ).get_feeding_effectivity_temperature();
+            
+        end
+        
+        
         function [ latent_heat, sensible_heat ] = get_min_latent_heat( obj )
             
             assert( obj.prepared );
@@ -291,6 +321,23 @@ classdef (Sealed) PhysicalProperties < handle
             assert( ismember( melt_id, obj.melt_ids ) );
 
             fs = pp.lookup_values( melt_id, Material.FS, temperatures );
+            
+        end
+        
+        
+        function q = compute_melt_enthalpies( obj, mesh, temperatures, melt_id )
+            
+            assert( obj.prepared );
+            
+            if nargin < 4
+                melt_id = obj.primary_melt_id;
+            end
+            
+            assert( numel( mesh ) == numel( temperatures ) );
+            
+            q = zeros( size( mesh ) );
+            q( mesh == melt_id ) = ...
+                obj.lookup_values( melt_id, Material.Q, temperatures( mesh == melt_id ) );
             
         end
         
@@ -336,55 +383,6 @@ classdef (Sealed) PhysicalProperties < handle
             initial_temperature = obj.materials( material_id ).get_initial_temperature();
             
         end
-        
-        
-        function fe = get_feeding_effectivity( obj, melt_id )
-            
-            assert( obj.prepared );
-            
-            if nargin < 2
-                melt_id = obj.primary_melt_id;
-            end
-            
-            assert( ismember( melt_id, obj.melt_ids ) )
-            
-            fe = obj.materials( melt_id ).get_feeding_effectivity();
-            
-        end
-        
-        
-        function temperature = get_feeding_effectivity_temperature( obj, melt_id )
-            
-            assert( obj.prepared );
-            
-            if nargin < 2
-                melt_id = obj.primary_melt_id;
-            end
-            
-            assert( ismember( melt_id, obj.melt_ids ) )
-            
-            temperature = obj.materials( melt_id ).get_feeding_effectivity_temperature();
-            
-        end
-        
-        
-        function q = compute_melt_enthalpies( obj, mesh, temperatures, melt_id )
-            
-            assert( obj.prepared );
-            
-            if nargin < 4
-                melt_id = obj.primary_melt_id;
-            end
-            
-            assert( numel( mesh ) == numel( temperatures ) );
-            
-            q = zeros( size( mesh ) );
-            q( mesh == melt_id ) = ...
-                obj.lookup_values( melt_id, Material.Q, temperatures( mesh == melt_id ) );
-            
-        end
-        
-        
         
     end
     
