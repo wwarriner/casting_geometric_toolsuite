@@ -94,7 +94,7 @@ classdef SolidificationProblem < handle
         end
         
         
-        function solve( obj, time_step )
+        function quality = solve( obj, time_step )
             
             rho_cp = obj.compute_rho_cp( obj.u_previous( : ), obj.u( : ) );
             [ boundary_heat_flow, m_internal_heat_flow ] = ...
@@ -121,8 +121,8 @@ classdef SolidificationProblem < handle
             % check solution
             tic;
             obj.q_previous = obj.q;
-            [ obj.quality_ratio, obj.q ] = ...
-                obj.determine_solution_quality_ratio( obj.q_previous, obj.u );
+            [ quality, obj.q ] = ...
+                obj.determine_solution_quality( obj.q_previous, obj.u );
             obj.times( obj.CHECK_TIME ) = toc;
             
             obj.below_critical_previous = obj.is_finished();
@@ -154,13 +154,6 @@ classdef SolidificationProblem < handle
         function below = was_below_critical( obj )
             
             below = obj.below_critical_previous;
-            
-        end
-        
-        
-        function ratio = get_quality_ratio( obj )
-            
-            ratio = obj.quality_ratio;
             
         end
         
@@ -222,7 +215,6 @@ classdef SolidificationProblem < handle
         
         below_critical_previous
         
-        quality_ratio
         times
         pcg_count
         
@@ -377,7 +369,7 @@ classdef SolidificationProblem < handle
         end
         
         
-        function [ quality_ratio, q ] = determine_solution_quality_ratio( ...
+        function [ quality, q ] = determine_solution_quality( ...
                 obj, ...
                 q_prev, ...
                 u ...
@@ -389,7 +381,7 @@ classdef SolidificationProblem < handle
             % if latent heat very small, use sensible heat over freezing range instead
             heat = max( latent_heat, sensible_heat );
             desired_q = heat * obj.latent_heat_target_ratio;
-            quality_ratio = ( max_delta_q - desired_q ) / desired_q;
+            quality = ( max_delta_q - desired_q ) / desired_q;
             
         end
         
