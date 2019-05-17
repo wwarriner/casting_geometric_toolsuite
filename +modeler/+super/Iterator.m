@@ -17,11 +17,9 @@ classdef Iterator < utils.Printer & handle
             obj.problem.prepare();
             obj.iterate_impl();
             time = toc;
-            if isempty( obj.computation_times )
-                obj.computation_times = TimeTracker( time );
-            else
-                obj.computation_times.append_time_step( time );
-            end
+            obj.computation_times.append_time_step( time );
+            obj.iterations.append_time_step( obj.get_previous_iterations() );
+            obj.solver_counts.append_time_step( obj.get_previous_solver_count() );
             obj.printf( obj.get_iteration_message() );
             
         end
@@ -50,6 +48,20 @@ classdef Iterator < utils.Printer & handle
         end
         
         
+        function total = get_total_iterations( obj )
+            
+            total = obj.iterations.get_total_time();
+            
+        end
+        
+        
+        function total = get_total_solver_count( obj )
+            
+            total = obj.solver_counts.get_total_time();
+            
+        end
+        
+        
         function simulation_times = get_simulation_times( obj )
             
             assert( obj.is_ready() );
@@ -72,6 +84,8 @@ classdef Iterator < utils.Printer & handle
         
         iterate_impl( obj );
         ready = is_ready_impl( obj );
+        iterations = get_previous_iterations( obj );
+        counts = get_previous_solver_count( obj );
         
     end
     
@@ -80,11 +94,13 @@ classdef Iterator < utils.Printer & handle
         
         function obj = Iterator( problem )
         
-            assert( isa( problem, 'modeler.Problem' ) );
+            assert( isa( problem, 'modeler.super.Problem' ) );
             
             obj.problem = problem;
-            obj.computation_times = TimeTracker();
-            obj.simulation_times = TimeTracker();
+            obj.computation_times = modeler.util.TimeTracker();
+            obj.simulation_times = modeler.util.TimeTracker();
+            obj.iterations = modeler.util.TimeTracker();
+            obj.solver_counts = modeler.util.TimeTracker();
             obj.status = '';
         
         end
@@ -139,6 +155,8 @@ classdef Iterator < utils.Printer & handle
         
         computation_times
         simulation_times
+        iterations
+        solver_counts
         status
         
     end

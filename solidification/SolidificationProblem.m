@@ -1,4 +1,4 @@
-classdef SolidificationProblem < modeler.Problem
+classdef SolidificationProblem < modeler.super.Problem
     
     properties ( Access = public, Constant )
         
@@ -134,8 +134,6 @@ classdef SolidificationProblem < modeler.Problem
                 obj.determine_solution_quality( obj.q, obj.u_candidate );
             obj.times( obj.CHECK_TIME ) = toc;
             
-            obj.below_critical_previous = obj.is_finished();
-            
         end
         
         
@@ -163,13 +161,6 @@ classdef SolidificationProblem < modeler.Problem
         function q = get_enthalpy( obj )
             
             q = obj.q_candidate;
-            
-        end
-        
-        
-        function below = was_below_critical( obj )
-            
-            below = obj.below_critical_previous;
             
         end
         
@@ -202,7 +193,7 @@ classdef SolidificationProblem < modeler.Problem
         end
         
         
-        function count = get_last_pcg_count( obj )
+        function count = get_solver_count( obj )
             
             count = obj.pcg_count;
             
@@ -234,8 +225,6 @@ classdef SolidificationProblem < modeler.Problem
         q_candidate
         
         finish_temperature
-        
-        below_critical_previous
         
         times
         pcg_count

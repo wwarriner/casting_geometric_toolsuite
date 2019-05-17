@@ -1,4 +1,4 @@
-classdef SolidificationTimeResult < Result
+classdef SolidificationTimeResult < modeler.super.Result
     
     methods ( Access = public )
         

@@ -11,9 +11,9 @@ classdef (Sealed) Manager < handle
                 results ...
                 )
             
-            assert( isa( solver, 'modeler.Solver' ) );
-            assert( isa( problem, 'modeler.Problem' ) );
-            assert( isa( iterator, 'modeler.Iterator' ) );
+            assert( isa( solver, 'modeler.super.Solver' ) );
+            assert( isa( problem, 'modeler.super.Problem' ) );
+            assert( isa( iterator, 'modeler.super.Iterator' ) );
             
             obj.mesh = fdm_mesh;
             obj.physical_properties = physical_properties;

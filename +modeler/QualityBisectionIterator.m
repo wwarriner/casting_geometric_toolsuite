@@ -1,10 +1,10 @@
-classdef QualityBisectionIterator < modeler.Iterator
+classdef QualityBisectionIterator < modeler.super.Iterator
     
     methods ( Access = public )
         
         function obj = QualityBisectionIterator( problem )
             
-            obj@modeler.Iterator( problem );
+            obj@modeler.super.Iterator( problem );
             obj.maximum_iteration_count = 20;
             obj.quality_tolerance = 0.2;
             obj.stagnation_tolerance = 0.01;
@@ -51,14 +51,15 @@ classdef QualityBisectionIterator < modeler.Iterator
         
         function iterate_impl( obj )
             
-            bisector = obj.create_bisector();
+            obj.per_iteration_solver_counts = modeler.util.TimeTracker();
+            obj.bisector = obj.create_bisector();
             while true
                 
-                complete = obj.update( bisector );
+                complete = obj.update( obj.bisector, obj.per_iteration_solver_counts );
                 if complete; break; end
                 
             end
-            obj.append_time_step( bisector.get() );
+            obj.append_time_step( obj.bisector.get() );
             
         end
         
@@ -66,6 +67,20 @@ classdef QualityBisectionIterator < modeler.Iterator
         function ready = is_ready_impl( ~ )
             
             ready = true;
+            
+        end
+        
+        
+        function iterations = get_previous_iterations( obj )
+            
+            iterations = obj.bisector.get_iterations();
+            
+        end
+        
+        
+        function counts = get_previous_solver_count( obj )
+            
+            counts = obj.per_iteration_solver_counts.get_total_time();
             
         end
         
@@ -77,6 +92,9 @@ classdef QualityBisectionIterator < modeler.Iterator
         maximum_iteration_count
         quality_tolerance
         stagnation_tolerance
+        
+        bisector
+        per_iteration_solver_counts
         
     end
     
@@ -94,13 +112,12 @@ classdef QualityBisectionIterator < modeler.Iterator
     
     methods ( Access = private )
         
-        
         function bisector = create_bisector( obj )
             
             LOWER_BOUND = 0;
             UPPER_BOUND = inf;
             TARGET_QUALITY = 0;
-            bisector = BisectionTracker( ...
+            bisector = modeler.util.BisectionTracker( ...
                 obj.get_candidate_time_step(), ...
                 LOWER_BOUND, ...
                 UPPER_BOUND, ...
@@ -112,9 +129,10 @@ classdef QualityBisectionIterator < modeler.Iterator
         end
         
         
-        function complete = update( obj, bisector )
+        function complete = update( obj, bisector, solver_counts )
             
             within_tolerance = bisector.update();
+            solver_counts.append_time_step( obj.problem.get_solver_count() );
             if within_tolerance
                 complete = true;
                 status = obj.TOLERANCE_STATUS;

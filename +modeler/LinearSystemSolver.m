@@ -1,4 +1,4 @@
-classdef (Sealed) LinearSystemSolver < modeler.Solver
+classdef (Sealed) LinearSystemSolver < modeler.super.Solver
     
     methods ( Access = public )
         

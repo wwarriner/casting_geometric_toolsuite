@@ -48,6 +48,7 @@ classdef (Sealed) BisectionTracker < handle
         function within_tolerance = update( obj )
             
             y = obj.compute_y_fn( obj.x );
+            obj.iterations = obj.iterations + 1;
             within_tolerance = false;
             if obj.is_within_tolerance( y )
                 within_tolerance = true;
