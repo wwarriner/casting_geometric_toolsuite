@@ -6,6 +6,7 @@ classdef (Abstract) Problem < handle
         quality = solve( obj, time_step );
         finished = is_finished( obj );
         count = get_solver_count( obj );
+        times = get_times( obj );
         
     end
     

@@ -44,6 +44,7 @@ classdef (Sealed) Manager < handle
         
         function solve( obj )
             
+            wallclock_timer = tic;
             while ~obj.problem.is_finished()
                 
                 obj.iterator.iterate();
@@ -51,6 +52,7 @@ classdef (Sealed) Manager < handle
                 obj.update_dashboard();
                 
             end
+            obj.wallclock_time = toc( wallclock_timer );
             
         end
         
@@ -128,6 +130,8 @@ classdef (Sealed) Manager < handle
         results
         
         dashboard
+        
+        wallclock_time
         
     end
     

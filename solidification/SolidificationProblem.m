@@ -2,14 +2,14 @@ classdef SolidificationProblem < modeler.super.Problem
     
     properties ( Access = public, Constant )
         
-        LOOKUP_TIME = 'lookup';
+        %LOOKUP_TIME = 'lookup';
         BC_TIME = 'boundary';
         BAND_TIME = 'bands';
-        DKDU_TIME = 'dkdu';
-        KDDU_TIME = 'kddu sparse';
-        SETUP_TIME = 'set up linear system';
-        SOLVE_TIME = 'linear solver';
-        CHECK_TIME = 'quality check';
+        %DKDU_TIME = 'dkdu';
+        KDDU_TIME = 'kddu_sparse';
+        SETUP_TIME = 'set_up_linear_system';
+        SOLVE_TIME = 'linear_solver';
+        CHECK_TIME = 'quality_check';
         
     end
     
@@ -49,7 +49,15 @@ classdef SolidificationProblem < modeler.super.Problem
             obj.implicitness = 1.0;
             obj.latent_heat_target_ratio = 0.25;
             
-            obj.times = containers.Map();
+            vars = { ...
+                obj.BC_TIME ...
+                obj.BAND_TIME ...
+                obj.KDDU_TIME ...
+                obj.SETUP_TIME ...
+                obj.SOLVE_TIME ...
+                obj.CHECK_TIME ...
+                };
+            obj.times = modeler.util.ComputationTimes( vars );
             
         end
         
@@ -99,6 +107,8 @@ classdef SolidificationProblem < modeler.super.Problem
         
         function prepare( obj )
             
+            obj.times.add_row();
+            
             obj.u_previous = obj.u;
             obj.u = obj.u_candidate;
             obj.q = obj.q_candidate;
@@ -111,6 +121,8 @@ classdef SolidificationProblem < modeler.super.Problem
         
         function quality = solve( obj, time_step )
             
+            obj.times.add_row();
+            
             % set up linear system
             tic;
             [ lhs, rhs ] = obj.setup_linear_system( ...
@@ -120,19 +132,19 @@ classdef SolidificationProblem < modeler.super.Problem
                 obj.boundary_heat_flow, ...
                 obj.u( : ) ...
                 );
-            obj.times( obj.SETUP_TIME ) = toc;
+            obj.times.append_times( obj.SETUP_TIME, toc );
             
             % solve linear system
             obj.u_candidate = obj.linear_system_solver.solve( lhs, rhs, obj.u( : ) );
             obj.u_candidate = reshape( obj.u_candidate, size( obj.u ) );
             obj.pcg_count = obj.linear_system_solver.get_iteration_count();
-            obj.times( obj.SOLVE_TIME ) = obj.linear_system_solver.get_time();
+            obj.times.append_times( obj.SOLVE_TIME, obj.linear_system_solver.get_time() );
             
             % check solution
             tic;
             [ quality, obj.q_candidate ] = ...
                 obj.determine_solution_quality( obj.q, obj.u_candidate );
-            obj.times( obj.CHECK_TIME ) = toc;
+            obj.times.append_times( obj.CHECK_TIME, toc );
             
         end
         
@@ -165,28 +177,7 @@ classdef SolidificationProblem < modeler.super.Problem
         end
         
         
-        function labels = get_time_labels( obj )
-            
-            labels = obj.times.keys();
-            
-        end
-        
-        
-        function time = get_last_total_time( obj )
-            
-            time = sum( obj.get_last_times() );
-            
-        end
-        
-        
-        function times = get_last_times( obj )
-            
-            times = cell2mat( obj.times.values() );
-            
-        end
-        
-        
-        function times = get_last_times_map( obj )
+        function times = get_times( obj )
             
             times = obj.times;
             
@@ -280,7 +271,7 @@ classdef SolidificationProblem < modeler.super.Problem
             heat_flow = 1 ./ resistances;
             heat_flow( ~isfinite( heat_flow ) ) = 0;
             
-            obj.times( obj.BC_TIME ) = toc;
+            obj.times.append_times( obj.BC_TIME, toc );
             
         end
         
@@ -299,14 +290,14 @@ classdef SolidificationProblem < modeler.super.Problem
                 
             end
             
-            obj.times( obj.BAND_TIME ) = toc;
+            obj.times.append_times( obj.BAND_TIME, toc );
             
             tic;
             
             heat_flow_bands = 1 ./ resistance_bands;
             m_heat_flow = obj.construct_internal_heat_flow_matrix( heat_flow_bands );
             
-            obj.times( obj.KDDU_TIME ) = toc;
+            obj.times.append_times( obj.KDDU_TIME, toc );
             
         end
         
@@ -323,7 +314,7 @@ classdef SolidificationProblem < modeler.super.Problem
                 boundary_indices ...
                 );
             
-            obj.times( obj.DKDU_TIME ) = toc;
+            obj.times.append_times( obj.DKDU_TIME, toc );
             
         end
         

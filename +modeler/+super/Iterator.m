@@ -17,7 +17,7 @@ classdef Iterator < utils.Printer & handle
             obj.problem.prepare();
             obj.iterate_impl();
             time = toc;
-            obj.computation_times.append_time_step( time );
+            obj.computation_times.append_time_step( obj.problem.get_times().get_total() );
             obj.iterations.append_time_step( obj.get_previous_iterations() );
             obj.solver_counts.append_time_step( obj.get_previous_solver_count() );
             obj.printf( obj.get_iteration_message() );
