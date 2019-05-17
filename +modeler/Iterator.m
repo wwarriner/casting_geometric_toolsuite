@@ -80,6 +80,8 @@ classdef Iterator < utils.Printer & handle
         
         function obj = Iterator( problem )
         
+            assert( isa( problem, 'modeler.Problem' ) );
+            
             obj.problem = problem;
             obj.computation_times = TimeTracker();
             obj.simulation_times = TimeTracker();

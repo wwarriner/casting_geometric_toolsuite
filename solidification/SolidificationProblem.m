@@ -1,4 +1,4 @@
-classdef SolidificationProblem < Problem
+classdef SolidificationProblem < modeler.Problem
     
     properties ( Access = public, Constant )
         
@@ -21,6 +21,8 @@ classdef SolidificationProblem < Problem
                 physical_properties, ...
                 linear_system_solver ...
                 )
+            
+            assert( isa( linear_system_solver, 'modeler.LinearSystemSolver' ) );
             
             obj.fdm_mesh = fdm_mesh;
             obj.shape = size( fdm_mesh );
@@ -123,8 +125,8 @@ classdef SolidificationProblem < Problem
             % solve linear system
             obj.u_candidate = obj.linear_system_solver.solve( lhs, rhs, obj.u( : ) );
             obj.u_candidate = reshape( obj.u_candidate, size( obj.u ) );
-            obj.pcg_count = obj.linear_system_solver.get_previous_iterations();
-            obj.times( obj.SOLVE_TIME ) = obj.linear_system_solver.get_previous_time();
+            obj.pcg_count = obj.linear_system_solver.get_iteration_count();
+            obj.times( obj.SOLVE_TIME ) = obj.linear_system_solver.get_time();
             
             % check solution
             tic;

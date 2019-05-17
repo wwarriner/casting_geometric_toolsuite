@@ -1,10 +1,11 @@
-classdef (Abstract) Material < handle & matlab.mixin.Heterogeneous
+classdef Material < handle & matlab.mixin.Heterogeneous
     
     properties ( Access = public )
         
         mesh_id
         
     end
+    
     
     properties ( Access = public, Constant )
         
@@ -20,6 +21,22 @@ classdef (Abstract) Material < handle & matlab.mixin.Heterogeneous
     
     
     methods ( Access = public )
+        
+        function data = read( obj, file )
+            
+            data = readtable( file );
+            
+            [ rho_t, rho ] = remove_nans( data.rho_t, data.rho );
+            [ cp_t, cp ] = remove_nans( data.cp_t, data.cp );
+            [ k_t, k ] = remove_nans( data.k_t, data.k );
+            
+            obj.set( RhoProperty( rho_t, rho ) );
+            obj.set( CpProperty( cp_t, cp ) );
+            obj.set( KProperty( k_t, k ) );
+            obj.set_initial_temperature( 25 );
+            
+        end
+        
         
         % DO NOT SET Q OR RHO_CP DIRECTLY
         function set( obj, material_property )
@@ -116,7 +133,11 @@ classdef (Abstract) Material < handle & matlab.mixin.Heterogeneous
     
     methods ( Access = protected )
         
-        function obj = Material( mesh_id )
+        function obj = Material( mesh_id, file )
+            
+            if nargin < 2
+                file = [];
+            end
             
             obj.mesh_id = mesh_id;
             
@@ -127,6 +148,15 @@ classdef (Abstract) Material < handle & matlab.mixin.Heterogeneous
             obj.initial_temperature_set = false;
             
             obj.prepared = false;
+            
+            if ~isempty( file )
+                try
+                    obj.read( file );
+                catch e
+                    disp( getReport( e ) );
+                    assert( false );
+                end
+            end
             
         end
         

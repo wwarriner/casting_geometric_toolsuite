@@ -17,6 +17,13 @@ classdef (Sealed) ConvectionProperties < handle
         end
         
         
+        function read_ambient( obj, mesh_id, file )
+            
+            obj.read( obj.ambient_mesh_id, mesh_id, file );
+            
+        end
+        
+        
         function set( obj, first_mesh_id, second_mesh_id, h )
             
             assert( first_mesh_id ~= second_mesh_id );
@@ -29,6 +36,15 @@ classdef (Sealed) ConvectionProperties < handle
             end
             m = obj.convection( first );
             m( second ) = h; %#ok<NASGU> assigning to a handle is ok
+            
+        end
+        
+        
+        function read( obj, first_mesh_id, second_mesh_id, file )
+            
+            data = readtable( file );
+            h = HProperty( data.h_t, data.h );
+            obj.set( first_mesh_id, second_mesh_id, h );
             
         end
         

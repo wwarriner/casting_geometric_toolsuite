@@ -1,4 +1,4 @@
-classdef (Sealed) LinearSystemSolver < handle
+classdef (Sealed) LinearSystemSolver < modeler.Solver
     
     methods ( Access = public )
         
@@ -42,16 +42,16 @@ classdef (Sealed) LinearSystemSolver < handle
         end
         
         
-        function count = get_previous_iterations( obj )
+        function count = get_iteration_count( obj )
             
-            count = obj.previous_iteration_count;
+            count = obj.iteration_count;
             
         end
         
         
-        function time = get_previous_time( obj )
+        function time = get_time( obj )
             
-            time = obj.previous_time;
+            time = obj.time;
             
         end
         
@@ -64,8 +64,8 @@ classdef (Sealed) LinearSystemSolver < handle
         maximum_iteration_count
         
         initial_guess
-        previous_iteration_count
-        previous_time
+        iteration_count
+        time
         
     end
     
@@ -78,7 +78,7 @@ classdef (Sealed) LinearSystemSolver < handle
             
             preconditioner = ichol( A, struct( 'michol', 'on' ) );
             if ~isempty( x0 )
-                [ x, ~, ~, obj.previous_iteration_count, ~ ] = pcg( ...
+                [ x, ~, ~, obj.iteration_count, ~ ] = pcg( ...
                     A, ...
                     b, ...
                     obj.tolerance, ...
@@ -88,7 +88,7 @@ classdef (Sealed) LinearSystemSolver < handle
                     x0( : ) ...
                     );
             else
-                [ x, ~, ~, obj.previous_iteration_count, ~ ] = pcg( ...
+                [ x, ~, ~, obj.iteration_count, ~ ] = pcg( ...
                     A, ...
                     b, ...
                     obj.tolerance, ...
@@ -98,7 +98,7 @@ classdef (Sealed) LinearSystemSolver < handle
                     );
             end
             
-            obj.previous_time = toc;
+            obj.time = toc;
             
         end
         

@@ -1,10 +1,10 @@
-classdef QualityBisectionIterator < Iterator
+classdef QualityBisectionIterator < modeler.Iterator
     
     methods ( Access = public )
         
         function obj = QualityBisectionIterator( problem )
             
-            obj@Iterator( problem );
+            obj@modeler.Iterator( problem );
             obj.maximum_iteration_count = 20;
             obj.quality_tolerance = 0.2;
             obj.stagnation_tolerance = 0.01;
@@ -86,7 +86,7 @@ classdef QualityBisectionIterator < Iterator
         TOLERANCE_STATUS = 'Tolerance met.';
         ITERATION_STATUS = 'Exceeded maximum iterations.';
         STAGNATION_STATUS = 'Time step stagnated.';
-        BELOW_CRITICAL_STATUS = 'Solver field below critical value.';
+        BELOW_CRITICAL_STATUS = 'Problem finished.';
         CONTINUING_STATUS = 'Continuing.';
         
     end
@@ -124,9 +124,9 @@ classdef QualityBisectionIterator < Iterator
             elseif obj.stagnated( bisector.get(), bisector.get_previous() )
                 complete = true;
                 status = obj.STAGNATION_STATUS;
-            elseif obj.was_below_critical()
+            elseif obj.is_finished()
                 complete = true;
-                status = obj.BELOW_CRITICAL_STATUS;
+                status = obj.FINISHED_STATUS;
             else
                 complete = false;
                 status = obj.CONTINUING_STATUS;
@@ -150,9 +150,9 @@ classdef QualityBisectionIterator < Iterator
         end
         
         
-        function below = was_below_critical( obj )
+        function below = is_finished( obj )
             
-            below = obj.problem.was_below_critical();
+            below = obj.problem.is_finished();
             
         end
         

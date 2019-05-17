@@ -2,11 +2,24 @@ classdef (Sealed) MeltMaterial < Material
     
     methods ( Access = public )
         
-        function obj = MeltMaterial( mesh_id )
+        function obj = MeltMaterial( varargin )
             
-            obj = obj@Material( mesh_id );
+            obj = obj@Material( varargin{ : } );
             obj.feeding_effectivity = [];
             obj.feeding_effectivity_set = false;
+            
+        end
+        
+        
+        function read( obj, file )
+            
+            data = obj.read@Material( file );
+            
+            [ fs_t, fs ] = remove_nans( data.fs_t, data.fs );
+            
+            obj.set( FsProperty( fs_t, fs ) );
+            obj.set_feeding_effectivity( 0.5 );
+            obj.set_default_initial_temperature();
             
         end
         
@@ -106,6 +119,14 @@ classdef (Sealed) MeltMaterial < Material
             if isa( material_property, 'FsProperty' )
                 index = obj.FS;
             end
+            
+        end
+        
+        
+        function set_default_initial_temperature( obj )
+
+            t = obj.get_liquidus_temperature();
+            obj.set_initial_temperature( t * 1.05 );
             
         end
         
