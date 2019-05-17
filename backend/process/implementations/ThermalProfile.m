@@ -71,8 +71,8 @@ classdef ThermalProfile < Process
                     obj.FALLBACK_MOLD_PAD_AMOUNTS ...
                     );
                 obj.show_thermal_profile_dashboard = obj.options.get( ...
-                    [ base '.show_thermal_profile_dashboard' ], ...
-                    obj.FALLBACK_SHOW_THERMAL_PROFILE_DASHBOARD ...
+                    [ base '.show_dashboard' ], ...
+                    obj.FALLBACK_SHOW_DASHBOARD ...
                     );
             end
             assert( ~isempty( obj.mold_material_filename ) );
@@ -245,7 +245,7 @@ classdef ThermalProfile < Process
         
         FALLBACK_MOLD_PAD_TYPE = 'ratio';
         FALLBACK_MOLD_PAD_AMOUNTS = 0.125;
-        FALLBACK_SHOW_THERMAL_PROFILE_DASHBOARD = false;
+        FALLBACK_SHOW_DASHBOARD = false;
         
     end
     

@@ -30,7 +30,7 @@
 		"melt_initial_temperature_c":1600,
 		"mold_pad_type":"ratio",
 		"mold_pad_amounts":[0.125],
-		"show_thermal_profile_dashboard":false
+		"show_dashboard":false
 		}
 	}
 }
