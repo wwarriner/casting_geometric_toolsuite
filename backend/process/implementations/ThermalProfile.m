@@ -88,9 +88,9 @@ classdef ThermalProfile < Process
             
             space_step_in_m = obj.mesh.scale / 1000; % mm -> m
             pp = PhysicalProperties( space_step_in_m ); % mm -> m
-            pp.add_ambient_material( generate_air_properties( ambient_id ) );
-            pp.add_material( read_mold_material( mold_id, which( obj.mold_material_filename ) ) );
-            melt = read_melt_material( melt_id, which( obj.melt_material_filename ) );
+            pp.add_ambient_material( AmbientMaterial( ambient_id ) );
+            pp.add_material( MoldMaterial( mold_id, which( obj.mold_material_filename ) ) );
+            melt = MeltMaterial( melt_id, which( obj.melt_material_filename ) );
             if ~isnan( obj.melt_initial_temperature_c )
                 melt.set_initial_temperature( obj.melt_initial_temperature_c );
             end
@@ -99,13 +99,11 @@ classdef ThermalProfile < Process
             conv = ConvectionProperties( ambient_id );
             conv.set_ambient( mold_id, generate_air_convection() );
             conv.set_ambient( melt_id, generate_air_convection() );
-            conv.set( mold_id, melt_id, read_convection( which( obj.mold_melt_convection_filename ) ) );
+            conv.read( mold_id, melt_id, which( obj.mold_melt_convection_filename ) );
             pp.set_convection( conv );
             
+            pp.prepare_for_solver();
             obj.physical_properties = pp;
-            
-            assert( ~isempty( obj.physical_properties ) );
-            assert( obj.physical_properties.is_ready() );
             
             obj.printf( 'Computing thermal profile...\n' );
             
@@ -132,18 +130,36 @@ classdef ThermalProfile < Process
                     assert( false );
             end
             
-            obj.physical_properties.prepare_for_solver();
-            lss = LinearSystemSolver( fdm_mesh, obj.physical_properties );
-            lss.set_implicitness( 1 );
-            lss.set_solver_tolerance( 1e-4 );
-            lss.set_solver_max_iteration_count( 100 );
-            lss.set_latent_heat_target_fraction( 1.0 );
-            lss.set_quality_ratio_tolerance( 0.2 );
+            solver = modeler.LinearSystemSolver();
+            solver.set_tolerance( 1e-4 );
+            solver.set_maximum_iterations( 100 );
             
-            solver = FdmSolver( fdm_mesh, obj.physical_properties, lss );
-            solver.turn_printing_on( @obj.printf );
-            solver.set_live_plotting( obj.show_thermal_profile_dashboard );
-            solver.solve( melt_id );
+            problem = SolidificationProblem( fdm_mesh, obj.physical_properties, solver );
+            problem.set_implicitness( 1 );
+            problem.set_latent_heat_target_ratio( 0.05 );
+            
+            iterator = modeler.QualityBisectionIterator( problem );
+            iterator.set_maximum_iteration_count( 20 );
+            iterator.set_quality_ratio_tolerance( 0.2 );
+            iterator.set_time_step_stagnation_tolerance( 1e-2 );
+            iterator.set_initial_time_step( obj.physical_properties.compute_initial_time_step() );
+            iterator.set_printer( @fprintf );
+            
+            sol_temp = obj.physical_properties.get_fraction_solid_temperature( 1.0 );
+            sol_time = SolidificationTimeResult( size( fdm_mesh ), sol_temp );
+            results = containers.Map( ...
+                { 'solidification_times' }, ...
+                { sol_time } ...
+                );
+            
+            manager = modeler.Manager( fdm_mesh, obj.physical_properties, solver, problem, iterator, results );
+            if obj.show_thermal_profile_dashboard
+                center = ceil( size( fdm_mesh ) );
+                dashboard = SolidificationDashboard( fdm_mesh, obj.physical_properties, solver, problem, iterator, results, center );
+                manager.set_dashboard( dashboard );
+            end
+            manager.solve();
+            
             obj.solidification_times = obj.mesh.unpad_fdm_result( ...
                 pad_count, ...
                 solver.solidification_times.values ...
