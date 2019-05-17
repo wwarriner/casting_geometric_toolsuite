@@ -16,10 +16,7 @@ classdef (Sealed) Results < handle
                 'keytype', 'char', ...
                 'valuetype', 'any' ...
                 );
-            
-            if 1 <= nargin
-                obj.options = options;
-            end
+            obj.options = options;
             
         end
         
