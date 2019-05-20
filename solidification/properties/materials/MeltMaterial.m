@@ -5,8 +5,9 @@ classdef (Sealed) MeltMaterial < Material
         function obj = MeltMaterial( varargin )
             
             obj = obj@Material( varargin{ : } );
-            obj.feeding_effectivity = [];
-            obj.feeding_effectivity_set = false;
+            if isempty( obj.feeding_effectivity )
+                obj.feeding_effectivity_set = false;
+            end
             
         end
         
