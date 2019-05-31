@@ -104,7 +104,7 @@ classdef QualityBisectionIterator < modeler.super.Iterator
         TOLERANCE_STATUS = 'Tolerance met.';
         ITERATION_STATUS = 'Exceeded maximum iterations.';
         STAGNATION_STATUS = 'Time step stagnated.';
-        BELOW_CRITICAL_STATUS = 'Problem finished.';
+        FINISHED_STATUS = 'Problem finished.';
         CONTINUING_STATUS = 'Continuing.';
         
     end
