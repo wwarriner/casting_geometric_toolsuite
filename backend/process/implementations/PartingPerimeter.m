@@ -174,8 +174,8 @@ classdef (Sealed) PartingPerimeter < Process
             % TODO expand parting line opt to every connected component of the
             % parting perimeter
             % TODO compute draw using parting line values
-            largest_length = obj.mesh.to_stl_units( obj.mesh.get_largest_length() );
-            obj.draw_ratio = 2 .* obj.draw / largest_length;
+            largest_length = obj.mesh.get_largest_length();
+            obj.draw_ratio = obj.draw / largest_length;
             obj.length_ratio = obj.perimeter_length ./ largest_length;
             cc = bwconncomp( squeeze( any( obj.jog_free_perimeter, obj.parting_dimension ) ) );
             obj.jog_free_count = cc.NumObjects;
@@ -428,7 +428,8 @@ classdef (Sealed) PartingPerimeter < Process
                 draws( i ) = ...
                     ( extrema( 2 ) - ( scale .* min_of_max_slice ) ) ...
                     + ( ( scale .* max_of_min_slice ) - extrema( 1 ) ) ...
-                    + ( scale .* ( jog_heights_in_voxel_units( i ) - 1 ) );
+                    + scale; %...
+                    %+ ( scale .* ( jog_heights_in_voxel_units( i ) - 1 ) );
                 
             end
             draw = max( draws );
