@@ -39,7 +39,7 @@ classdef (Sealed) Undercuts < Process
                 obj.parting_dimension ...
                 );
             obj.paint_undercuts( obj.parting_dimension, obj.mesh.interior );
-            obj.cc = bwconncomp( obj.array );
+            obj.cc = bwconncomp( obj.array, conndef( 3, 'minimal' ) );
             obj.count = double( obj.cc.NumObjects );
             obj.volume = obj.mesh.to_stl_volume( sum( obj.array( : ) ) );
             obj.volume_ratio = obj.volume ./ obj.mesh.to_stl_volume( obj.mesh.volume );
