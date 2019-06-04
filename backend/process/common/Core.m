@@ -46,7 +46,7 @@ classdef Core < Process
             assert( ~isempty( obj.threshold_stl_units ) );
             
             obj.printf( 'Evaluating orientation-independent cores...\n' );
-            cc = bwconncomp( obj.create_array(), conndef( 3, 'minimal' ) );
+            cc = bwconncomp( obj.create_array(), conndef( 3, 'maximal' ) );
             obj.array = labelmatrix( cc );
             
             obj.printf( '  Computing Statistics...\n' );
