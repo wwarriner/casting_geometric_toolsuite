@@ -29,7 +29,16 @@ classdef UniformVoxelMesh < modeler.mesh.MeshInterface
                 obj.strides = [ 1 cumprod( obj.shape( 1 : end - 1 ) ) ];
             end
             
-            inds = obj.determine_boundary_indices( ...
+            % get all pairs of neighbors (connectivity)
+            % get all indices touching exterior along each axis
+            %  make into pairs with 0 (0,each)
+            %  append to pairs of neighbors
+            %  
+            % convert connectivity to material ids
+            % get indices of those which are not equal
+            % that is interior boundaries
+            
+            obj.external_boundary_ids = obj.determine_external_boundary_indices( ...
                 obj.dimension_count, ...
                 obj.element_count, ...
                 obj.strides ...
@@ -40,13 +49,13 @@ classdef UniformVoxelMesh < modeler.mesh.MeshInterface
                 base( inds{ i }, i ) = false;
                 
             end
-            obj.connectivity = spdiags2( ...
+            connectivity = spdiags2( ...
                 base, ...
                 obj.strides, ...
                 obj.element_count, ...
                 obj.element_count ...
                 );
-            obj.connectivity = obj.connectivity | obj.connectivity.';
+            [ obj.lhs_connectivity, obj.rhs_connectivity ] = find( connectivity );
             
             obj.material_ids = material_id_array( : );
             
@@ -64,6 +73,13 @@ classdef UniformVoxelMesh < modeler.mesh.MeshInterface
     % see base class definition for documentation
     methods ( Access = public )
         
+        function count = get_dimension_count( obj )
+            
+            count = obj.dimension_count;
+            
+        end
+        
+        
         function count = get_count( obj )
             
             count = obj.element_count;
@@ -71,38 +87,62 @@ classdef UniformVoxelMesh < modeler.mesh.MeshInterface
         end
         
         
-        function connectivity = get_connectivity( obj, indices )
+        function [ lhs, rhs ] = get_connectivity( obj )
             
-            connectivity = obj.connectivity( indices, : );
-            
-        end
-        
-        
-        function material_ids = get_material_ids( obj, indices )
-            
-            material_ids = obj.material_ids( indices );
+            lhs = obj.lhs_connectivity;
+            rhs = obj.rhs_connectivity;
             
         end
         
         
-        function [ lhs, rhs ] = get_distances( obj, indices )
+        function ids = get_unique_material_ids( obj )
             
-            lhs = obj.half_separation .* obj.get_connectivity( indices );
-            rhs = lhs;
-            
-        end
-        
-        
-        function areas = get_interface_areas( obj, indices )
-            
-            areas = obj.interface_area .* obj.get_connectivity( indices );
+            ids = unique( obj.get_material_ids() );
             
         end
         
         
-        function volumes = get_element_volumes( obj, indices )
+        function ids = get_material_ids( obj )
             
-            volumes = obj.element_volume .* ones( size( indices ) );
+            ids = obj.material_ids;
+            
+        end
+        
+        
+        function ids = get_external_boundary_ids( obj )
+            
+            ids = obj.external_boundary_ids;
+            
+        end
+        
+        
+        function ids = get_internal_boundary_ids( obj )
+            
+            ids = obj.internal_boundary_ids;
+            
+        end
+        
+        
+        function [ lhs, rhs ] = get_distances( obj )
+            
+            [ lhs, rhs ] = obj.get_connectivity();
+            lhs = obj.half_separation .* ones( size( lhs ) );
+            rhs = obj.half_separation .* ones( size( rhs ) );
+            
+        end
+        
+        
+        function areas = get_interface_areas( obj )
+            
+            lhs = obj.get_connectivity();
+            areas = obj.interface_area .* ones( size( lhs ) );
+            
+        end
+        
+        
+        function volumes = get_element_volumes( obj )
+            
+            volumes = obj.element_volume .* ones( obj.element_count, 1 );
             
         end
         
@@ -116,8 +156,12 @@ classdef UniformVoxelMesh < modeler.mesh.MeshInterface
         shape
         strides
         
-        connectivity
+        lhs_connectivity
+        rhs_connectivity
+        
         material_ids
+        external_boundary_ids
+        internal_boundary_ids
         
         element_separation
         half_separation
@@ -129,7 +173,7 @@ classdef UniformVoxelMesh < modeler.mesh.MeshInterface
     
     methods ( Access = public, Static )
         
-        function indices = determine_boundary_indices( ...
+        function indices = determine_external_boundary_indices( ...
                 dimension_count, ...
                 element_count, ...
                 strides ...
