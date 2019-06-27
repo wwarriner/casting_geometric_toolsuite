@@ -6,11 +6,11 @@ classdef SolidificationKernel < problem.kernel
         function A = create_coefficient_matrix( obj )
             
             % get connectivity
-            [ r, c ] = find( mesh.get_connectivity() );
+            cc = mesh.get_connectivity();
             
             % get material props
             material_ids = mesh.get_material_ids();
-            unique_material_ids = mesh.get_unique_material_ids();
+            unique_material_ids = unique( material_ids );
             rho = nan( shape( material_ids ) );
             cp = nan( shape( material_ids ) );
             k = nan( shape( material_ids ) );
@@ -27,7 +27,9 @@ classdef SolidificationKernel < problem.kernel
             assert( ~any( isnan( rho ) ) );
             assert( ~any( isnan( cp ) ) );
             assert( ~any( isnan( k ) ) );
-            rho_cp = rho( r ) * cp( r ) + rho( c ) + cp( c );
+            rho_cp = ...
+                rho( cc( :, 1 ) ) * cp( cc( :, 1 ) ) ...
+                + rho( cc( :, 2 ) ) * cp( cc( :, 2 ) );
             k_resistance = 1 ./ k( r ) + 1 ./ k( c );
             
             

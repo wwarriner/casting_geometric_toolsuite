@@ -2,67 +2,18 @@ classdef UniformVoxelMesh < modeler.mesh.MeshInterface
     
     methods ( Access = public )
         
-        % material_id_array is an array of values representing materials
-        % - element_separation is a finite double greater than zero indicating
-        % the separation of voxels from center to center along an axis
-        function obj = UniformVoxelMesh( ...
-                material_id_array, ...
-                element_separation ...
-                )
+        % - material_id_array is an array of values representing materials
+        % - scale is a finite double greater than zero indicating
+        % the separation of voxels from center to center along any one axis
+        function obj = UniformVoxelMesh( element_count )
             
-            assert( isnumeric( material_id_array ) );
+            assert( isa( element_count, 'double' ) );
+            assert( isscalar( element_count ) );
+            assert( isfinite( element_count ) );
+            assert( 0.0 < element_count );
             
-            assert( isa( element_separation, 'double' ) );
-            assert( isfinite( element_separation ) );
-            assert( 0.0 < element_separation );
-            
-            if isvector( material_id_array )
-                obj.dimension_count = 1;
-            else
-                obj.dimension_count = ndims( material_id_array );
-            end
-            obj.element_count = numel( material_id_array );
-            obj.shape = size( material_id_array );
-            if obj.dimension_count == 1
-                obj.strides = 1;
-            else
-                obj.strides = [ 1 cumprod( obj.shape( 1 : end - 1 ) ) ];
-            end
-            
-            % get all pairs of neighbors (connectivity)
-            % get all indices touching exterior along each axis
-            %  make into pairs with 0 (0,each)
-            %  append to pairs of neighbors
-            %  
-            % convert connectivity to material ids
-            % get indices of those which are not equal
-            % that is interior boundaries
-            
-            obj.external_boundary_ids = obj.determine_external_boundary_indices( ...
-                obj.dimension_count, ...
-                obj.element_count, ...
-                obj.strides ...
-                );
-            base = true( obj.element_count, obj.dimension_count );
-            for i = 1 : obj.dimension_count
-                
-                base( inds{ i }, i ) = false;
-                
-            end
-            connectivity = spdiags2( ...
-                base, ...
-                obj.strides, ...
-                obj.element_count, ...
-                obj.element_count ...
-                );
-            [ obj.lhs_connectivity, obj.rhs_connectivity ] = find( connectivity );
-            
-            obj.material_ids = material_id_array( : );
-            
-            obj.element_separation = element_separation;
-            obj.half_separation = 0.5 * obj.element_separation;
-            obj.interface_area = element_separation .^ 2;
-            obj.element_volume = element_separation .^ 3;
+            obj.dimension_count = 3;
+            obj.desired_element_count = element_count;
             
         end
         
@@ -73,76 +24,67 @@ classdef UniformVoxelMesh < modeler.mesh.MeshInterface
     % see base class definition for documentation
     methods ( Access = public )
         
-        function count = get_dimension_count( obj )
+        function add_component( obj, component )
             
-            count = obj.dimension_count;
-            
-        end
-        
-        
-        function count = get_count( obj )
-            
-            count = obj.element_count;
+            obj.component_list = [ obj.component_list component ];
             
         end
         
         
-        function [ lhs, rhs ] = get_connectivity( obj )
+        function assign_default_external_boundary_id( obj, id )
             
-            lhs = obj.lhs_connectivity;
-            rhs = obj.rhs_connectivity;
-            
-        end
-        
-        
-        function ids = get_unique_material_ids( obj )
-            
-            ids = unique( obj.get_material_ids() );
+            obj.default_external_boundary_id = id;
             
         end
         
         
-        function ids = get_material_ids( obj )
+        function assign_external_boundary_id( obj, id, interface_ids )
             
-            ids = obj.material_ids;
-            
-        end
-        
-        
-        function ids = get_external_boundary_ids( obj )
-            
-            ids = obj.external_boundary_ids;
+            obj.external_boundary_id_list( obj, id, interface_ids );
             
         end
         
         
-        function ids = get_internal_boundary_ids( obj )
+        function build( obj )
             
-            ids = obj.internal_boundary_ids;
+            envelope = obj.unify_envelopes();
+            obj.voxels = mesh.Voxels( obj.desired_element_count, envelope );
+            for i = 1 : numel( obj.component_list )
+                
+                component = obj.component_list( i );
+                obj.voxels.paint_fv( component.get_fv(), component.id );
+                
+            end
             
-        end
-        
-        
-        function [ lhs, rhs ] = get_distances( obj )
-            
-            [ lhs, rhs ] = obj.get_connectivity();
-            lhs = obj.half_separation .* ones( size( lhs ) );
-            rhs = obj.half_separation .* ones( size( rhs ) );
-            
-        end
-        
-        
-        function areas = get_interface_areas( obj )
-            
-            lhs = obj.get_connectivity();
-            areas = obj.interface_area .* ones( size( lhs ) );
-            
-        end
-        
-        
-        function volumes = get_element_volumes( obj )
-            
-            volumes = obj.element_volume .* ones( obj.element_count, 1 );
+            % internal
+            external_boundary_indices = obj.determine_external_boundary_indices( ...
+                obj.dimension_count, ...
+                obj.element_count, ...
+                obj.strides ...
+                );
+            obj.connectivity_in = obj.determine_internal_connectivity( ...
+                obj.element_count, ...
+                obj.dimension_count, ...
+                obj.strides, ...
+                external_boundary_indices ...
+                );
+            obj.interface_count_in = size( obj.connectivity_in, 1 );
+            obj.interface_areas_in = obj.determine_interface_areas( ...
+                obj.interface_count_in, ...
+                obj.interface_area ...
+                );
+            obj.distances_fwd_in = obj.determine_distances( ...
+                obj.interface_count_in, ...
+                obj.half_scale ...
+                );
+            obj.distances_bwd_in = obj.determine_distances( ...
+                obj.interface_count_in, ...
+                obj.half_scale ...
+                );
+            obj.is_boundary_in = obj.determine_internal_boundaries( ...
+                obj.connectivity_in, ...
+                obj.material_ids ...
+                );
             
         end
         
@@ -152,26 +94,126 @@ classdef UniformVoxelMesh < modeler.mesh.MeshInterface
     properties ( Access = private )
         
         dimension_count
-        element_count
-        shape
-        strides
+        desired_element_count
+        voxels
         
-        lhs_connectivity
-        rhs_connectivity
+        connectivity_in
+        interface_count_in
+        interface_areas_in
+        distances_fwd_in
+        distances_bwd_in
+        is_boundary_in
         
         material_ids
-        external_boundary_ids
-        internal_boundary_ids
         
-        element_separation
-        half_separation
+        half_scale
         interface_area
         element_volume
+        
+        component_list
         
     end
     
     
     methods ( Access = public, Static )
+        
+        function connectivity = determine_internal_connectivity( ...
+                element_count, ...
+                dimension_count, ...
+                strides, ...
+                is_external_boundary ...
+                )
+            
+            base = true( element_count, dimension_count );
+            for i = 1 : dimension_count
+                base( is_external_boundary{ i }, i ) = false;
+            end
+            connectivity = spdiags2( ...
+                base, ...
+                strides, ...
+                element_count, ...
+                element_count ...
+                );
+            [ lhs, rhs ] = find( connectivity );
+            connectivity = [ lhs rhs ];
+            
+        end
+        
+        
+        function interface_areas = determine_interface_areas( ...
+                interface_count, ...
+                interface_area ...
+                )
+            
+            interface_areas = interface_area .* ones( interface_count, 1 );
+            
+        end
+        
+        
+        function distances = determine_distances( ...
+                interface_count, ...
+                separation_length ...
+                )
+            
+            distances = separation_length .* ones( interface_count, 1 );
+            
+        end
+        
+        
+        function all = determine_connectivity( ...
+                external_boundaries, ...
+                dimension_count, ...
+                element_count, ...
+                strides ...
+                )
+            
+            % external
+            external_count = 0;
+            for i = 1 : 2 * dimension_count
+                
+                external_count = external_count + numel( external_boundaries{ i } );
+                
+            end
+            external = zeros( external_count, 2 );
+            finish = 0;
+            for i = 1 : 2 * dimension_count
+                
+                start = finish + 1;
+                finish = start + numel( external_boundaries{ i } ) - 1;
+                external( start : finish, 2 ) = external_boundaries{ i };
+                
+            end
+            
+            % internal
+            base = true( element_count, dimension_count );
+            for i = 1 : dimension_count
+                
+                base( external_boundaries{ i }, i ) = false;
+                
+            end
+            connectivity = spdiags2( ...
+                base, ...
+                strides, ...
+                element_count, ...
+                element_count ...
+                );
+            [ lhs, rhs ] = find( connectivity );
+            internal = [ lhs rhs ];
+            all = [ internal; external ];
+            
+        end
+        
+        
+        function boundaries = determine_internal_boundaries( ...
+                connectivity, ...
+                material_ids ...
+                )
+            
+            boundaries = material_ids( connectivity( :, 1 ) ) ....
+                == material_ids( connectivity( :, 2 ) );
+            
+        end
+        
         
         function indices = determine_external_boundary_indices( ...
                 dimension_count, ...
@@ -180,12 +222,11 @@ classdef UniformVoxelMesh < modeler.mesh.MeshInterface
                 )
             
             if dimension_count == 1
-                indices = { 1 };
+                indices = { 1, 1 };
                 return;
             end
             
-            ec = element_count;
-            augmented_strides = [ strides( : ); ec ];
+            augmented_strides = [ strides( : ); element_count ];
             
             bases = cell( dimension_count, 1 );
             for i = 1 : dimension_count
@@ -193,12 +234,13 @@ classdef UniformVoxelMesh < modeler.mesh.MeshInterface
                 current_stride = augmented_strides( i );
                 next_stride = augmented_strides( i + 1 );
                 order = 1 : dimension_count;
-                order = [ order( order == i ) order( order ~= i ) ]; 
+                order = [ order( order == i ) order( order ~= i ) ];
                 bases{ i } = permute( 1 : current_stride : next_stride, order );
                 
             end
             
             indices = cell( dimension_count, 1 );
+            %indices = cell( 2 * dimension_count, 1 );
             for i = 1 : dimension_count
                 
                 order = 1 : dimension_count;
@@ -209,7 +251,26 @@ classdef UniformVoxelMesh < modeler.mesh.MeshInterface
                     inds = inds + bases{ order( j ) };
                     
                 end
-                indices{ i } = inds( : ) - dimension_count + 2;
+                inds = inds( : ) - dimension_count + 2;
+                indices{ i } = inds;
+                %indices{ i + dimension_count } = element_count - inds;
+                
+            end
+            
+        end
+        
+    end
+    
+    
+    methods ( Access = private )
+        
+        function envelope = unify_envelopes( obj )
+            
+            envelope = obj.component_list( 1 ).envelope.copy();
+            for i = 2 : numel( obj.component_list )
+                
+                component = obj.component_list( 1 );
+                envelope = envelope.union( component.envelope );
                 
             end
             
