@@ -2,10 +2,11 @@ classdef (Sealed) Envelope < handle & matlab.mixin.Copyable
     
     properties ( GetAccess = public, SetAccess = private )
         
-        min_point;
-        max_point;
-        lengths;
-        volume;
+        dimension_count
+        min_point
+        max_point
+        lengths
+        volume
         
     end
     
@@ -35,6 +36,8 @@ classdef (Sealed) Envelope < handle & matlab.mixin.Copyable
         
         function u = union( obj, envelope )
             
+            assert( obj.dimension_count == envelope.dimension_count );
+            
             new_min = min( obj.min_point, envelope.min_point );
             new_max = max( obj.max_point, envelope.max_point );
             u = geometry.Envelope( new_min, new_max );
@@ -55,6 +58,7 @@ classdef (Sealed) Envelope < handle & matlab.mixin.Copyable
                 assert( isprop( fv, 'vertices' ) );
             end
             
+            obj.dimension_count = size( fv.vertices, 2 );
             obj.min_point = min( fv.vertices, [], 1 );
             obj.max_point = max( fv.vertices, [], 1 );
             
@@ -72,9 +76,10 @@ classdef (Sealed) Envelope < handle & matlab.mixin.Copyable
             
             assert( isnumeric( min ) && isnumeric( max ) );
             assert( isvector( min ) && isvector( max ) );
-            assert( numel( min ) == 3 && numel( max ) == 3 );
+            assert( numel( min ) == numel( max ) );
             assert( all( isfinite( min ) ) && all( isfinite( max ) ) );
             
+            obj.dimension_count = numel( min );
             obj.min_point = min( : ).';
             obj.max_point = max( : ).';
             

@@ -41,7 +41,6 @@ classdef (Sealed) Component < handle
         function assign_id( obj, id )
             
             assert( 0 < id );
-            assert( 1 < id, 'component_id 1 is reserved' );
             obj.id = id;
             
         end

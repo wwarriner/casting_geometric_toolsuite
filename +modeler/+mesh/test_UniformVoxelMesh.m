@@ -26,14 +26,16 @@
 
 %% 3D
 rng( 314159 )
-cavity = geometry.shapes.create_cube( [ -1 -1 -1 ], [ 2 2 2 ], 'cavity' );
-cavity.assign_id( 2 );
-mold = geometry.shapes.create_cube( [ -2 -2 -2 ], [ 4 4 4 ], 'mold' );
-mold.assign_id( 3 );
+%cavity = geometry.shapes.create_cube( [ -1 -1 -1 ], [ 2 2 2 ], 'cavity' );
+%cavity.assign_id( 1 );
+cavity = geometry.Component( which( 'bearing_block.stl' ) );
+cavity.assign_id( 1 );
+mold = geometry.shapes.create_cube( cavity.envelope.min_point - 25, cavity.envelope.lengths + 50, 'mold' );
+mold.assign_id( 2 );
 
 element_count = 1e5;
 ufv = modeler.mesh.UniformVoxelMesh( element_count );
 ufv.add_component( mold );
 ufv.add_component( cavity );
-%ufv.assign_default_external_boundary_id( 1 );
 ufv.build();
+ufv.assign_uniform_external_boundary_id( 1 );
