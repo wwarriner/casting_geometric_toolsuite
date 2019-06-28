@@ -1,12 +1,29 @@
-classdef ExternalInterfaces < handle
+classdef ExternalInterfaces < modeler.mesh.Interfaces
     
-    properties ( Access = public )
+    methods ( Access = public )
         
-        count
-        element_ids
-        areas
-        distances
-        boundary_ids % 1 is 
+        function obj = ExternalInterfaces( ...
+                elements, ...
+                element_ids, ...
+                areas, ...
+                distances ...
+                )
+            
+            obj = obj@modeler.mesh.Interfaces( ...
+                elements, ...
+                element_ids, ...
+                areas, ...
+                distances ...
+                );
+            
+        end
+        
+    end
+    
+    
+    properties ( Access = protected, Constant )
+        
+        COLUMN_COUNT = 1;
         
     end
     
