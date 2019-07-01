@@ -2,11 +2,11 @@ classdef (Sealed) Envelope < handle & matlab.mixin.Copyable
     
     properties ( GetAccess = public, SetAccess = private )
         
-        dimension_count
-        min_point
-        max_point
-        lengths
-        volume
+        dimension_count(1,1) uint64 {mustBePositive} = 1
+        min_point(1,:) double {mustBeReal,mustBeFinite} = []
+        max_point(1,:) double {mustBeReal,mustBeFinite} = []
+        lengths(1,:) double {mustBeReal,mustBeFinite,mustBeNonnegative} = []
+        volume(1,1) double {mustBeReal,mustBeFinite,mustBeNonnegative} = 0.0
         
     end
     
@@ -18,7 +18,11 @@ classdef (Sealed) Envelope < handle & matlab.mixin.Copyable
         % min_point, max_point as two vectors of length 3
         function obj = Envelope( varargin )
             
-            if nargin == 0 || 2 < nargin
+            if nargin == 0
+                return;
+            end
+            
+            if 2 < nargin
                 assert( false )
             end
             

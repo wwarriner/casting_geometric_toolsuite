@@ -2,17 +2,17 @@ classdef (Sealed) Component < handle
     
     properties ( GetAccess = public, SetAccess = private )
         
-        path
-        name
+        path(1,1) string = ""
+        name(1,1) string = ""
         
-        faces
-        vertices
-        normals
+        faces uint64 {mustBePositive} = []
+        vertices double {mustBeReal,mustBeFinite} = []
+        normals double {mustBeReal,mustBeFinite} = []
         
-        envelope
+        envelope(1,1) geometry.Envelope
         
-        id
-        cdata
+        id(1,1) uint64 {mustBePositive} = 1
+        cdata double {mustBeReal,mustBeFinite} = []
         
         
     end
@@ -100,7 +100,6 @@ classdef (Sealed) Component < handle
             
             obj.envelope = geometry.Envelope( obj );
             
-            obj.id = nan;
             obj.cdata = obj.DEFAULT_COLOR;
             
         end
@@ -142,7 +141,6 @@ classdef (Sealed) Component < handle
             
             obj.envelope = geometry.Envelope( obj );
             
-            obj.id = nan;
             obj.cdata = obj.DEFAULT_COLOR;
             
         end
