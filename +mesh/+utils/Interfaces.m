@@ -2,7 +2,7 @@ classdef Interfaces < handle
     
     properties ( GetAccess = public, SetAccess = private )
         
-        elements modeler.mesh.Elements
+        elements mesh.utils.Elements
         
         count(1,1) uint64 {mustBePositive} = 1
         element_ids(:,:) uint64 {mustBePositive} = 1
@@ -55,6 +55,20 @@ classdef Interfaces < handle
             assert( all( 0 < interface_ids ) );
             
             obj.boundary_ids( interface_ids ) = id;
+            
+        end
+        
+        
+        function count = get_id_count( obj )
+            
+            count = numel( obj.get_unique_ids() );
+            
+        end
+        
+        
+        function ids = get_unique_ids( obj )
+            
+            ids = unique( obj.boundary_ids );
             
         end
         

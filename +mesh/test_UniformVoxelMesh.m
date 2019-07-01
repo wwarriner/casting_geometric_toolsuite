@@ -25,7 +25,6 @@
 % v = ufv.get_element_volumes();
 
 %% 3D
-rng( 314159 )
 %cavity = geometry.shapes.create_cube( [ -1 -1 -1 ], [ 2 2 2 ], 'cavity' );
 %cavity.assign_id( 1 );
 cavity = geometry.Component( which( 'bearing_block.stl' ) );
@@ -34,7 +33,7 @@ mold = geometry.shapes.create_cube( cavity.envelope.min_point - 25, cavity.envel
 mold.assign_id( 2 );
 
 element_count = 1e5;
-ufv = modeler.mesh.UniformVoxelMesh( element_count );
+ufv = mesh.UniformVoxelMesh( element_count );
 ufv.add_component( mold );
 ufv.add_component( cavity );
 ufv.build();
