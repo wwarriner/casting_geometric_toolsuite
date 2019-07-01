@@ -2,18 +2,18 @@ classdef Voxels < handle
     
     properties ( Access = public )
         
-        dimension_count
-        element_count
-        scale
-        shape
-        origin
-        strides
-        envelope
+        dimension_count(1,1) uint64 {mustBePositive} = 1
+        element_count(1,1) uint64 {mustBePositive} = 1
+        scale(1,1) double {mustBeReal,mustBeFinite,mustBePositive} = 1
+        shape(1,:) uint64 {mustBeReal,mustBeFinite,mustBePositive} = 1
+        origin(1,:) double {mustBeReal,mustBeFinite} = 1
+        strides(1,:) uint64 {mustBeReal,mustBeFinite,mustBePositive} = 1
+        envelope(1,1) geometry.Envelope
         
-        interface_area
-        element_volume
+        interface_area(1,1) double {mustBeReal,mustBeFinite,mustBePositive} = 1
+        element_volume(1,1) double {mustBeReal,mustBeFinite,mustBePositive} = 1
         
-        array
+        array uint64 = []
         
     end
     
@@ -25,20 +25,20 @@ classdef Voxels < handle
             obj.desired_element_count = element_count;
             obj.envelope = envelope;
             obj.dimension_count = envelope.dimension_count;
-            obj.scale = mesh.utils.compute_voxel_mesh_scale( ...
+            obj.scale = obj.compute_scale( ...
                 obj.envelope, ...
                 obj.desired_element_count ...
                 );
-            obj.desired_shape = mesh.utils.compute_voxel_mesh_desired_shape( ...
+            obj.desired_shape = obj.compute_desired_shape( ...
                 obj.envelope, ...
                 obj.scale ...
                 );
-            obj.origin = mesh.utils.compute_voxel_mesh_origin( ...
+            obj.origin = obj.compute_origin( ...
                 obj.envelope, ...
                 obj.desired_shape, ...
                 obj.scale ...
                 );
-            obj.points = mesh.utils.compute_voxel_mesh_points( ...
+            obj.points = obj.compute_points( ...
                 obj.desired_shape, ...
                 obj.origin, ...
                 obj.scale ...
@@ -121,9 +121,9 @@ classdef Voxels < handle
             end
             connectivity = spdiags2( ...
                 base, ...
-                obj.strides, ...
-                obj.element_count, ...
-                obj.element_count ...
+                double( obj.strides ), ...
+                double( obj.element_count ), ...
+                double( obj.element_count ) ...
                 );
             [ lhs, rhs ] = find( connectivity );
             pairs = [ lhs rhs ];
@@ -146,8 +146,47 @@ classdef Voxels < handle
         
         function array = rasterize( obj, fv, value )
             
-            array = mesh.utils.rasterize_fv( fv, obj.points );
+            array = mesh.voxel.rasterize_fv( fv, obj.points );
             array( array ~= 0 ) = value;
+            
+        end
+        
+    end
+    
+    
+    methods ( Access = private, Static )
+        
+        function scale = compute_scale( envelope, count )
+            
+            scale = ( envelope.volume / count ) .^ ( 1.0 / 3.0 );
+            
+        end
+        
+        
+        function shape = compute_desired_shape( envelope, scale )
+            
+            shape = floor( envelope.lengths ./ scale );
+            
+        end
+        
+        
+        function origin = compute_origin( envelope, shape, scale )
+            
+            mesh_lengths = shape .* scale;
+            origin_offsets = ( mesh_lengths - envelope.lengths ) ./ 2;
+            origin = envelope.min_point - origin_offsets;
+            
+        end
+        
+        
+        function points = compute_points( shape, origin, scale )
+            
+            points = arrayfun( ...
+                @(x,y) x + linspace( 0, scale, y ) .* y, ...
+                origin, ...
+                shape, ...
+                'uniformoutput', false ...
+                );
             
         end
         
