@@ -3,7 +3,33 @@ classdef SolidificationKernel < problem.kernel
     % abstrac superclass methods
     methods ( Access = public )
         
-        function A = create_coefficient_matrix( obj )
+        function [ A, b ] = create_system( obj )
+            
+            external_bc_values = zeros( 
+            
+            % create external BC vector
+            %  zero vector of size external interface count by 1
+            %  loop over external BC ids
+            %   apply BC to interfaces with BC id and add to vector
+            
+            % create internal BC vector
+            %  zero vector of size internal interface count by 1
+            %  loop over internal BC ids
+            %   apply BC to interfaces with BC id and add to vector
+            
+            % create internal coefficients
+            %  material property lookup
+            %  for each property of interest...
+            %   zero vector of size element count by 1
+            %   loop over material ids
+            %    apply property of material to elements with material id
+            %    and assign to vector
+            %  interface lookup
+            %   apply material to 
+            
+            
+            
+            
             
             % get connectivity
             cc = mesh.get_connectivity();
@@ -85,13 +111,6 @@ classdef SolidificationKernel < problem.kernel
             %  get pair of lists of indices
             %  get temperatures at indices
             %  get boundary 
-            
-        end
-        
-        
-        function b = create_constant_vector( obj )
-            
-            
             
         end
         
