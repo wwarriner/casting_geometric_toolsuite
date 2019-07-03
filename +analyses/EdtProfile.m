@@ -52,6 +52,8 @@ classdef EdtProfile < handle
             if nargin < 2
                 mask_optional = true( size( obj.values ) );
             end
+            assert( islogical( mask_optional ) );
+            assert( all( size( obj.values ) == size( mask_optional ) ) );
             
             values = obj.values;
             values( ~mask_optional ) = 0;
