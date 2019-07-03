@@ -21,28 +21,10 @@ classdef (Sealed) EdtProfile < Process
         end
         
         function run( obj )
-            if ~isempty( obj.results )
-                mesh_key = ProcessKey( Mesh.NAME );
-                obj.mesh = obj.results.get( mesh_key );
-            end
-            assert( ~isempty( obj.mesh ) );
-            
-            obj.printf( 'Computing EDT profile...\n' );
-            obj.edt = analyses.EdtProfile( ...
-                obj.mesh.surface, ...
-                obj.mesh.exterior ...
-                );
-            obj.edt.scale( obj.mesh.scale );
-            obj.printf( 'Filtering profile...\n' );
-            obj.filter = analyses.FilteredProfile( ...
-                obj.scaled, ...
-                obj.compute_filter_amount( obj.mesh.scale ) ...
-                );
-            obj.printf( '  Computing statistics...\n' );
-            [ obj.minimum_thickness, obj.maximum_thickness ] = ...
-                obj.thickness_analysis( obj.scaled_interior );
-            obj.thickness_ratio = ...
-                1 - ( obj.minimum_thickness / obj.maximum_thickness );
+            obj.obtain_inputs();
+            obj.prepare_edt();
+            obj.prepare_filter();
+            obj.compute_statistics();
         end
         
         function legacy_run( obj, mesh )
@@ -117,9 +99,47 @@ classdef (Sealed) EdtProfile < Process
     
     
     properties ( Access = private )
-        mesh        
-        edt
-        filter
+        mesh(1,1) Mesh
+        edt(1,1) analyses.EdtProfile
+        filter(1,1) analyses.FilteredProfile
+    end
+    
+    
+    methods ( Access = private )
+        
+        function obtain_inputs( obj )
+            if ~isempty( obj.results )
+                mesh_key = ProcessKey( Mesh.NAME );
+                obj.mesh = obj.results.get( mesh_key );
+            end
+            assert( ~isempty( obj.mesh ) );
+        end
+        
+        function prepare_edt( obj )
+            obj.printf( 'Computing EDT profile...\n' );
+            obj.edt = analyses.EdtProfile( ...
+                obj.mesh.surface, ...
+                obj.mesh.exterior ...
+                );
+            obj.edt.scale( obj.mesh.scale );
+        end
+        
+        function prepare_filter( obj )
+            obj.printf( 'Filtering profile...\n' );
+            obj.filter = analyses.FilteredProfile( ...
+                obj.scaled, ...
+                obj.compute_filter_amount( obj.mesh.scale ) ...
+                );
+        end
+        
+        function compute_statistics( obj )
+            obj.printf( '  Computing statistics...\n' );
+            [ obj.minimum_thickness, obj.maximum_thickness ] = ...
+                obj.thickness_analysis( obj.scaled_interior );
+            obj.thickness_ratio = ...
+                1 - ( obj.minimum_thickness / obj.maximum_thickness );
+        end
+        
     end
     
     
