@@ -1,12 +1,11 @@
 classdef (Sealed) Segmentation < Process
+    % Segments encapsulates the behavior and data of segments relating to
+    % castings. These segments are similar to isolated heavy sections, and can
+    % be thought of as sections that each must be independently fed to ensure
+    % sound solidification.
     
     properties ( GetAccess = public, SetAccess = private )
-        array
         count
-    end
-    
-    properties ( Access = public, Constant )
-        BOUNDARY_VALUE = -1;
     end
     
     methods ( Access = public )
@@ -16,39 +15,8 @@ classdef (Sealed) Segmentation < Process
         end
         
         function run( obj )
-            if ~isempty( obj.results )
-                mesh_key = ProcessKey( Mesh.NAME );
-                obj.mesh = obj.results.get( mesh_key );
-            end
-            assert( ~isempty( obj.mesh ) );
-            
-            if ~isempty( obj.results )
-                geometric_profile_key = ProcessKey( GeometricProfile.NAME );
-                obj.geometric_profile = obj.results.get( geometric_profile_key );
-            end
-            assert( ~isempty( obj.geometric_profile ) );
-            
-            if ~isempty( obj.options )
-                FALLBACK_USE_THERMAL_PROFILE = false;
-                obj.use_thermal_profile = obj.options.get( ...
-                    'processes.thermal_profile.use', ...
-                    FALLBACK_USE_THERMAL_PROFILE ...
-                    );
-            end
-            assert( ~isempty( obj.use_thermal_profile ) );
-            
-            obj.printf( 'Segmenting...\n' );
-            if obj.use_thermal_profile
-                thermal_profile_key = ProcessKey( ThermalProfile.NAME );
-                obj.profile = obj.results.get( thermal_profile_key );
-            else
-                obj.profile = obj.geometric_profile.scaled_interior;
-            end
-            assert( ~isempty( obj.profile ) );
-            obj.segments = analyses.Segments( ...
-                obj.profile, ...
-                obj.mesh.interior ...
-                );
+            obj.obtain_inputs();
+            obj.prepare_segments();
         end
         
         function legacy_run( obj, geometric_profile, mesh, thermal_profile )
@@ -128,6 +96,15 @@ classdef (Sealed) Segmentation < Process
     end
     
     
+    methods % getters
+        
+        function value = get.count( obj )
+            value = obj.segments.get_count();
+        end
+        
+    end
+    
+    
     methods ( Access = public, Static )
         
         function name = NAME()
@@ -167,6 +144,49 @@ classdef (Sealed) Segmentation < Process
         use_thermal_profile(1,1) logical = false
         profile double {mustBeReal,mustBeFinite}
         segments analyses.Segments
+    end
+    
+    
+    methods ( Access = private )
+        
+        function obtain_inputs( obj )
+            if ~isempty( obj.results )
+                mesh_key = ProcessKey( Mesh.NAME );
+                obj.mesh = obj.results.get( mesh_key );
+            end
+            assert( ~isempty( obj.mesh ) );
+            
+            if ~isempty( obj.results )
+                geometric_profile_key = ProcessKey( GeometricProfile.NAME );
+                obj.geometric_profile = obj.results.get( geometric_profile_key );
+            end
+            assert( ~isempty( obj.geometric_profile ) );
+            
+            if ~isempty( obj.options )
+                FALLBACK_USE_THERMAL_PROFILE = false;
+                obj.use_thermal_profile = obj.options.get( ...
+                    'processes.thermal_profile.use', ...
+                    FALLBACK_USE_THERMAL_PROFILE ...
+                    );
+            end
+            assert( ~isempty( obj.use_thermal_profile ) );
+        end
+        
+        function prepare_segments( obj )
+            obj.printf( 'Segmenting...\n' );
+            if obj.use_thermal_profile
+                thermal_profile_key = ProcessKey( ThermalProfile.NAME );
+                obj.profile = obj.results.get( thermal_profile_key );
+            else
+                obj.profile = obj.geometric_profile.scaled_interior;
+            end
+            assert( ~isempty( obj.profile ) );
+            obj.segments = analyses.Segments( ...
+                obj.profile, ...
+                obj.mesh.interior ...
+                );
+        end
+        
     end
     
     
