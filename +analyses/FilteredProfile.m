@@ -1,4 +1,7 @@
 classdef FilteredProfile < handle
+    % Filters the input profile by the input amount using the imhmax
+    % morphological image reconstruction algorithm. Filtering occurs on both the
+    % positive and negative values independently using the same input amount.
     
     methods ( Access = public )
         
@@ -7,6 +10,9 @@ classdef FilteredProfile < handle
         % which to reduce local peak regions by, in the same units as values in
         % @profile
         function obj = FilteredProfile( profile, amount )
+            if nargin == 0
+                return;
+            end
             
             assert( isa( profile, 'double' ) );
             assert( isreal( profile ) );
@@ -22,45 +28,31 @@ classdef FilteredProfile < handle
             obj.values = ...
                 obj.filter_masked( profile, mask, amount ) ...
                 - obj.filter_masked( -profile, ~mask, amount );
-            
         end
-        
-        
-        function shape = get_size( obj )
-            
-            shape = size( obj.values );
-            
-        end
-        
         
         % - output values is ND array of signed distance field
         % - mask_optional is a logical array of size get_size() where false
         % elements are set to 0 in output values
         function values = get( obj, mask_optional )
-            
             if nargin < 2
                 mask_optional = true( size( obj.values ) );
             end
             
             values = obj.values;
             values( ~mask_optional ) = 0;
-            
         end
         
     end
     
     
     properties ( Access = private )
-        
         values double {mustBeReal,mustBeFinite} = [];
-        
     end
     
     
     methods ( Access = private, Static )
         
         function array = filter_masked( array, mask, amount )
-            
             array( ~mask ) = 0;
             max_value = max( array( : ) );
             % normalized because imhmax only operates on matrices scaled in the
@@ -69,7 +61,6 @@ classdef FilteredProfile < handle
                 array ./ max_value, ...
                 amount ./ max_value ...
                 );
-            
         end
         
     end

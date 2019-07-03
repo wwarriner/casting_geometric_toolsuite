@@ -13,6 +13,9 @@ classdef EdtProfile < handle
         % reflects regions to be marked with negative distance. Default gives 
         % positive distance everywhere.
         function obj = EdtProfile( features, mask )
+            if nargin == 0
+                return;
+            end
             
             assert( islogical( features ) );
             
@@ -25,14 +28,12 @@ classdef EdtProfile < handle
             v = bwdist( features );
             v( mask ) = -v( mask );
             obj.values = v;
-            
         end
         
         
         % @scale scales the values in the distance field by @factor.
         % - @factor is a real, positive, finite, scalar double.
         function scale( obj, factor )
-            
             assert( isscalar( factor ) );
             assert( isa( factor, 'double' ) );
             assert( isreal( factor ) );
@@ -40,7 +41,6 @@ classdef EdtProfile < handle
             assert( 0.0 < factor );
             
             obj.values = obj.values .* factor;
-            
         end
         
         
@@ -49,23 +49,19 @@ classdef EdtProfile < handle
         % - @mask_optional is a logical array of size @get_size() where false 
         % elements are set to 0 in @values. Default is all true.
         function values = get( obj, mask_optional )
-            
             if nargin < 2
                 mask_optional = true( size( obj.values ) );
             end
             
             values = obj.values;
             values( ~mask_optional ) = 0;
-            
         end
         
     end
     
     
     properties ( Access = private )
-        
         values double {mustBeReal,mustBeFinite} = [];
-        
     end
     
 end
