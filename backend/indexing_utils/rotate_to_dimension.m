@@ -4,7 +4,7 @@
 function [ array, inverse ] = rotate_to_dimension( dimension, array, position )
 
 if nargin < 3
-    position = 2;
+    position = 1;
 end
 
 rotated_dimensions = circshift( 1 : ndims( array ), position - dimension );
