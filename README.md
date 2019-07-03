@@ -25,7 +25,6 @@ Added on 28 Nov 2018 is an orientation plotting tool. The tool plots casting ori
 # Sources
 
 #### External Libraries
-- [3D Euclidean Distance Transform for Variable Data Aspect Ratio](https://www.mathworks.com/matlabcentral/fileexchange/15455-3d-euclidean-distance-transform-for-variable-data-aspect-ratio) (bwdistsc, BSD)
 - [CDF Quantiles](https://www.mathworks.com/matlabcentral/fileexchange/70274-cdf-quantiles) (matlab_quantiles, UNLICENSE)
 - [Mesh voxelization](https://www.mathworks.com/matlabcentral/fileexchange/27390-mesh-voxelisation) (Mesh_voxelization, BSD)
 - [A suite of minimal bounding objects](https://www.mathworks.com/matlabcentral/fileexchange/34767-a-suite-of-minimal-bounding-objects) (MinBoundSuite, BSD)
