@@ -39,8 +39,8 @@ classdef ThinWall < Process
                 mesh_key = ProcessKey( Mesh.NAME );
                 obj.mesh = obj.results.get( mesh_key );
                 
-                edt_profile_key = ProcessKey( EdtProfile.NAME );
-                obj.profile = obj.results.get( edt_profile_key );
+                geometric_profile_key = ProcessKey( GeometricProfile.NAME );
+                obj.profile = obj.results.get( geometric_profile_key );
             end
             assert( ~isempty( obj.component ) );
             assert( ~isempty( obj.mesh ) );
@@ -56,13 +56,13 @@ classdef ThinWall < Process
             assert( ~isempty( obj.sweep_coefficient ) );
             
             obj.printf( 'Locating thin wall sections...\n' );
-            edt = ThinWall.select_edt( obj.profile, obj.region );
-            padding = ones( 1, ndims( edt ) );
+            profile = ThinWall.select_profile( obj.profile, obj.region );
+            padding = ones( 1, ndims( profile ) );
             border_value = ThinWall.select_border_value( obj.region );
             mask = ThinWall.select_mask( obj.mesh, obj.region );
             mask = padarray( mask, padding, border_value, 'both' );
             
-            other_wall = edt > obj.threshold_in_component_units;
+            other_wall = profile > obj.threshold_in_component_units;
             other_wall = padarray( other_wall, padding, border_value, 'both' );
             
             obj.printf( '  Forward sweep...\n' );
@@ -189,17 +189,17 @@ classdef ThinWall < Process
         end
         
         
-        function edt = select_edt( EdtProfile, region )
+        function profile = select_profile( profile, region )
             
-            edt = EdtProfile.scaled;
+            profile = profile.scaled;
             if strcmpi( region, ThinWall.CAVITY )
                 % do nothing
             elseif strcmpi( region, ThinWall.DIE ) || strcmpi( region, ThinWall.MOLD )
-                edt = -edt;
+                profile = -profile;
             else
                 assert( false );
             end
-            edt( edt < 0 ) = 0;
+            profile( profile < 0 ) = 0;
             
         end
         

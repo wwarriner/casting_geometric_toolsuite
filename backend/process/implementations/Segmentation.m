@@ -3,7 +3,7 @@ classdef (Sealed) Segmentation < Process
     properties ( GetAccess = public, SetAccess = private )
         %% inputs
         mesh
-        edt_profile
+        geometric_profile
         use_thermal_profile
         thermal_profile
         
@@ -37,11 +37,11 @@ classdef (Sealed) Segmentation < Process
                 mesh_key = ProcessKey( Mesh.NAME );
                 obj.mesh = obj.results.get( mesh_key );
                 
-                edt_profile_key = ProcessKey( EdtProfile.NAME );
-                obj.edt_profile = obj.results.get( edt_profile_key );
+                geometric_profile_key = ProcessKey( GeometricProfile.NAME );
+                obj.geometric_profile = obj.results.get( geometric_profile_key );
             end
             assert( ~isempty( obj.mesh ) );
-            assert( ~isempty( obj.edt_profile ) );
+            assert( ~isempty( obj.geometric_profile ) );
             
             if ~isempty( obj.options )
                 FALLBACK_USE_THERMAL_PROFILE = false;
@@ -62,7 +62,7 @@ classdef (Sealed) Segmentation < Process
             if obj.use_thermal_profile
                 segmentation_base = obj.thermal_profile.thermal_modulus_filtered; % modulus-like
             else
-                segmentation_base = obj.edt_profile.filtered_interior;
+                segmentation_base = obj.geometric_profile.filtered_interior;
             end
             segmentation_array = Segmentation.generate_array( ...
                 segmentation_base, ...
@@ -73,7 +73,7 @@ classdef (Sealed) Segmentation < Process
             obj.segments = obj.generate_segments( ...
                 segmentation_base, ...
                 segmentation_array, ...
-                obj.edt_profile.scaled_interior, ...
+                obj.geometric_profile.scaled_interior, ...
                 obj.mesh, ...
                 obj.count ...
                 );
@@ -82,10 +82,10 @@ classdef (Sealed) Segmentation < Process
         end
         
         
-        function legacy_run( obj, edt_profile, mesh, thermal_profile )
+        function legacy_run( obj, geometric_profile, mesh, thermal_profile )
             
             obj.mesh = mesh;
-            obj.edt_profile = edt_profile;
+            obj.geometric_profile = geometric_profile;
             if 3 < nargin
                 obj.use_thermal_profile = true;
                 obj.thermal_profile = thermal_profile;
@@ -103,7 +103,7 @@ classdef (Sealed) Segmentation < Process
         end
         
         
-        function neighbor_pairs = get_neighbor_pairs( obj, EdtProfile, Mesh )
+        function neighbor_pairs = get_neighbor_pairs( obj, GeometricProfile, Mesh )
             
             if obj.count == 1
                 neighbor_pairs = SegmentPair.empty( 0 );
@@ -120,7 +120,7 @@ classdef (Sealed) Segmentation < Process
                     pair = SegmentPair( ...
                         obj, ...
                         [ first second ], ...
-                        EdtProfile, ...
+                        GeometricProfile, ...
                         Mesh ...
                         );
                     if ~pair.are_neighbors
@@ -252,7 +252,7 @@ classdef (Sealed) Segmentation < Process
                 else
                     base_array = edt_array;
                     base_threshold = ...
-                        obj.edt_profile.filter_amount;
+                        obj.geometric_profile.filter_amount;
                 end
                 
                 Segments( i ) = Segment( ...

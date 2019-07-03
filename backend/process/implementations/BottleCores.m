@@ -29,8 +29,8 @@ classdef (Sealed) BottleCores < Process
                 mesh_key = ProcessKey( Mesh.NAME );
                 obj.mesh = obj.results.get( mesh_key );
                 
-                edt_profile_key = ProcessKey( EdtProfile.NAME );
-                obj.profile = obj.results.get( edt_profile_key );
+                geometric_profile_key = ProcessKey( GeometricProfile.NAME );
+                obj.profile = obj.results.get( geometric_profile_key );
             end
             assert( ~isempty( obj.mesh ) );
             assert( ~isempty( obj.profile ) );

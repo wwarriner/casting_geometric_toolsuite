@@ -1,4 +1,4 @@
-classdef (Sealed) EdtProfile < Process
+classdef (Sealed) GeometricProfile < Process
     % GeometricProfile encapsulates the behavior and data of a geometric
     % approach to the solidification profile of castings
     
@@ -16,7 +16,7 @@ classdef (Sealed) EdtProfile < Process
     
     methods ( Access = public )
         
-        function obj = EdtProfile( varargin )
+        function obj = GeometricProfile( varargin )
             obj = obj@Process( varargin{ : } );
         end
         
