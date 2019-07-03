@@ -1,0 +1,77 @@
+classdef FilteredProfile < handle
+    
+    methods ( Access = public )
+        
+        % - @profile is an ND double array similar to a signed distance field
+        % - @amount is a positive double scalar indicating the amount to by
+        % which to reduce local peak regions by, in the same units as values in
+        % @profile
+        function obj = FilteredProfile( profile, amount )
+            
+            assert( isa( profile, 'double' ) );
+            assert( isreal( profile ) );
+            assert( all( isfinite( profile ), 'all' ) );
+            
+            assert( isscalar( amount ) );
+            assert( isa( amount, 'double' ) );
+            assert( isreal( amount ) );
+            assert( isfinite( amount ) );
+            assert( 0.0 < amount );
+            
+            mask = profile >= 0;
+            obj.values = ...
+                obj.filter_masked( profile, mask, amount ) ...
+                - obj.filter_masked( -profile, ~mask, amount );
+            
+        end
+        
+        
+        function shape = get_size( obj )
+            
+            shape = size( obj.values );
+            
+        end
+        
+        
+        % - output values is ND array of signed distance field
+        % - mask_optional is a logical array of size get_size() where false
+        % elements are set to 0 in output values
+        function values = get( obj, mask_optional )
+            
+            if nargin < 2
+                mask_optional = true( size( obj.values ) );
+            end
+            
+            values = obj.values;
+            values( ~mask_optional ) = 0;
+            
+        end
+        
+    end
+    
+    
+    properties ( Access = private )
+        
+        values double {mustBeReal,mustBeFinite} = [];
+        
+    end
+    
+    
+    methods ( Access = private, Static )
+        
+        function array = filter_masked( array, mask, amount )
+            
+            array( ~mask ) = 0;
+            max_value = max( array( : ) );
+            % normalized because imhmax only operates on matrices scaled in the
+            % range [ 0, 1 ]
+            array = max_value .* imhmax( ...
+                array ./ max_value, ...
+                amount ./ max_value ...
+                );
+            
+        end
+        
+    end
+    
+end

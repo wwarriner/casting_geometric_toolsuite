@@ -252,7 +252,7 @@ classdef (Sealed) Segmentation < Process
                 else
                     base_array = edt_array;
                     base_threshold = ...
-                        obj.edt_profile.filter_threshold_interior;
+                        obj.edt_profile.filter_amount;
                 end
                 
                 Segments( i ) = Segment( ...
