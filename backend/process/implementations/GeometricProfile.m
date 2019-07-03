@@ -100,8 +100,8 @@ classdef (Sealed) GeometricProfile < Process
     
     properties ( Access = private )
         mesh(1,1) Mesh
-        edt(1,1) analyses.EdtProfile
-        filter(1,1) analyses.FilteredProfile
+        edt analyses.EdtProfile
+        filter analyses.FilteredProfile
     end
     
     
