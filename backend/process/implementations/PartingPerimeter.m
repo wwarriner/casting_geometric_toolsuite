@@ -57,6 +57,8 @@ classdef (Sealed) PartingPerimeter < Process
             end        
             assert( ~isempty( obj.optimize ) );
             
+            ppp = analyses.PartingPerimeter( obj.mesh.interior );
+            
             % PARTING PERIMETER
             obj.printf( ...
                 'Locating parting perimeter for axis %d...\n', ...
