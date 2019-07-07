@@ -35,11 +35,11 @@ classdef Elements < handle
     methods % getters
         
         function value = get.count( obj )
-            value = numel( obj.component_ids );
+            value = uint64( numel( obj.component_ids ) );
         end
         
         function value = get.material_id_count( obj )
-            value = numel( obj.material_id_list );
+            value = uint64( numel( obj.material_id_list ) );
         end
         
         function value = get.material_id_list( obj )

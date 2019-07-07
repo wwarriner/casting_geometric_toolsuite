@@ -40,6 +40,9 @@ classdef (Abstract) MeshInterface < handle
         % - @values are the values of the applied function
         values = apply_material_property_fn( obj, fn );
         
+        ids = get_element_ids( obj );
+        count = get_element_count( obj );
+        
     end
     
 end

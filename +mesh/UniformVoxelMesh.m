@@ -130,6 +130,14 @@ classdef UniformVoxelMesh < mesh.MeshInterface
             end
         end
         
+        function ids = get_element_ids( obj )
+            ids = obj.internal_interfaces.element_ids;
+        end
+        
+        function count = get_element_count( obj )
+            count = obj.elements.count;
+        end
+        
     end
     
     

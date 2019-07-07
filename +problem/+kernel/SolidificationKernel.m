@@ -44,6 +44,11 @@ classdef SolidificationKernel < handle
             
             int_res = int_res + int_bc;
             
+            ids = mesh.get_element_ids();
+            A = sparse2( ids( :, 1 ), ids( :, 2 ), int_res, mesh.get_element_count(), mesh.get_element_count() );
+            A = A + A.';
+            A = A + spdiags2( sum( A, 2 ), 0, A );
+            
 %             external_bc_function = @
 %             
 %             external_bc_values = obj.mesh.apply_external_bc_fns( 
