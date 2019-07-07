@@ -6,7 +6,6 @@ classdef UniformVoxelMesh < mesh.MeshInterface
         % - scale is a finite double greater than zero indicating
         % the separation of voxels from center to center along any one axis
         function obj = UniformVoxelMesh( element_count )
-            
             assert( isa( element_count, 'double' ) );
             assert( isscalar( element_count ) );
             assert( isfinite( element_count ) );
@@ -14,7 +13,6 @@ classdef UniformVoxelMesh < mesh.MeshInterface
             
             obj.dimension_count = 3;
             obj.desired_element_count = element_count;
-            
         end
         
     end
@@ -25,14 +23,10 @@ classdef UniformVoxelMesh < mesh.MeshInterface
     methods ( Access = public )
         
         function add_component( obj, component )
-            
             obj.component_list = [ obj.component_list component ];
-            
         end
         
-        
         function build( obj )
-            
             obj.material_ids = obj.get_material_ids();
             obj.voxels = obj.paint_voxels();
             volumes = obj.voxels.element_volume .* ones( obj.voxels.element_count, 1 );
@@ -41,7 +35,6 @@ classdef UniformVoxelMesh < mesh.MeshInterface
                 obj.material_ids( obj.voxels.array( : ) ), ...
                 volumes ...
                 );
-            
             % external
             element_ids = cell2mat( obj.voxels.get_external_elements() );
             areas = obj.voxels.interface_area .* ones( size( element_ids ) );
@@ -52,7 +45,6 @@ classdef UniformVoxelMesh < mesh.MeshInterface
                 areas, ...
                 distances ...
                 );
-            
             % internal
             element_ids = obj.voxels.get_neighbor_pairs();
             areas = obj.voxels.interface_area .* ones( size( element_ids, 1 ), 1 );
@@ -63,124 +55,127 @@ classdef UniformVoxelMesh < mesh.MeshInterface
                 areas, ...
                 distances ...
                 );
-            
         end
-        
         
         function assign_uniform_external_boundary_id( obj, id )
-            
             obj.external_interfaces.assign_uniform_id( id );
-            
         end
-        
         
         function assign_external_boundary_id( obj, id, interface_ids )
-            
             obj.external_interfaces.assign_id( id, interface_ids );
-            
         end
         
-        
         function values = apply_external_bc_fns( obj, fns )
-            
             values = zeros( obj.external_interfaces.count, 1 );
             ids = obj.external_interfaces.get_unique_boundary_ids();
             for i = 1 : obj.external_interfaces.get_boundary_id_count()
-                
                 id = ids( i );
                 fn = fns{ i };
                 values( ids == id ) = fn( obj.elements.material_ids( ...
                     obj.external_interfaces.element_ids( ids == id ) ...
                     ) );
-                
             end
-            
         end
         
-        
-        function values = apply_internal_bcs( obj, fns )
+        function values = apply_internal_bc_fns( obj, fns )
+            if isa( fns, 'function_handle' )
+                fns = repmat( { fns }, [ obj.elements.material_id_count 1 ] );
+            end
             
             values = zeros( obj.internal_interfaces.count, 1 );
-            ids = obj.internal_interfaces.get_unique_boundary_ids();
-            for i = 1 : obj.internal_interfaces.get_boundary_id_count()
-                
-                id = ids( i );
+            m_ids = sort( obj.elements.material_ids( obj.internal_interfaces.element_ids ), 2 );
+            id_list = obj.internal_interfaces.bc_id_list;
+            for i = 1 : obj.internal_interfaces.bc_id_count
+                ids = id_list( i, : );
                 fn = fns{ i };
-                values( ids == id ) = fn( obj.elements.material_ids( ...
-                    obj.internal_interfaces.element_ids( ids == id ) ...
-                    ) );
-                
+                locations = all( m_ids == ids, 2 );
+                e_ids = obj.internal_interfaces.element_ids( locations, : );
+                values( locations ) = fn( ids, e_ids );
             end
-            
         end
         
+        function values = apply_internal_interface_fns( obj, fn )
+            values = fn( ...
+                obj.internal_interfaces.element_ids, ...
+                obj.internal_interfaces.distances, ...
+                obj.internal_interfaces.areas ...
+                );
+        end
         
+        % @apply_material_property_fn applies the material property
+        % function or functions in @fns to the list of elements in the
+        % mesh, returning a vector with the same number of elements as the
+        % underlying mesh.
+        % - @fns must be either a single function handle, applied uniformly
+        % to all material ids, or a cell array of function handles, one per
+        % material id in the mesh. Each function handle in @fns must be of
+        % the form `values = fn( id, locations )` where id is a scalar
+        % material id, locations is a logical vector indicating the
+        % elements with that material id (for e.g. field lookup), and
+        % values is a list of returns values of the same size as locations
+        % assigned to @values in the appropriate elements.
+        % - @values are the values of the applied function
         function values = apply_material_property_fn( obj, fns )
-            
-            values = zeros( obj.elements.count, 1 );
-            ids = obj.elements.get_unique_material_ids();
-            for i = 1 : obj.elements.get_material_id_count()
-                
-                id = ids( i );
-                fn = fns{ i };
-                values( obj.elements.material_ids == id ) = fn( obj.elements.material_ids == id );
-                
+            if isa( fns, 'function_handle' )
+                fns = repmat( { fns }, [ obj.elements.material_id_count 1 ] );
             end
             
+            values = zeros( obj.elements.count, 1 );
+            ids = obj.elements.material_id_list;
+            for i = 1 : obj.elements.material_id_count
+                id = ids( i );
+                locations = obj.elements.material_ids == id;
+                fn = fns{ i };
+                values( locations ) = fn( id, locations );
+            end
+        end
+        
+    end
+    
+    
+    % class specific methods
+    methods ( Access = public )
+        
+        function field = reshape( obj, values )
+            field = reshape( values, obj.voxels.shape );
         end
         
     end
     
     
     properties ( Access = private )
-        
         dimension_count
         component_list
         voxels
         material_ids
-        
         elements
         internal_interfaces
         external_interfaces
-        
         desired_element_count
-        
     end
     
     
     methods ( Access = private )
         
         function ids = get_material_ids( obj )
-            
             ids = [ obj.component_list.id ];
-            
         end
         
-        
         function voxels = paint_voxels( obj )
-            
             envelope = obj.unify_envelopes();
             voxels = mesh.voxel.Voxels( obj.desired_element_count, envelope );
             for i = 1 : numel( obj.component_list )
-                
                 c = obj.component_list( i );
                 voxels.paint( c.get_fv(), i );
-                
             end
-            
         end
         
-        
         function envelope = unify_envelopes( obj )
-            
             envelope = obj.component_list( 1 ).envelope.copy();
             for i = 2 : numel( obj.component_list )
-                
                 component = obj.component_list( 1 );
                 envelope = envelope.union( component.envelope );
-                
             end
-            
         end
         
     end
