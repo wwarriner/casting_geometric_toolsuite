@@ -1,73 +1,99 @@
 classdef PartingPerimeter < handle
     
+    properties ( GetAccess = public, SetAccess = private, Dependent )
+        count
+        label_matrix
+        perimeter
+    end
+    
+
+    properties ( GetAccess = public, SetAccess = private )
+        limits(:,:,2) double {mustBeReal,mustBeFinite,mustBeNonnegative} = [];
+    end
+    
+    
     methods ( Access = public )
         
-        function obj = PartingPerimeter( interior )
+        function obj = PartingPerimeter( interior, projected_perimeter )
             if nargin == 0
                 return;
             end
             
+            assert( ndims( interior ) == 3 );
             assert( islogical( interior ) );
             
-            % project
-            p_interior = any( interior, 3 );
-            % area
+            assert( ismatrix( projected_perimeter ) );
+            assert( islogical( projected_perimeter ) );
             
-            % projected perimeter
-            p_perimeter = bwperim( p_interior, conndef( 2, 'minimal' ) );
-            
-            % label matrix
-            lm_p_perimeter = labelmatrix( bwconncomp( p_perimeter, conndef( 2, 'maximal' ) ) );
-            
-            % determine limits
-            sz = size( interior );
-            [ ~, ~, Z ] = meshgrid( 1 : sz( 2 ), 1 : sz( 1 ), 1 : sz( 3 ) );
-            sweep = repmat( p_perimeter, [ 1 1 sz( 3 ) ] );
-            Z( ~( sweep & interior ) ) = nan;
-            limits = cat( 3, ...
-                min( Z, [], 3 ), ...
-                max( Z, [], 3 ) ...
-                );
-            
-            % unprojection
-            perimeter = zeros( size( interior ) );
-            for i = 1 : sz( 1 )
-                for j = 1 : sz( 2 )
-                    if ~p_perimeter( i, j )
-                        continue;
-                    end
-                    perimeter( i, j, limits( i, j, 1 ) : limits( i, j, 2 ) ) = lm_p_perimeter( i, j );
-                end
-            end
-            
-            % jog-free
-            jf_perimeter = zeros( size( interior ) );
-            cc_p_perimeter = bwconncomp( p_perimeter, conndef( 3, 'maximal' ) );
-            lower_limit = limits( :, :, 1 );
-            upper_limit = limits( :, :, 2 );
-            for i = 1 : cc_p_perimeter.NumObjects
-                indices = cc_p_perimeter.PixelIdxList{ i };
-                highest_lower_limit = max( lower_limit( indices ), [], 'all' );
-                lowest_upper_limit = min( upper_limit( indices ), [], 'all' );
-                jf_gap = lowest_upper_limit - highest_lower_limit + 1;
-                if 0 < jf_gap
-                    current_perimeter = false( size( interior ) );
-                    current_perimeter( perimeter == i ) = true;
-                    current_perimeter( :, :, 1 : highest_lower_limit - 1 ) = false;
-                    current_perimeter( :, :, lowest_upper_limit + 1 : end ) = false;
-                    jf_perimeter( current_perimeter ) = i;
-                end
-            end
-            
-            % optimized parting line(s)
+            obj.limits = obj.determine_limits( interior, projected_perimeter );
+            perimeter = obj.unproject_perimeter( interior, projected_perimeter, obj.limits );
+            obj.values = obj.label( perimeter );
             
         end
         
     end
     
     
+    methods % getters
+        
+        function value = get.count( obj )
+            value = uint64( numel( unique( obj.values ) ) - 1 );
+        end
+        
+        function value = get.label_matrix( obj )
+            value = obj.values;
+        end
+        
+        function value = get.perimeter( obj )
+            value = obj.values > 0;
+        end
+        
+    end
+    
+    
     properties ( Access = private )
-        values double {mustBeReal,mustBeFinite,mustBeNonnegative} = []
+        values(:,:,:) double {mustBeReal,mustBeFinite,mustBeNonnegative} = []
+    end
+    
+    
+    methods ( Access = private, Static )
+        
+        function limits = determine_limits( interior, projected_perimeter )
+            sz = size( interior );
+            [ ~, ~, Z ] = meshgrid( 1 : sz( 2 ), 1 : sz( 1 ), 1 : sz( 3 ) );
+            sweep = repmat( projected_perimeter, [ 1 1 sz( 3 ) ] );
+            Z( ~( sweep & interior ) ) = nan;
+            lower = min( Z, [], 3 );
+            lower( ~projected_perimeter ) = inf;
+            lower = imerode( lower, conndef( 2, 'maximal' ) );
+            lower( ~projected_perimeter ) = 0;
+            upper = max( Z, [], 3 );
+            upper( ~projected_perimeter ) = -inf;
+            upper = imdilate( upper, conndef( 2, 'maximal' ) );
+            upper( ~projected_perimeter ) = 0;
+            limits = cat( 3, lower, upper );
+        end
+        
+        function perimeter = unproject_perimeter( interior, projected_perimeter, limits )
+            sz = size( interior );
+            perimeter = zeros( sz );
+            for i = 1 : sz( 1 )
+                for j = 1 : sz( 2 )
+                    if projected_perimeter( i, j ) <= 0
+                        continue;
+                    end
+                    perimeter( i, j, limits( i, j, 1 ) : limits( i, j, 2 ) ) = true;
+                end
+            end
+        end
+        
+        function labels = label( perimeter )
+            labels = labelmatrix( bwconncomp( ...
+                perimeter, ...
+                conndef( 3, 'maximal' ) ...
+                ) );
+        end
+        
     end
     
 end
