@@ -63,7 +63,7 @@ classdef EdtProfile < handle
     
     
     properties ( Access = private )
-        values double {mustBeReal,mustBeFinite} = [];
+        values(:,:,:) double {mustBeReal,mustBeFinite} = []
     end
     
 end

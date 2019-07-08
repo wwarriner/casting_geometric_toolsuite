@@ -26,7 +26,7 @@ classdef Segments < handle
             assert( islogical( mask ) );
             assert( all( size( mask ) == size( profile ) ) );
             
-            obj.values = obj.compute_segments( profile, mask );
+            obj.values = obj.label( profile, mask );
         end
         
     end
@@ -46,13 +46,13 @@ classdef Segments < handle
     
     
     properties ( Access = private )
-        values double {mustBeReal,mustBeFinite,mustBeNonnegative} = [];
+        values(:,:,:) double {mustBeReal,mustBeFinite,mustBeNonnegative} = []
     end
     
     
     methods ( Access = private, Static )
         
-        function segments = compute_segments( profile, mask )
+        function segments = label( profile, mask )
             profile( ~mask ) = -inf;
             segments = double( watershed( -profile ) );
             segments( ~mask ) = 0;

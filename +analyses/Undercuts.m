@@ -18,19 +18,9 @@ classdef Undercuts < handle
             
             assert( islogical( interior ) );
             
-            [ rotated_interior, inverse ] = rotate_to_dimension( 3, interior );
-            sz = size( rotated_interior );
-            uc = zeros( sz );
-            for k = 1 : sz( 3 )
-                for j = 1 : sz( 2 )
-                    painting = false;
-                    [ uc, painting ] = obj.paint_forward( rotated_interior, uc, j, k, painting );
-                    uc = obj.unpaint_reverse( rotated_interior, uc, j, k, painting );
-                end
-            end
-            uc = rotate_from_dimension( uc, inverse );
+            uc = obj.paint( interior );
             uc = obj.remove_spurious_undercuts( uc );
-            obj.values = labelmatrix( bwconncomp( uc ) );
+            obj.values = obj.label( uc );
         end
         
     end
@@ -50,11 +40,25 @@ classdef Undercuts < handle
     
     
     properties ( Access = private )
-        values double {mustBeReal,mustBeFinite,mustBeNonnegative} = []
+        values(:,:,:) double {mustBeReal,mustBeFinite,mustBeNonnegative} = []
     end
     
     
     methods ( Access = private, Static )
+        
+        function uc = paint( interior )
+            [ rotated_interior, inverse ] = rotate_to_dimension( 3, interior );
+            sz = size( rotated_interior );
+            uc = zeros( sz );
+            for k = 1 : sz( 3 )
+                for j = 1 : sz( 2 )
+                    painting = false;
+                    [ uc, painting ] = obj.paint_forward( rotated_interior, uc, j, k, painting );
+                    uc = obj.unpaint_reverse( rotated_interior, uc, j, k, painting );
+                end
+            end
+            uc = rotate_from_dimension( uc, inverse );
+        end
         
         function [ uc, painting ] = paint_forward( interior, uc, j, k, painting )
             for i = 1 : size( interior, 1 )
@@ -84,6 +88,10 @@ classdef Undercuts < handle
         
         function uc = remove_spurious_undercuts( uc )
             uc = remove_small_connected_regions( uc );
+        end
+        
+        function labels = label( uc )
+            labels = labelmatrix( bwconncomp( uc ) );
         end
         
     end
