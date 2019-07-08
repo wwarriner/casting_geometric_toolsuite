@@ -2,6 +2,12 @@ classdef Undercuts < handle
     % Undercuts identifies regions in any column lying between two points in the
     % interior, then finds the resulting connected components.
     
+    properties ( GetAccess = public, SetAccess = private, Dependent )
+        count
+        label_matrix
+    end
+    
+    
     methods ( Access = public )
         
         % - @interior is a logical array representing a rasterized solid body.
@@ -27,46 +33,17 @@ classdef Undercuts < handle
             obj.values = labelmatrix( bwconncomp( uc ) );
         end
         
-        % @get_count() returns the number of segments.
-        % - @count is a scalar double representing the number of segments.
-        function count = get_count( obj )
-            count = numel( unique( obj.values ) ) - 1; % discount 0 value
+    end
+    
+    
+    methods % getters
+        
+        function value = get.count( obj )
+            value = numel( unique( obj.values ) ) - 1;
         end
         
-        % @get() returns a connected component (CC) struct representing the
-        % segments labeled by @indices.
-        % - @segments is a connected component struct.
-        % - @indices is a vector of values falling in the range
-        % [1,@get_count()].
-        function undercuts = get( obj, indices )
-            if nargin < 2
-                indices = 1 : obj.get_count();
-            end
-            
-            assert( isnumeric( indices ) );
-            assert( isvector( indices ) );
-            assert( all( ismember( indices, 1 : obj.get_count() ) ) );
-            
-            undercuts = bwconncomp( obj.get_as_label_matrix() );
-        end
-        
-        % @get_as_label_matrix() returns a label matrix representing the
-        % segments labled by @indices.
-        % - @segments is a label matrix of the same size as the inputs to the
-        % constructor.
-        % - @indices is a vector of values falling in the range
-        % [1,@get_count()].
-        function undercuts = get_as_label_matrix( obj, indices )
-            if nargin < 2
-                indices = 1 : obj.get_count();
-            end
-            
-            assert( isnumeric( indices ) );
-            assert( isvector( indices ) );
-            assert( all( ismember( indices, 1 : obj.get_count() ) ) );
-            
-            undercuts = obj.values;
-            undercuts( ~ismember( undercuts, indices ) ) = 0;
+        function value = get.label_matrix( obj )
+            value = obj.values;
         end
         
     end

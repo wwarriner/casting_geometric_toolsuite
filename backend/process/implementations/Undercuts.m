@@ -2,9 +2,9 @@ classdef (Sealed) Undercuts < Process
     % Undercuts encapsulates the behavior and data of casting undercuts for
     % two-piece molding or tooling.
     
-    properties ( GetAccess = public, SetAccess = private )
+    properties ( GetAccess = public, SetAccess = private, Dependent )
         count
-        volume
+        volume % stl units
     end
     
     
@@ -30,7 +30,7 @@ classdef (Sealed) Undercuts < Process
         end
         
         function a = to_array( obj )
-            a = obj.undercuts.get_as_label_matrix();
+            a = obj.undercuts.label_matrix;
         end
         
     end
@@ -39,11 +39,12 @@ classdef (Sealed) Undercuts < Process
     methods % getters
         
         function value = get.count( obj )
-            value = obj.undercuts.get_count();
+            value = obj.undercuts.count;
         end
         
         function value = get.volume( obj )
-            value = sum( obj.undercuts.get_as_label_matrix() > 0, 'all' );
+            value = sum( obj.undercuts.label_matrix > 0, 'all' );
+            value = obj.mesh.to_stl_volume( value ); 
         end
         
     end

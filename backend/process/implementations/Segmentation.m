@@ -99,7 +99,7 @@ classdef (Sealed) Segmentation < Process
     methods % getters
         
         function value = get.count( obj )
-            value = obj.segments.get_count();
+            value = obj.segments.count;
         end
         
     end
