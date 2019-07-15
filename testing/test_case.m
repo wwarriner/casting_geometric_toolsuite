@@ -46,6 +46,8 @@ u = ufv.apply_material_property_fn( u_fn );
 sk = problem.kernel.SolidificationKernel( pp );
 [ A, b ] = sk.create_system( ufv, u );
 
+lss = solver.LinearSystemSolver();
+u2 = lss.solve( A, b, u );
 
 
 %% LINEAR SYSTEM SOLVER

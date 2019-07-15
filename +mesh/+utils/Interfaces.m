@@ -9,6 +9,16 @@ classdef Interfaces < handle
     end
     
     
+    properties ( Dependent )
+        bc_id_count
+    end
+    
+    
+    properties ( Dependent, Abstract )
+        bc_id_list
+    end
+    
+    
     methods ( Access = public )
         
         function obj = Interfaces( ...
@@ -46,12 +56,13 @@ classdef Interfaces < handle
             obj.boundary_ids( interface_ids ) = id;
         end
         
-        function count = get_id_count( obj )
-            count = numel( obj.get_unique_ids() );
-        end
+    end
+    
+    
+    methods % getters
         
-        function ids = get_unique_ids( obj )
-            ids = unique( obj.boundary_ids );
+        function value = get.bc_id_count( obj )
+            value = size( obj.bc_id_list, 1 );
         end
         
     end

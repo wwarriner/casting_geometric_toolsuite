@@ -66,20 +66,29 @@ classdef UniformVoxelMesh < mesh.MeshInterface
         end
         
         function values = apply_external_bc_fns( obj, fns )
-            values = zeros( obj.external_interfaces.count, 1 );
-            ids = obj.external_interfaces.get_unique_boundary_ids();
-            for i = 1 : obj.external_interfaces.get_boundary_id_count()
-                id = ids( i );
-                fn = fns{ i };
-                values( ids == id ) = fn( obj.elements.material_ids( ...
-                    obj.external_interfaces.element_ids( ids == id ) ...
-                    ) );
+            if isa( fns, 'function_handle' )
+                fns = repmat( { fns }, [ obj.external_interfaces.bc_id_count 1 ] );
             end
+            
+            values = zeros( obj.external_interfaces.count, 1 );
+            m_ids = obj.elements.material_ids( obj.external_interfaces.element_ids );
+            m_id_list = obj.elements.material_id_list;
+            bc_ids = obj.external_interfaces.bc_id_list;
+            for i = 1 : obj.external_interfaces.bc_id_count
+                bc_id = bc_ids( i );
+                fn = fns{ i };
+                for m_id = m_id_list( : ).'
+                    locations = bc_id == obj.external_interfaces.boundary_ids & m_id == m_ids;
+                    e_ids = obj.external_interfaces.element_ids( locations, : );
+                    values( locations ) = fn( m_id, e_ids );
+                end
+            end
+            values = accumarray( obj.external_interfaces.element_ids, values, [ obj.elements.count, 1 ] );
         end
         
         function values = apply_internal_bc_fns( obj, fns )
             if isa( fns, 'function_handle' )
-                fns = repmat( { fns }, [ obj.elements.material_id_count 1 ] );
+                fns = repmat( { fns }, [ obj.internal_interfaces.bc_id_count 1 ] );
             end
             
             values = zeros( obj.internal_interfaces.count, 1 );

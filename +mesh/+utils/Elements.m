@@ -7,7 +7,7 @@ classdef Elements < handle
     end
     
     
-    properties ( GetAccess = public, Dependent )
+    properties ( Dependent )
         count
         material_id_count
         material_id_list
