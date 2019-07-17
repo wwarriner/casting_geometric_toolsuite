@@ -1,5 +1,12 @@
 classdef (Abstract) MeshInterface < handle
     
+    properties ( Abstract, SetAccess = private, Dependent )
+        connectivity
+        count
+        volumes
+    end
+    
+    
     methods ( Access = public )
         
         add_component( obj, component );
@@ -39,9 +46,6 @@ classdef (Abstract) MeshInterface < handle
         % assigned to @values in the appropriate elements.
         % - @values are the values of the applied function
         values = apply_material_property_fn( obj, fn );
-        
-        ids = get_element_ids( obj );
-        count = get_element_count( obj );
         
     end
     

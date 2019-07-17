@@ -1,5 +1,17 @@
 classdef UniformVoxelMesh < mesh.MeshInterface
     
+    properties ( Access = public )
+        default_component_id(1,1) uint64 {mustBeNonnegative} = 1
+    end
+    
+    
+    properties ( SetAccess = private, Dependent )
+        connectivity
+        count
+        volumes
+    end
+    
+    
     methods ( Access = public )
         
         % - material_id_array is an array of values representing materials
@@ -18,6 +30,23 @@ classdef UniformVoxelMesh < mesh.MeshInterface
     end
     
     
+    methods % getters
+        
+        function value = get.connectivity( obj )
+            value = obj.internal_interfaces.element_ids;
+        end
+        
+        function value = get.count( obj )
+            value = obj.elements.count;
+        end
+        
+        function value = get.volumes( obj )
+            value = obj.elements.volumes;
+        end
+        
+    end
+    
+    
     % base class implementations
     % see base class definition for documentation
     methods ( Access = public )
@@ -29,14 +58,13 @@ classdef UniformVoxelMesh < mesh.MeshInterface
         function build( obj )
             obj.material_ids = obj.get_material_ids();
             obj.voxels = obj.paint_voxels();
-            volumes = obj.voxels.element_volume .* ones( obj.voxels.element_count, 1 );
             obj.elements = mesh.utils.Elements( ...
-                obj.voxels.array( : ), ...
-                obj.material_ids( obj.voxels.array( : ) ), ...
-                volumes ...
+                obj.voxels.values( : ), ...
+                obj.material_ids( obj.voxels.values( : ) ), ...
+                obj.voxels.element_volume .* ones( obj.voxels.element_count, 1 ) ...
                 );
             % external
-            element_ids = cell2mat( obj.voxels.get_external_elements() );
+            element_ids = cell2mat( obj.voxels.external_elements );
             areas = obj.voxels.interface_area .* ones( size( element_ids ) );
             distances = 0.5 .* obj.voxels.scale .* ones( size( element_ids ) );
             obj.external_interfaces = mesh.utils.ExternalInterfaces( ...
@@ -46,9 +74,9 @@ classdef UniformVoxelMesh < mesh.MeshInterface
                 distances ...
                 );
             % internal
-            element_ids = obj.voxels.get_neighbor_pairs();
+            element_ids = obj.voxels.neighbor_pairs;
             areas = obj.voxels.interface_area .* ones( size( element_ids, 1 ), 1 );
-            distances = obj.voxels.interface_area .* ones( size( element_ids ) );
+            distances = 0.5 .* obj.voxels.scale .* ones( size( element_ids ) );
             obj.internal_interfaces = mesh.utils.InternalInterfaces( ...
                 obj.elements, ...
                 element_ids, ...
@@ -73,14 +101,14 @@ classdef UniformVoxelMesh < mesh.MeshInterface
             values = zeros( obj.external_interfaces.count, 1 );
             m_ids = obj.elements.material_ids( obj.external_interfaces.element_ids );
             m_id_list = obj.elements.material_id_list;
-            bc_ids = obj.external_interfaces.bc_id_list;
+            bc_id_list = obj.external_interfaces.bc_id_list;
             for i = 1 : obj.external_interfaces.bc_id_count
-                bc_id = bc_ids( i );
+                bc_id = bc_id_list( i );
                 fn = fns{ i };
                 for m_id = m_id_list( : ).'
                     locations = bc_id == obj.external_interfaces.boundary_ids & m_id == m_ids;
                     e_ids = obj.external_interfaces.element_ids( locations, : );
-                    values( locations ) = fn( m_id, e_ids );
+                    values( locations ) = fn( m_id, e_ids, obj.external_interfaces.distances( locations ), obj.external_interfaces.areas( locations ) );
                 end
             end
             values = accumarray( obj.external_interfaces.element_ids, values, [ obj.elements.count, 1 ] );
@@ -99,7 +127,7 @@ classdef UniformVoxelMesh < mesh.MeshInterface
                 fn = fns{ i };
                 locations = all( m_ids == ids, 2 );
                 e_ids = obj.internal_interfaces.element_ids( locations, : );
-                values( locations ) = fn( ids, e_ids );
+                values( locations ) = fn( ids, e_ids, obj.internal_interfaces.distances( locations, : ), obj.internal_interfaces.areas( locations ) );
             end
         end
         
@@ -139,14 +167,6 @@ classdef UniformVoxelMesh < mesh.MeshInterface
             end
         end
         
-        function ids = get_element_ids( obj )
-            ids = obj.internal_interfaces.element_ids;
-        end
-        
-        function count = get_element_count( obj )
-            count = obj.elements.count;
-        end
-        
     end
     
     
@@ -175,16 +195,23 @@ classdef UniformVoxelMesh < mesh.MeshInterface
     methods ( Access = private )
         
         function ids = get_material_ids( obj )
-            ids = [ obj.component_list.id ];
+            id_list = [ obj.component_list.id ];
+            ids = nan( max( id_list ), 1 );
+            ids( id_list ) = id_list;
         end
         
         function voxels = paint_voxels( obj )
             envelope = obj.unify_envelopes();
-            voxels = mesh.voxel.Voxels( obj.desired_element_count, envelope );
+            voxels = mesh.voxel.Voxels( ...
+                obj.desired_element_count, ...
+                envelope, ...
+                obj.default_component_id ...
+                );
             for i = 1 : numel( obj.component_list )
                 c = obj.component_list( i );
-                voxels.paint( c.get_fv(), i );
+                voxels.paint( c.get_fv(), c.id );
             end
+            assert( ~any( voxels.values == 0, 'all' ) );
         end
         
         function envelope = unify_envelopes( obj )
