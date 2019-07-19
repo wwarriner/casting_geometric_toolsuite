@@ -1,9 +1,8 @@
-classdef (Abstract) KernelInterface < handle
+classdef KernelInterface < handle
     
-    methods ( Access = public )
+    methods ( Access = public, Abstract )
         
-        A = create_coefficient_matrix( obj );
-        b = create_constant_vector( obj );
+        [ A, b, x0 ] = create_system( obj )
         
     end
     

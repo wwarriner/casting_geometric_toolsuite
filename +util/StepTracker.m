@@ -2,11 +2,11 @@ classdef (Sealed) StepTracker < handle
     
     properties ( SetAccess = private )
         values(:,1) double = []
-        running_totals(:,1) double = []
     end
     
     
     properties ( SetAccess = private, Dependent )
+        running_totals
         total
         count
     end
@@ -14,8 +14,12 @@ classdef (Sealed) StepTracker < handle
     
     methods % getters
         
+        function value = get.running_totals( obj )
+            value = cumsum( obj.values );
+        end
+        
         function value = get.total( obj )
-            value = obj.running_totals( end );
+            value = sum( obj.values );
         end
         
         function value = get.count( obj )
@@ -29,12 +33,6 @@ classdef (Sealed) StepTracker < handle
         
         function append( obj, value )
             obj.values( end + 1 ) = value;
-            if isempty( obj.running_totals )
-                obj.running_totals( end + 1 ) = value;
-            else
-                obj.running_totals( end + 1 ) ...
-                    = obj.running_totals( end ) + value;
-            end
         end
         
     end

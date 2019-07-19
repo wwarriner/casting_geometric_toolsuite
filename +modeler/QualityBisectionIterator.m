@@ -1,177 +1,125 @@
 classdef QualityBisectionIterator < modeler.super.Iterator
     
+    properties ( Access = public )
+        maximum_iterations(1,1) uint64 {mustBePositive} = 100
+        quality_tolerance(1,1) double {mustBeReal,mustBeFinite,mustBePositive} = 0.2
+        stagnation_tolerance(1,1) double {mustBeReal,mustBeFinite,mustBePositive} = 0.01
+    end
+    
+    
+    properties ( SetAccess = private )
+        qualities(1,1) util.StepTracker
+        bisection_iterations(1,1) util.StepTracker
+    end
+    
+    
     methods ( Access = public )
         
-        function obj = QualityBisectionIterator( problem )
-            
-            obj@modeler.super.Iterator( problem );
-            obj.maximum_iteration_count = 20;
-            obj.quality_tolerance = 0.2;
-            obj.stagnation_tolerance = 0.01;
-            
-        end
-        
-        
-        function set_maximum_iteration_count( obj, count )
-            
-            assert( isscalar( count ) );
-            assert( isa( count, 'double' ) );
-            assert( 0 < count );
-            
-            obj.maximum_iteration_count = count;
-            
-        end
-        
-        
-        function set_quality_ratio_tolerance( obj, tol )
-            
-            assert( isscalar( tol ) );
-            assert( isa( tol, 'double' ) );
-            assert( 0 < tol );
-            
-            obj.quality_tolerance = tol;
-            
-        end
-        
-        
-        function set_time_step_stagnation_tolerance( obj, tol )
-            
-            assert( isscalar( tol ) );
-            assert( isa( tol, 'double' ) );
-            assert( 0 < tol );
-            
-            obj.stagnation_tolerance = tol;
-            
+        function obj = QualityBisectionIterator( meta_kernel )
+            obj@modeler.super.Iterator( meta_kernel );
+            obj.qualities = util.StepTracker();
+            obj.bisection_iterations = util.StepTracker();
         end
         
     end
     
     
-    methods ( Access = protected )
+    methods ( Access = protected ) % abstract base class implementations
         
         function iterate_impl( obj )
-            
-            obj.per_iteration_solver_counts = modeler.util.TimeTracker();
+            tic;
             obj.bisector = obj.create_bisector();
-            while true
-                
-                complete = obj.update( obj.bisector, obj.per_iteration_solver_counts );
-                if complete; break; end
-                
-            end
-            obj.append_time_step( obj.bisector.get() );
-            
+            obj.solver_counts = util.StepTracker();
+            while ~obj.update( obj.bisector ); end
+            obj.qualities.append( obj.bisector.y );
+            obj.bisection_iterations.append( obj.bisector.count );
+            obj.computation_time = toc;
         end
         
-        
-        function ready = is_ready_impl( ~ )
-            
-            ready = true;
-            
+        function time = get_simulation_time( obj )
+            time = obj.bisector.x;
         end
         
-        
-        function iterations = get_previous_iterations( obj )
-            
-            iterations = obj.bisector.get_iterations();
-            
+        function time = get_computation_time( obj )
+            time = obj.computation_time;
         end
         
+        function count = get_solver_iteration_count( obj )
+            count = obj.solver_counts.total;
+        end
         
-        function counts = get_previous_solver_count( obj )
-            
-            counts = obj.per_iteration_solver_counts.get_total_time();
-            
+        function message = get_message( obj )
+            message = obj.status_message;
         end
         
     end
     
     
     properties ( Access = private )
-        
-        maximum_iteration_count
-        quality_tolerance
-        stagnation_tolerance
-        
-        bisector
-        per_iteration_solver_counts
-        
+        bisector = []
+        computation_time(1,1) double {mustBeReal,mustBeFinite,mustBeNonnegative} = 0.0
+        solver_counts(1,1) util.StepTracker
+        status_message(1,1) string
     end
     
     
     properties ( Access = private, Constant )
-        
-        TOLERANCE_STATUS = 'Tolerance met.';
-        ITERATION_STATUS = 'Exceeded maximum iterations.';
-        STAGNATION_STATUS = 'Time step stagnated.';
-        FINISHED_STATUS = 'Problem finished.';
-        CONTINUING_STATUS = 'Continuing.';
-        
+        TOLERANCE_STATUS = "Tolerance met.";
+        ITERATION_STATUS = "Exceeded maximum iterations.";
+        STAGNATION_STATUS = "Time step stagnated.";
+        FINISHED_STATUS = "Problem finished.";
+        CONTINUING_STATUS = "Continuing.";
     end
     
     
     methods ( Access = private )
         
         function bisector = create_bisector( obj )
-            
             LOWER_BOUND = 0;
             UPPER_BOUND = inf;
             TARGET_QUALITY = 0;
             bisector = modeler.util.BisectionTracker( ...
-                obj.get_candidate_time_step(), ...
+                obj.initial_time_step, ...
                 LOWER_BOUND, ...
                 UPPER_BOUND, ...
-                @(t)obj.problem.solve(t), ...
+                @(dt)obj.meta_kernel.apply_time_step(dt), ...
                 TARGET_QUALITY, ...
                 obj.quality_tolerance ...
                 );
-            
         end
         
-        
-        function complete = update( obj, bisector, solver_counts )
-            
-            within_tolerance = bisector.update();
-            solver_counts.append_time_step( obj.problem.get_solver_count() );
-            if within_tolerance
-                complete = true;
-                status = obj.TOLERANCE_STATUS;
-            elseif obj.exceeded_maximum_iterations( bisector.get_iterations() )
-                complete = true;
-                status = obj.ITERATION_STATUS;
-            elseif obj.stagnated( bisector.get(), bisector.get_previous() )
-                complete = true;
-                status = obj.STAGNATION_STATUS;
+        function finished = update( obj, bisector )
+            if bisector.update()
+                finished = true;
+                message = obj.TOLERANCE_STATUS;
+            elseif obj.exceeded_maximum_iterations( bisector.count )
+                finished = true;
+                message = obj.ITERATION_STATUS;
+            elseif obj.stagnated( bisector.x, bisector.x_previous )
+                finished = true;
+                message = obj.STAGNATION_STATUS;
             elseif obj.is_finished()
-                complete = true;
-                status = obj.FINISHED_STATUS;
+                finished = true;
+                message = obj.FINISHED_STATUS;
             else
-                complete = false;
-                status = obj.CONTINUING_STATUS;
+                finished = false;
+                message = obj.CONTINUING_STATUS;
             end
-            obj.set_status( status );
-            
+            obj.status_message = message;
         end
-        
         
         function exceeded = exceeded_maximum_iterations( obj, iterations )
-            
-            exceeded = obj.maximum_iteration_count <= iterations;
-            
+            exceeded = obj.maximum_iterations <= iterations;
         end
-        
         
         function stagnated = stagnated( obj, current, previous )
-            
-            stagnated = ( abs( current - previous ) / previous ) < obj.stagnation_tolerance;
-            
+            change_ratio = abs( current - previous ) / previous;
+            stagnated = change_ratio < obj.stagnation_tolerance;
         end
         
-        
         function below = is_finished( obj )
-            
-            below = obj.problem.is_finished();
-            
+            below = false;
+            %below = obj.problem.is_finished();
         end
         
     end

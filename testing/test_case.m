@@ -1,8 +1,9 @@
-cavity = geometry.Component( which( 'bearing_block.stl' ) );
+%cavity = geometry.Component( which( 'bearing_block.stl' ) );
+cavity = geometry.shapes.create_cube( [ -0.015 -0.015 -0.015 ], [ 0.03 0.03 0.03 ], 'cavity' );
 cavity_id = 1;
 cavity.assign_id( cavity_id );
 
-mold_thickness = 25; % stl units
+mold_thickness = 0.010; % stl units
 mold = geometry.shapes.create_cube( ...
     cavity.envelope.min_point - mold_thickness, ...
     cavity.envelope.lengths + 2 * mold_thickness, ...
@@ -13,6 +14,7 @@ mold.assign_id( mold_id );
 
 element_count = 1e5;
 ufv = mesh.UniformVoxelMesh( element_count );
+ufv.default_component_id = mold.id;
 ufv.add_component( mold );
 ufv.add_component( cavity );
 ufv.build();
@@ -43,30 +45,20 @@ u = ufv.apply_material_property_fn( u_fn );
 %u = ufv.reshape( u );
 
 %% TESTING
-sk = problem.kernel.SolidificationKernel( pp );
-[ A, b ] = sk.create_system( ufv, u );
+utils.Printer.turn_print_on();
+utils.Printer.set_printer( @fprintf );
 
+sk = problem.kernel.SolidificationKernel( pp, ufv, u );
 lss = solver.LinearSystemSolver();
-u2 = lss.solve( A, b, u );
 
+smk = problem.kernel.SolidificationMetaKernel( sk, lss, pp, cavity_id );
 
-%% LINEAR SYSTEM SOLVER
-solver = modeler.LinearSystemSolver();
-solver.set_tolerance( 1e-4 );
-solver.set_maximum_iterations( 100 );
-
-%% SOLIDIFICATION PROBLEM
-problem = SolidificationProblem( fdm_mesh, pp, solver );
-problem.set_implicitness( 1 );
-problem.set_latent_heat_target_ratio( 0.05 );
-
-%% ITERATOR
-iterator = modeler.QualityBisectionIterator( problem );
-iterator.set_maximum_iteration_count( 20 );
-iterator.set_quality_ratio_tolerance( 0.2 );
-iterator.set_time_step_stagnation_tolerance( 1e-2 );
-iterator.set_initial_time_step( pp.compute_initial_time_step() );
-iterator.set_printer( @fprintf );
+qbi = modeler.QualityBisectionIterator( smk );
+qbi.maximum_iterations = 100;
+qbi.quality_tolerance = 0.2;
+qbi.stagnation_tolerance = 1e-2;
+qbi.initial_time_step = pp.compute_initial_time_step();
+qbi.iterate();
 
 %% RESULTS
 sol_temp = pp.get_fraction_solid_temperature( 1.0 );

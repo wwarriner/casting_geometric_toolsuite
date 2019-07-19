@@ -1,5 +1,19 @@
 classdef (Sealed) BisectionTracker < handle
     
+    properties ( SetAccess = private )
+        x_values(1,1) util.StepTracker
+        y_values(1,1) util.StepTracker
+    end
+    
+    
+    properties ( SetAccess = private, Dependent )
+        x
+        y
+        x_previous
+        count
+    end
+    
+    
     methods ( Access = public )
         
         % -inf < x_lower
@@ -12,110 +26,95 @@ classdef (Sealed) BisectionTracker < handle
                 y_target, ...
                 tol ...
                 )
-            
-            obj.x = x_initial;
+            obj.x_values = util.StepTracker();
+            obj.x_values.append( x_initial );
             obj.lower = x_lower;
             obj.upper = x_upper;
             obj.compute_y_fn = compute_y_fn;
             obj.y_target = y_target;
-            obj.iterations = 0;
             obj.tol = tol;
-            
         end
         
-        
-        function x = get( obj )
-            
-            x = obj.x;
-            
-        end
-        
-        
-        function x = get_previous( obj )
-            
-            x = obj.x_previous;
-            
-        end
-        
-        
-        function iterations = get_iterations( obj )
-            
-            iterations = obj.iterations;
-            
-        end
-        
-        
+        % no guarantees on behavior if update is called after update has
+        % previously returned true
         function within_tolerance = update( obj )
-            
-            y = obj.compute_y_fn( obj.x );
-            obj.iterations = obj.iterations + 1;
-            within_tolerance = false;
-            if obj.is_within_tolerance( y )
-                within_tolerance = true;
-                return;
+            within_tolerance = obj.update_y();
+            if ~within_tolerance
+                obj.bisect_x();
             end
-            
-            if obj.is_below_target( y )
-                obj.increase();
-            else
-                obj.decrease();
-            end
-                
-            
+        end
+        
+    end
+    
+    
+    methods % getters
+        
+        function value = get.x( obj )
+            value = obj.x_values.values( end );
+        end
+        
+        function value = get.y( obj )
+            value = obj.y_values.values( end );
+        end
+        
+        function value = get.x_previous( obj )
+            value = obj.x_values.values( end - 1 );
+        end
+        
+        function value = get.count( obj )
+            value = obj.x_values.count;
         end
         
     end
     
     
     properties ( Access = private )
-        
-        x
-        x_previous
-        lower
-        upper
-        compute_y_fn
-        y_target
-        iterations
-        tol
-        
+        lower(1,1) double {mustBeReal,mustBeFinite}
+        upper(1,1) double {mustBeReal}
+        compute_y_fn(1,1) function_handle = @()[]
+        y_target(1,1) double {mustBeReal,mustBeFinite}
+        tol(1,1) double {mustBeReal,mustBeFinite,mustBePositive} = 1e-5
     end
     
     
     methods ( Access = private )
         
+        function within_tolerance = update_y( obj )
+            xv = obj.x_values.values( end );
+            yv = obj.compute_y_fn( xv );
+            obj.y_values.append( yv );
+            within_tolerance = obj.is_within_tolerance( yv );
+        end
+        
         function within = is_within_tolerance( obj, y )
-            
             within = abs( y - obj.y_target ) <= obj.tol;
-            
         end
         
-        
-        function below = is_below_target( obj, y )
-            
-            below = y < obj.y_target;
-            
+        function xv = bisect_x( obj )
+            if obj.is_below_target()
+                xv = obj.increase();
+            else
+                xv = obj.decrease();
+            end
+            obj.x_values.append( xv );
         end
         
+        function below = is_below_target( obj )
+            below = obj.y < obj.y_target;
+        end
         
-        function increase( obj )
-            
-            obj.x_previous = obj.x;
+        function xv = increase( obj )
             obj.lower = obj.x;
             if isinf( obj.upper )
-                obj.x = obj.x * 2;
+                xv = obj.lower * 2;
             else
-                obj.x = mean( [ obj.lower obj.upper ] );
+                xv = mean( [ obj.lower obj.upper ] );
             end
-            
         end
         
-        
-        function decrease( obj )
-            
-            obj.x_previous = obj.x;
+        function xv = decrease( obj )
             obj.upper = obj.x;
-            obj.x = mean( [ obj.lower obj.upper ] );
-            
+            xv = mean( [ obj.lower obj.upper ] );
         end
         
     end
