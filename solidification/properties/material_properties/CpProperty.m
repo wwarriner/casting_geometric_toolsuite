@@ -1,4 +1,4 @@
-classdef (Sealed) CpProperty < MaterialProperty
+classdef (Sealed) CpProperty < property.MaterialProperty
     
     methods ( Access = public )
         

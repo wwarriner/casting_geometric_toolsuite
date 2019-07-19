@@ -1,11 +1,11 @@
-classdef (Sealed) FsProperty < MaterialProperty
+classdef (Sealed) FsProperty < property.MaterialProperty
     
     methods ( Access = public )
         
         % unitless ratio in range [ 0, 1 ]
         function obj = FsProperty( temperatures, fractions_solid )
             
-            obj = obj@MaterialProperty( temperatures, fractions_solid );
+            obj = obj@property.MaterialProperty( temperatures, fractions_solid );
             
             first_liquid = find( obj.values == 0, 1, 'first' );
             last_solid = find( obj.values == 1, 1, 'last' );

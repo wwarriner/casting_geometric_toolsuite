@@ -1,4 +1,4 @@
-classdef (Sealed) QProperty < MaterialProperty
+classdef (Sealed) QProperty < property.MaterialProperty
     
     methods ( Access = public )
         
@@ -7,7 +7,7 @@ classdef (Sealed) QProperty < MaterialProperty
             assert( isa( cp, 'CpProperty' ) );
             
             [ t, v ] = QProperty.compute( cp, t_range );
-            obj = obj@MaterialProperty( t, v );
+            obj = obj@property.MaterialProperty( t, v );
             
             obj.cp = cp;
             

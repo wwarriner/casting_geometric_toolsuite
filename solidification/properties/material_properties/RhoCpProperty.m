@@ -1,4 +1,4 @@
-classdef (Sealed) RhoCpProperty < MaterialProperty
+classdef (Sealed) RhoCpProperty < property.MaterialProperty
     
     methods ( Access = public )
         
@@ -8,7 +8,7 @@ classdef (Sealed) RhoCpProperty < MaterialProperty
             assert( isa( cp, 'CpProperty' ) );
             
             [ t, v ] = RhoCpProperty.compute( rho, cp );
-            obj = obj@MaterialProperty( t, v );
+            obj = obj@property.MaterialProperty( t, v );
             
         end
         

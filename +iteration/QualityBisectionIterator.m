@@ -1,4 +1,4 @@
-classdef QualityBisectionIterator < modeler.super.Iterator
+classdef QualityBisectionIterator < iteration.Iterator
     
     properties ( Access = public )
         maximum_iterations(1,1) uint64 {mustBePositive} = 100
@@ -16,7 +16,7 @@ classdef QualityBisectionIterator < modeler.super.Iterator
     methods ( Access = public )
         
         function obj = QualityBisectionIterator( meta_kernel )
-            obj@modeler.super.Iterator( meta_kernel );
+            obj@iteration.Iterator( meta_kernel );
             obj.qualities = util.StepTracker();
             obj.bisection_iterations = util.StepTracker();
         end
@@ -78,7 +78,7 @@ classdef QualityBisectionIterator < modeler.super.Iterator
             LOWER_BOUND = 0;
             UPPER_BOUND = inf;
             TARGET_QUALITY = 0;
-            bisector = modeler.util.BisectionTracker( ...
+            bisector = util.BisectionTracker( ...
                 obj.initial_time_step, ...
                 LOWER_BOUND, ...
                 UPPER_BOUND, ...

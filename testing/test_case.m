@@ -23,7 +23,7 @@ ufv.assign_uniform_external_boundary_id( 1 );
 %% TEST PROPERTY GENERATION
 ambient_id = 0;
 space_step_in_m = 0.005; % m
-pp = PhysicalProperties( space_step_in_m );
+pp = property.PhysicalProperties( space_step_in_m );
 pp.add_ambient_material( AmbientMaterial( ambient_id ) );
 pp.add_material( MoldMaterial( mold_id, which( 'silica_dry.txt' ) ) );
 melt = MeltMaterial( cavity_id, which( 'a356.txt' ) );
@@ -31,7 +31,7 @@ melt.set_initial_temperature( 660 );
 melt.set_feeding_effectivity( 0.3 );
 pp.add_melt_material( melt );
 
-conv = ConvectionProperties( ambient_id );
+conv = property.ConvectionProperties( ambient_id );
 conv.set_ambient( mold_id, generate_air_convection() );
 conv.set_ambient( cavity_id, generate_air_convection() );
 conv.read( mold_id, cavity_id, which( 'al_sand_htc.txt' ) );
@@ -48,9 +48,9 @@ u = ufv.apply_material_property_fn( u_fn );
 utils.Printer.turn_print_on();
 utils.Printer.set_printer( @fprintf );
 
-smk = problem.kernel.SolidificationMetaKernel( ufv, pp, cavity_id, u );
+smk = SolidificationMetaKernel( ufv, pp, cavity_id, u );
 
-qbi = modeler.QualityBisectionIterator( smk );
+qbi = iteration.QualityBisectionIterator( smk );
 qbi.maximum_iterations = 100;
 qbi.quality_tolerance = 0.2;
 qbi.stagnation_tolerance = 1e-2;
@@ -60,19 +60,3 @@ finish_check_fn = @()all(smk.u<=pp.get_liquidus_temperature(cavity_id),'all');
 lp = iteration.Looper( qbi, finish_check_fn );
 lp.run();
 
-
-%% RESULTS
-sol_temp = pp.get_fraction_solid_temperature( 1.0 );
-sol_time = SolidificationTimeResult( shape, sol_temp );
-results = containers.Map( ...
-    { 'solidification_times' }, ...
-    { sol_time } ...
-    );
-
-%% DASHBOARD
-dashboard = SolidificationDashboard( fdm_mesh, pp, solver, problem, iterator, results, center );
-
-%% WRAPPER
-manager = modeler.Manager( fdm_mesh, pp, solver, problem, iterator, results );
-manager.set_dashboard( dashboard );
-manager.solve();

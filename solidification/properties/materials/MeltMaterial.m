@@ -1,10 +1,10 @@
-classdef (Sealed) MeltMaterial < Material
+classdef (Sealed) MeltMaterial < property.Material
     
     methods ( Access = public )
         
         function obj = MeltMaterial( varargin )
             
-            obj = obj@Material( varargin{ : } );
+            obj = obj@property.Material( varargin{ : } );
             if isempty( obj.feeding_effectivity )
                 obj.feeding_effectivity_set = false;
             end
@@ -14,7 +14,7 @@ classdef (Sealed) MeltMaterial < Material
         
         function read( obj, file )
             
-            data = obj.read@Material( file );
+            data = obj.read@property.Material( file );
             
             [ fs_t, fs ] = remove_nans( data.fs_t, data.fs );
             
@@ -40,7 +40,7 @@ classdef (Sealed) MeltMaterial < Material
         
         function ready = is_ready( obj )
             
-            ready = obj.is_ready@Material();
+            ready = obj.is_ready@property.Material();
             ready = ready & obj.feeding_effectivity_set;
             ready = ready & obj.properties_set.isKey( obj.FS );
             
@@ -116,7 +116,7 @@ classdef (Sealed) MeltMaterial < Material
         
         function index = get_type_index( obj, material_property )
             
-            index = obj.get_type_index@Material( material_property );
+            index = obj.get_type_index@property.Material( material_property );
             if isa( material_property, 'FsProperty' )
                 index = obj.FS;
             end

@@ -1,4 +1,4 @@
-classdef (Sealed) LinearSystemSolver < modeler.super.Solver
+classdef (Sealed) LinearSystemSolver < handle
     
     properties ( GetAccess = public, SetAccess = private )
         iteration_count(1,1) uint64 {mustBeNonnegative} = 0

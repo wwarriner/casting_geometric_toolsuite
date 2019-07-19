@@ -1,10 +1,10 @@
-classdef (Sealed) AmbientMaterial < Material
+classdef (Sealed) AmbientMaterial < property.Material
     
     methods ( Access = public )
         
         function obj = AmbientMaterial( varargin )
             
-            obj@Material( varargin{ : } );
+            obj@property.Material( varargin{ : } );
             
             obj.set( RhoProperty( 1.225 ) ); % kg / m ^ 3
             obj.set( CpProperty( 1006 ) ); % J / kg * K
