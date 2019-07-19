@@ -1,28 +1,33 @@
 classdef (Sealed) Component < handle
     
-    properties ( GetAccess = public, SetAccess = private )
-        
-        path(1,1) string = ""
-        name(1,1) string = ""
-        
-        faces uint64 {mustBePositive} = []
-        vertices double {mustBeReal,mustBeFinite} = []
-        normals double {mustBeReal,mustBeFinite} = []
-        
-        envelope(1,1) geometry.Envelope
-        
+    properties
         id(1,1) uint64 {mustBePositive} = 1
-        cdata double {mustBeReal,mustBeFinite} = []
-        
-        
     end
     
     
-    methods ( Access = public )
+    properties ( SetAccess = private )
+        path(1,1) string = ""
+        name(1,1) string = ""
+        faces(:,3) uint64 {mustBePositive} = []
+        vertices(:,3) double {mustBeReal,mustBeFinite} = []
+        normals(:,3) double {mustBeReal,mustBeFinite} = []
+        cdata(1,3) double {mustBeReal,mustBeFinite} = geometry.Component.DEFAULT_COLOR
+        envelope(1,1) geometry.Envelope
+    end
+    
+    
+    properties ( Dependent )
+        fv
+    end
+    
+    
+    methods
         
         function obj = Component( varargin )
-            
-            if nargin == 0 || 2 < nargin
+            if nargin == 0
+                return;
+            end
+            if 2 < nargin
                 assert( false )
             end
             
@@ -34,55 +39,31 @@ classdef (Sealed) Component < handle
             else
                 assert( false );
             end
-            
         end
         
-        
-        function assign_id( obj, id )
-            
-            assert( 0 < id );
-            obj.id = id;
-            
+        function value = get.fv( obj )
+            value.faces = obj.faces;
+            value.vertices = obj.vertices;
+            value.normals = obj.normals;
+            value.cdata = obj.cdata;
         end
         
-        
-        function assign_color( obj, color )
+        function set.cdata( obj, value )
+            assert( isvector( value ) );
+            assert( numel( value ) == 3 );
+            assert( all( 0.0 <= value ) && all( value <= 1.0 ) );
             
-            assert( isa( color, 'double' ) );
-            assert( isvector( color ) );
-            assert( numel( color ) == 3 );
-            assert( all( 0.0 <= color ) && all( color <= 1.0 ) );
-            obj.cdata = color;
-            
+            obj.cdata = value;
         end
         
-        
-        function ph = plot( obj, axh )
-            
-            ph = patch( ...
+        function gobj = plot( obj, axh )
+            gobj = patch( ...
                 axh, ...
                 'faces', obj.faces, ...
                 'vertices', obj.vertices, ...
                 'facecolor', obj.cdata ...
                 );
-            
         end
-        
-        
-        function fv = get_fv( obj )
-            
-            fv.faces = obj.faces;
-            fv.vertices = obj.vertices;
-            fv.cdata = obj.cdata;
-            
-        end
-        
-    end
-    
-    
-    properties ( Access = private )
-        
-        DEFAULT_COLOR = [ 0.5 0.5 0.5 ];
         
     end
     
@@ -90,39 +71,32 @@ classdef (Sealed) Component < handle
     methods ( Access = private )
         
         function construct_from_file( obj, file )
-            
             assert( isfile( file ) );
             
             [ obj.path, obj.name ] = fileparts( file );
-            
             [ coordinates, obj.normals ] = READ_stl( file );
             [ obj.faces, obj.vertices ] = CONVERT_meshformat( coordinates );
-            
-            obj.envelope = geometry.Envelope( obj );
-            
             obj.cdata = obj.DEFAULT_COLOR;
-            
+            obj.envelope = geometry.Envelope( obj );
         end
         
         
         function construct_from_fv( obj, varargin )
-            
             assert( nargin == 3 );
             
-            fv = varargin{ 1 };
-            name_in = varargin{ 2 };
-            
-            assert( isstruct( fv ) || isobject( fv ) );
-            if isstruct( fv )
-                assert( isfield( fv, 'faces' ) );
-                assert( isfield( fv, 'vertices' ) );
-            elseif isobject( fv )
-                assert( isprop( fv, 'faces' ) );
-                assert( isprop( fv, 'vertices' ) );
+            fv_in = varargin{ 1 };
+            assert( isstruct( fv_in ) || isobject( fv_in ) );
+            if isstruct( fv_in )
+                assert( isfield( fv_in, 'faces' ) );
+                assert( isfield( fv_in, 'vertices' ) );
+            elseif isobject( fv_in )
+                assert( isprop( fv_in, 'faces' ) );
+                assert( isprop( fv_in, 'vertices' ) );
             else
                 assert( false )
             end
             
+            name_in = varargin{ 2 };
             assert( ischar( name_in ) || isstring( name_in ) );
             if ischar( name_in )
                 assert( isvector( name_in ) );
@@ -134,17 +108,18 @@ classdef (Sealed) Component < handle
             
             obj.path = '';
             obj.name = name_in;
-            
-            obj.faces = fv.faces;
-            obj.vertices = fv.vertices;
+            obj.faces = fv_in.faces;
+            obj.vertices = fv_in.vertices;
             obj.normals = geometry.utils.compute_normals( obj );
-            
-            obj.envelope = geometry.Envelope( obj );
-            
             obj.cdata = obj.DEFAULT_COLOR;
-            
+            obj.envelope = geometry.Envelope( obj );
         end
         
+    end
+    
+    
+    properties ( Access = private, Constant )
+        DEFAULT_COLOR = [ 0.5 0.5 0.5 ];
     end
     
 end

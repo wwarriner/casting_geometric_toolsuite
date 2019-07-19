@@ -1,7 +1,7 @@
 %cavity = geometry.Component( which( 'bearing_block.stl' ) );
 cavity = geometry.shapes.create_cube( [ -0.015 -0.015 -0.015 ], [ 0.03 0.03 0.03 ], 'cavity' );
 cavity_id = 1;
-cavity.assign_id( cavity_id );
+cavity.id = cavity_id;
 
 mold_thickness = 0.010; % stl units
 mold = geometry.shapes.create_cube( ...
@@ -10,7 +10,7 @@ mold = geometry.shapes.create_cube( ...
     'mold' ...
     );
 mold_id = 2;
-mold.assign_id( mold_id );
+mold.id = mold_id;
 
 element_count = 1e5;
 ufv = mesh.UniformVoxelMesh( element_count );

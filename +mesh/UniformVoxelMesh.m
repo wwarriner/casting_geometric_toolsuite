@@ -209,7 +209,7 @@ classdef UniformVoxelMesh < mesh.MeshInterface
                 );
             for i = 1 : numel( obj.component_list )
                 c = obj.component_list( i );
-                voxels.paint( c.get_fv(), c.id );
+                voxels.paint( c.fv, c.id );
             end
             assert( ~any( voxels.values == 0, 'all' ) );
         end
