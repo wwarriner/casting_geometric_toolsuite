@@ -35,6 +35,7 @@ classdef Iterator < utils.Printer & handle
     methods ( Access = public )
         
         function iterate( obj )
+            obj.meta_kernel.update_system();
             obj.iterate_impl();
             obj.simulation_times.append( obj.get_simulation_time() );
             obj.computation_times.append( obj.get_computation_time() );

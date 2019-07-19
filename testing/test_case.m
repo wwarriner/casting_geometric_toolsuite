@@ -48,17 +48,18 @@ u = ufv.apply_material_property_fn( u_fn );
 utils.Printer.turn_print_on();
 utils.Printer.set_printer( @fprintf );
 
-sk = problem.kernel.SolidificationKernel( pp, ufv, u );
-lss = solver.LinearSystemSolver();
-
-smk = problem.kernel.SolidificationMetaKernel( sk, lss, pp, cavity_id );
+smk = problem.kernel.SolidificationMetaKernel( ufv, pp, cavity_id, u );
 
 qbi = modeler.QualityBisectionIterator( smk );
 qbi.maximum_iterations = 100;
 qbi.quality_tolerance = 0.2;
 qbi.stagnation_tolerance = 1e-2;
 qbi.initial_time_step = pp.compute_initial_time_step();
-qbi.iterate();
+
+finish_check_fn = @()all(smk.u<=pp.get_liquidus_temperature(cavity_id),'all');
+lp = iteration.Looper( qbi, finish_check_fn );
+lp.run();
+
 
 %% RESULTS
 sol_temp = pp.get_fraction_solid_temperature( 1.0 );
