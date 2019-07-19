@@ -1,5 +1,7 @@
 classdef MaterialProperty < handle
     
+    % TODO rename "PropertyBase"
+    
     properties ( GetAccess = public, SetAccess = protected )
         
         temperatures

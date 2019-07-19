@@ -1,5 +1,7 @@
 classdef (Sealed) LinearSystemSolver < handle
     
+    % TODO create interface
+    
     properties ( GetAccess = public, SetAccess = private )
         iteration_count(1,1) uint64 {mustBeNonnegative} = 0
         time(1,1) double {mustBeReal,mustBeFinite,mustBeNonnegative} = 0.0

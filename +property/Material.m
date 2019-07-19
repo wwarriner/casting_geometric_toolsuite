@@ -1,5 +1,7 @@
 classdef Material < handle & matlab.mixin.Heterogeneous
     
+    % TODO rename "MaterialBase"
+    
     properties ( Access = public )
         
         mesh_id

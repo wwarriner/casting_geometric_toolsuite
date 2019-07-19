@@ -1,5 +1,8 @@
 classdef (Sealed) ConvectionProperties < handle
     
+    % TODO rename "internal interface properties"
+    % TODO create interface
+    
     methods
         
         function obj = ConvectionProperties( ambient_mesh_id )

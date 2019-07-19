@@ -1,5 +1,9 @@
 classdef (Sealed) PhysicalProperties < handle
     
+    % TODO find better name
+    % TODO generalize
+    % TODO name XBase
+    
     methods ( Access = public )
         
         function obj = PhysicalProperties( space_step_in_m )

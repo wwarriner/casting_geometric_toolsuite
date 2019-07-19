@@ -1,10 +1,6 @@
 classdef Iterator < utils.Printer & handle
     
-    % need a new class to act as intermediary between iterator and solver
-    % the iterator gives the class a time step
-    % the class then acts on the solver and any other necessary data using
-    % that time step
-    % 
+    % TODO make into interface
     
     properties ( Access = public )
         initial_time_step(1,1) double {mustBeReal,mustBeFinite,mustBePositive} = 1.0
