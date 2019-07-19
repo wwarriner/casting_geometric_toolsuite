@@ -1,4 +1,4 @@
-classdef (Sealed) Envelope < handle
+classdef (Sealed) Envelope < handle & matlab.mixin.Copyable
     
     properties ( SetAccess = private )
         dimension_count(1,1) uint64 {mustBePositive} = 1
