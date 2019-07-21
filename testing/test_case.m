@@ -48,7 +48,7 @@ u = ufv.apply_material_property_fn( u_fn );
 utils.Printer.turn_print_on();
 utils.Printer.set_printer( @fprintf );
 
-smk = SolidificationMetaKernel( ufv, pp, cavity_id, u );
+smk = SolidificationProblem( ufv, pp, cavity_id, u );
 
 qbi = iteration.QualityBisectionIterator( smk );
 qbi.maximum_iterations = 100;
