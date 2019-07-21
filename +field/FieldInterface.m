@@ -1,21 +1,18 @@
 classdef FieldInterface < handle
     
-    methods ( Access = public )
-        
+    methods
         function obj = FieldInterface( values )
             obj.values = values;
         end
         
-    end
-    
-    methods ( Access = public ) % operators
-        
-        function value = double(obj)
-            value = obj.values;
-        end
-        
         function varargout = map( obj, fn )
             [varargout{1:nargout}] = fn( double(obj) );
+        end
+    end
+    
+    methods % operators
+        function value = double(obj)
+            value = obj.values;
         end
         
         function f = plus( obj1, obj2 )
@@ -111,9 +108,7 @@ classdef FieldInterface < handle
                     assert( false );
             end
         end
-        
     end
-    
     
     properties ( Access = private )
         values
