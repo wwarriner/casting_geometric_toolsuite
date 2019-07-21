@@ -31,7 +31,7 @@ classdef Iterator < utils.Printer & handle
     methods ( Access = public )
         
         function iterate( obj )
-            obj.meta_kernel.update_system();
+            obj.problem.update_system();
             obj.iterate_impl();
             obj.simulation_times.append( obj.get_simulation_time() );
             obj.computation_times.append( obj.get_computation_time() );
@@ -43,7 +43,7 @@ classdef Iterator < utils.Printer & handle
     
     
     properties ( Access = protected )
-        meta_kernel(1,1)
+        problem(1,1)
     end
     
     
@@ -58,11 +58,11 @@ classdef Iterator < utils.Printer & handle
     
     methods ( Access = protected )
         
-        function obj = Iterator( meta_kernel )
+        function obj = Iterator( problem )
             obj.simulation_times = util.StepTracker();
             obj.computation_times = util.StepTracker();
             obj.solver_iterations = util.StepTracker();
-            obj.meta_kernel = meta_kernel;
+            obj.problem = problem;
         end
         
         function set_time_step( obj, time_step )

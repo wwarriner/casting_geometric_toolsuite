@@ -1,4 +1,4 @@
-classdef SolidificationProblem < kernel.ProblemInterface
+classdef SolidificationProblem < problem.ProblemInterface
     
     properties
         quality_ratio(1,1) double {mustBeReal,mustBeFinite,mustBeNonnegative} = 1.0
