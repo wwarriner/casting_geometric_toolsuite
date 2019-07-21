@@ -1,4 +1,4 @@
-classdef (Sealed) Envelope < handle & matlab.mixin.Copyable
+classdef Envelope < handle & matlab.mixin.Copyable
     
     properties ( SetAccess = private )
         dimension_count(1,1) uint64 {mustBePositive} = 1
@@ -8,8 +8,7 @@ classdef (Sealed) Envelope < handle & matlab.mixin.Copyable
         volume(1,1) double {mustBeReal,mustBeFinite,mustBeNonnegative} = 0.0
     end
     
-    methods ( Access = public )
-        
+    methods
         % any one object like an fv struct
         % rows of fv.vertices must be points, columns dimensions
         % -OR-
@@ -39,12 +38,9 @@ classdef (Sealed) Envelope < handle & matlab.mixin.Copyable
             new_max = max( obj.max_point, envelope.max_point );
             u = geometry.Envelope( new_min, new_max );
         end
-        
     end
     
-    
     methods ( Access = private )
-        
         function construct_from_fv( obj, fv )
             assert( isstruct( fv ) || isobject( fv ) );
             if isstruct( fv )
@@ -59,7 +55,6 @@ classdef (Sealed) Envelope < handle & matlab.mixin.Copyable
             obj.recompute();
         end
         
-        
         function construct_from_points( obj, varargin )
             assert( nargin == 3 )
             
@@ -73,14 +68,12 @@ classdef (Sealed) Envelope < handle & matlab.mixin.Copyable
             obj.recompute();
         end
         
-        
         function recompute( obj )
             obj.min_point = min( obj.min_point, obj.max_point );
             obj.max_point = max( obj.min_point, obj.max_point );
             obj.lengths = obj.max_point - obj.min_point;
             obj.volume = prod( obj.lengths );
         end
-        
     end
     
 end
