@@ -1,31 +1,46 @@
-classdef QualityBisectionIterator < iteration.Iterator
+classdef QualityBisectionIterator < iteration.IteratorBase
+    % @QualityBisectionIterator is a @IteratorBase which implements a
+    % bisection method for finding an optimal time step quality. To do so,
+    % @problem must have a public property @quality. The value of quality
+    % must be zero when the time step is optimized. Negative quality
+    % must indicate a larger time step is required, and positive quality
+    % must indicate a smaller time step is required. It is recommended to
+    % have quality a dimensionless ratio of some physical quantity for best
+    % results.
     
-    properties ( Access = public )
+    properties
+        % @maximum_iterations controls how many bisection algorithm
+        % iterations are allowed before forcibly stopping computation.
         maximum_iterations(1,1) uint64 {mustBePositive} = 100
+        % @quality_tolerance controls how close quality must be to zero
+        % before stopping.
         quality_tolerance(1,1) double {mustBeReal,mustBeFinite,mustBePositive} = 0.2
+        % @stagnation_tolerance controls how close the current quality must
+        % be to the previous quality before forcibly stopping computation.
+        % Stagnation checking is required as there is no guarantee the
+        % quality function is convex.
         stagnation_tolerance(1,1) double {mustBeReal,mustBeFinite,mustBePositive} = 0.01
     end
-    
     
     properties ( SetAccess = private )
         qualities(1,1) util.StepTracker
         bisection_iterations(1,1) util.StepTracker
     end
     
-    
-    methods ( Access = public )
-        
+    methods
+        % Inputs:
+        % - @problem is derived from @ProblemInterface, and must have a
+        % public property @quality
         function obj = QualityBisectionIterator( problem )
-            obj@iteration.Iterator( problem );
+            assert( isprop( problem, 'quality' ) );
+            
+            obj@iteration.IteratorBase( problem );
             obj.qualities = util.StepTracker();
             obj.bisection_iterations = util.StepTracker();
         end
-        
     end
     
-    
-    methods ( Access = protected ) % abstract base class implementations
-        
+    methods ( Access = protected )
         function iterate_impl( obj )
             tic;
             obj.bisector = obj.create_bisector();
@@ -51,29 +66,16 @@ classdef QualityBisectionIterator < iteration.Iterator
         function message = get_message( obj )
             message = obj.status_message;
         end
-        
     end
     
-    
     properties ( Access = private )
-        bisector = []
+        bisector(1,1)
         computation_time(1,1) double {mustBeReal,mustBeFinite,mustBeNonnegative} = 0.0
         solver_counts(1,1) util.StepTracker
         status_message(1,1) string
     end
     
-    
-    properties ( Access = private, Constant )
-        TOLERANCE_STATUS = "Tolerance met.";
-        ITERATION_STATUS = "Exceeded maximum iterations.";
-        STAGNATION_STATUS = "Time step stagnated.";
-        FINISHED_STATUS = "Problem finished.";
-        CONTINUING_STATUS = "Continuing.";
-    end
-    
-    
     methods ( Access = private )
-        
         function bisector = create_bisector( obj )
             LOWER_BOUND = 0;
             UPPER_BOUND = inf;
@@ -89,7 +91,7 @@ classdef QualityBisectionIterator < iteration.Iterator
         end
         
         function quality = update_quality( obj, dt )
-            obj.problem.apply_time_step( dt );
+            obj.problem.solve( dt );
             quality = obj.problem.quality;
         end
         
@@ -126,7 +128,14 @@ classdef QualityBisectionIterator < iteration.Iterator
             below = false;
             %below = obj.problem.is_finished();
         end
-        
+    end
+    
+    properties ( Access = private, Constant )
+        TOLERANCE_STATUS = "Tolerance met.";
+        ITERATION_STATUS = "Exceeded maximum iterations.";
+        STAGNATION_STATUS = "Time step stagnated.";
+        FINISHED_STATUS = "Problem finished.";
+        CONTINUING_STATUS = "Continuing.";
     end
     
 end

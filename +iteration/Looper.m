@@ -1,21 +1,30 @@
 classdef Looper < handle
+    % @Looper facilitates iteration of the pde problem by repeatedly
+    % iterating until a finish checking function returns true.
+    % 
+    % TODO: Add callback functionality for per-iteration updates for, say,
+    % a dashboard, visualizations, etc.
     
-    methods ( Access = public )
-        
+    methods
+        % Inputs:
+        % - iterator is derived from @IteratorBase
+        % - finish_check_fn is a @function_handle taking zero arguments and
+        % returning a logical value indicating looping should stop when
+        % true and should continue when false.
         function obj = Looper( iterator, finish_check_fn )
             obj.iterator = iterator;
             obj.finish_check_fn = finish_check_fn;
         end
         
+        % @run loops on the @iterator until @finish_check_fn indicates
+        % looping should stop.
         function run( obj )
             while ~obj.is_finished()
                 obj.iterator.iterate();
                 obj.update_results();
             end
         end
-        
     end
-    
     
     properties ( Access = private )
         iterator(1,1)
@@ -23,9 +32,7 @@ classdef Looper < handle
         results(:,1)
     end
     
-    
     methods ( Access = private )
-        
         function finished = is_finished( obj )
             finished = obj.finish_check_fn();
         end
@@ -35,7 +42,6 @@ classdef Looper < handle
                 obj.results( i ).update();
             end
         end
-        
     end
     
 end
