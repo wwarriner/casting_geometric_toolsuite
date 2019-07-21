@@ -1,7 +1,5 @@
 function cube = create_cube( min_point, side_lengths, name )
 
-test22();
-
 assert( nargin == 3 );
 
 assert( isnumeric( min_point ) );
