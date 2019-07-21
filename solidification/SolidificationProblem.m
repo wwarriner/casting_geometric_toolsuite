@@ -1,4 +1,4 @@
-classdef SolidificationMetaKernel < handle
+classdef SolidificationProblem < kernel.ProblemInterface
     
     properties
         quality_ratio(1,1) double {mustBeReal,mustBeFinite,mustBeNonnegative} = 1.0
@@ -7,11 +7,12 @@ classdef SolidificationMetaKernel < handle
     properties ( SetAccess = private )
         u(:,1) double
         u_prev(:,1) double
+        quality(1,1) double
     end
     
     methods ( Access = public )
         
-        function obj = SolidificationMetaKernel( mesh, pp, cavity_id, u_init )
+        function obj = SolidificationProblem( mesh, pp, cavity_id, u_init )
             obj.u = u_init;
             obj.mesh = mesh;
             obj.solver = solver.LinearSystemSolver();
@@ -25,9 +26,9 @@ classdef SolidificationMetaKernel < handle
             obj.u_prev = obj.u;
         end
         
-        function quality = apply_time_step( obj, dt )
+        function apply_time_step( obj, dt )
             obj.u = obj.solver.solve( obj.A( dt ), obj.b( dt ), obj.u0 );
-            quality = obj.compute_quality( obj.u );
+            obj.quality = obj.compute_quality( obj.u );
         end
         
     end
