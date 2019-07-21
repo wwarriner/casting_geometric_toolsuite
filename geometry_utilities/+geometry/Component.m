@@ -1,9 +1,8 @@
-classdef (Sealed) Component < handle
+classdef Component < handle
     
     properties
         id(1,1) uint64 {mustBePositive} = 1
     end
-    
     
     properties ( SetAccess = private )
         path(1,1) string = ""
@@ -15,14 +14,11 @@ classdef (Sealed) Component < handle
         envelope(1,1) geometry.Envelope
     end
     
-    
     properties ( Dependent )
         fv
     end
     
-    
     methods
-        
         function obj = Component( varargin )
             if nargin == 0
                 return;
@@ -64,12 +60,9 @@ classdef (Sealed) Component < handle
                 'facecolor', obj.cdata ...
                 );
         end
-        
     end
     
-    
     methods ( Access = private )
-        
         function construct_from_file( obj, file )
             assert( isfile( file ) );
             
@@ -79,7 +72,6 @@ classdef (Sealed) Component < handle
             obj.cdata = obj.DEFAULT_COLOR;
             obj.envelope = geometry.Envelope( obj );
         end
-        
         
         function construct_from_fv( obj, varargin )
             assert( nargin == 3 );
@@ -114,9 +106,7 @@ classdef (Sealed) Component < handle
             obj.cdata = obj.DEFAULT_COLOR;
             obj.envelope = geometry.Envelope( obj );
         end
-        
     end
-    
     
     properties ( Access = private, Constant )
         DEFAULT_COLOR = [ 0.5 0.5 0.5 ];
