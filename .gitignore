@@ -1,3 +1,12 @@
 process_dependency_graph.mat
 examples/legacy_demo/legacy_demo.asv
 *.asv
+*.gz
+*.log
+*.blg
+*.bbl
+*.aux
+*.mexw64
+*.mexa64
+*.mexmaci64
+*.mex
