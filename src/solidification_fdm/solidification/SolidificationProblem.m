@@ -20,13 +20,13 @@ classdef SolidificationProblem < problem.ProblemInterface
             obj.cavity_id = cavity_id;
         end
         
-        function update_system( obj )
+        function prepare_system( obj )
             sk = SolidificationKernel( obj.pp, obj.mesh, obj.u );
             [ obj.A, obj.b, obj.u0 ] = sk.create_system();
             obj.u_prev = obj.u;
         end
         
-        function apply_time_step( obj, dt )
+        function solve( obj, dt )
             obj.u = obj.solver.solve( obj.A( dt ), obj.b( dt ), obj.u0 );
             obj.quality = obj.compute_quality( obj.u );
         end
