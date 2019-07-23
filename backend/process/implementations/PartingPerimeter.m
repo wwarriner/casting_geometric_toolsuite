@@ -18,6 +18,8 @@ classdef (Sealed) PartingPerimeter < Process
         length_ratio
         area_ratio
         draw_ratio
+        
+        parting_line
     end
     
     
@@ -61,50 +63,8 @@ classdef (Sealed) PartingPerimeter < Process
             obj.jog_free_perimeter = analyses.JogFreePerimeter( obj.perimeter.count, obj.perimeter.label_matrix, obj.projected_perimeter.label_matrix, obj.perimeter.limits );
             
             % PARTING LINE
-            %p = padarray( obj.projected_perimeter, [ 1 1 ], 0, 'both' );
-            p = obj.projected_perimeter;
-            a = imfill( p, 'holes' );
-            %b = imdilate( a, conndef( 2, 'maximal' ) );
-            c = bwperim( a );
-            d = bwmorph( c, 'thin', inf );
-            e = bwmorph( d, 'spur', inf );
-            f = bwmorph( e, 'thin', inf );
-            outer_perimeter = f;
-            %outer_perimeter = f( 2 : end, 2 : end );
-            [ loop_indices, right_side_distances ] = ...
-                obj.order_indices_by_loop( outer_perimeter );
-            if obj.optimize
-                obj.printf( '  Optimizing parting line...\n' );
-                pl = PartingLine( ...
-                    obj.min_slice( loop_indices ), ...
-                    obj.max_slice( loop_indices ), ...
-                    right_side_distances ...
-                    );
-                path_height = nan( size( outer_perimeter ) );
-                path_height( loop_indices ) = round( pl.parting_line );
-                unprojected_parting_line = obj.unproject_perimeter( ...
-                    rotated_interior, ...
-                    ~isnan( path_height ), ...
-                    path_height, ...
-                    path_height ...
-                    );
-                unprojected_parting_line = rotate_from_dimension( ...
-                    unprojected_parting_line, ...
-                    inverse ...
-                    );
-                PARTING_LINE_VALUE = 3;
-                % TODO add verticals when unprojecting somehow
-                obj.perimeter( unprojected_parting_line > 0 ) = PARTING_LINE_VALUE;
-                obj.flatness = pl.flatness;
-            else
-                if jog_height_voxel_units < 0
-                    %path_height = mean( [ max( obj.min_slice( : ) ) min( obj.max_slice( : ) ) ] );
-                    obj.flatness = 1;
-                else
-                    path_height = ( obj.min_slice( loop_indices ) + obj.max_slice( loop_indices ) ) ./ 2;
-                    obj.flatness = PartingLine.compute_flatness( path_height, right_side_distances );
-                end
-            end
+            obj.printf( '  Finding optimal parting line...\n' );
+            obj.parting_line = analyses.PartingLine( obj.mesh.interior, uint64( obj.projected_perimeter.label_matrix ), obj.perimeter.limits );
             
             % STATISTICS
             obj.printf( '  Computing statistics...\n' );
@@ -249,59 +209,6 @@ classdef (Sealed) PartingPerimeter < Process
                 %+ ( scale .* ( jog_heights_in_voxel_units( i ) - 1 ) );
             end
             draw = max( draws );
-        end
-        
-        function [ loop_indices, right_side_distances ] = ...
-                order_indices_by_loop( outer_perimeter )
-            % Empty case
-            if ~any( outer_perimeter( : ) )
-                loop_indices = 1;
-                right_side_distances = 0;
-                return;
-            end
-            % Fix image
-            im = imfill( outer_perimeter, 'holes' );
-            im = imopen( im, conndef( 2, 'maximal' ) );
-            im = bwareafilt( im, 1 );
-            im = bwperim( im );
-            im = bwmorph( im, 'skel', inf );
-            outer_perimeter = im;
-            % Setup
-            loop_indices = zeros( 1, sum( outer_perimeter( : ) ) + 1 );
-            right_side_distances = zeros( 1, sum( outer_perimeter( : ) ) );
-            % Loop Constants
-            INVALID_ELEMENT = 0;
-            VALID_ELEMENT = 1;
-            offsets = generate_neighbor_offsets( outer_perimeter );
-            preferred_neighbors = [ 7 8 5 3 2 1 4 6 ];
-            neighbor_distances = [ sqrt( 2 ) 1 sqrt( 2 ) 1 1 sqrt( 2) 1 sqrt( 2 ) ];
-            % Special Case
-            % first iteration is a special case so we end up with a closed loop
-            itr = 1;
-            loop_indices( itr ) = find( outer_perimeter, 1 );
-            itr = itr + 1;
-            % Identify Loop Indices
-            while true
-                % get next index
-                neighbors = loop_indices( itr - 1 ) + offsets;
-                valid_neighbors = outer_perimeter( neighbors ) == VALID_ELEMENT;
-                first_available_preference = find( valid_neighbors( preferred_neighbors ), 1 );
-                % end condition
-                if isempty( first_available_preference )
-                    % either loop is complete, or isn't a closed loop
-                    % because we are marking elements invalid as we pass
-                    break;
-                end
-                % updates
-                next_index = neighbors( preferred_neighbors( first_available_preference ) );
-                loop_indices( itr ) = next_index;
-                right_side_distances( itr - 1 ) = neighbor_distances( preferred_neighbors( first_available_preference ) );
-                outer_perimeter( next_index ) = INVALID_ELEMENT;
-                itr = itr + 1;
-            end
-            % Prepare Output
-            assert( loop_indices( 1 ) == loop_indices( end ) );
-            loop_indices = loop_indices( 1 : end - 1 );
         end
         
     end

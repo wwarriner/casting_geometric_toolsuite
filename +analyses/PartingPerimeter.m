@@ -26,7 +26,7 @@ classdef PartingPerimeter < handle
             assert( islogical( projected_perimeter ) );
             
             obj.limits = obj.determine_limits( interior, projected_perimeter );
-            perimeter = obj.unproject_perimeter( interior, projected_perimeter, obj.limits );
+            perimeter = unproject( interior, uint64( obj.limits ) );
             obj.values = obj.label( perimeter );
             
         end
@@ -72,19 +72,6 @@ classdef PartingPerimeter < handle
             upper = imdilate( upper, conndef( 2, 'maximal' ) );
             upper( ~projected_perimeter ) = 0;
             limits = cat( 3, lower, upper );
-        end
-        
-        function perimeter = unproject_perimeter( interior, projected_perimeter, limits )
-            sz = size( interior );
-            perimeter = zeros( sz );
-            for i = 1 : sz( 1 )
-                for j = 1 : sz( 2 )
-                    if projected_perimeter( i, j ) <= 0
-                        continue;
-                    end
-                    perimeter( i, j, limits( i, j, 1 ) : limits( i, j, 2 ) ) = true;
-                end
-            end
         end
         
         function labels = label( perimeter )
