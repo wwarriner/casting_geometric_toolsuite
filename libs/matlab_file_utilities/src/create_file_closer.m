@@ -9,7 +9,7 @@ function silent_fclose( fid )
 
 try
     fclose( fid );
-catch e
+catch e %#ok<NASGU>
     % do nothing
 end
 
