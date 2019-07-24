@@ -1,73 +1,100 @@
 classdef PartingLine < handle
     
+    properties ( SetAccess = private )
+        flatness(:,1) double
+    end
+    
     properties ( SetAccess = private, Dependent )
-        count
-        label_matrix
-        line
+        count(1,1) uint64
+        label_array(:,:,:) uint64
+        binary_array(:,:,:) logical
+        draw(1,1) double
     end
     
     methods
-        function obj = PartingLine( ...
-                interior, ...
-                projected_label_matrix, ...
-                limits ...
-                )
+        function obj = PartingLine( projected_perimeter, bounds, height )
             if nargin == 0
                 return;
             end
             
-            assert( ndims( interior ) == 3 );
-            assert( islogical( interior ) );
+            assert( isa( projected_perimeter, 'analyses.ProjectedPerimeter' ) );
             
-            assert( ismatrix( projected_label_matrix ) );
-            assert( isa( projected_label_matrix, 'uint64' ) );
+            assert( ndims( bounds ) == 3 );
+            assert( size( bounds, 3 ) == 2 );
+            assert( isa( bounds, 'uint64' ) );
             
-            assert( ndims( limits ) == 3 );
-            assert( size( limits, 3 ) == 2 );
-            assert( isa( limits, 'double' ) );
-            assert( isreal( limits ) );
-            assert( all( isfinite( limits ), 'all' ) );
-            assert( all( limits >= 0, 'all' ) );
+            assert( isscalar( height ) );
+            assert( isa( height, 'uint64' ) );
             
-            obj.values = zeros( size( interior ) );
-            for i = 1 : numel( unique( projected_label_matrix ) ) - 1
-                PP = Perimeter( projected_label_matrix == i );
-                
-                min_slice = limits( :, :, 1 );
-                max_slice = limits( :, :, 2 );
-                pl = analyses.RubberBandOptimizer( ...
-                    min_slice( PP.indices ), ...
-                    max_slice( PP.indices ), ...
-                    PP.distances ...
+            line = zeros( [ size( projected_perimeter.label_array ) height ] );
+            flatness = zeros( projected_perimeter.count, 1 );
+            for i = 1 : projected_perimeter.count
+                proj_segment = projected_perimeter.label_array == i;
+                [ path, flatness( i ) ] = obj.optimize_path( ...
+                    proj_segment, ...
+                    bounds ...
                     );
-                path_height = nan( size( projected_label_matrix ) );
-                path_height( PP.indices ) = round( pl.path );
-                
-                unprojected_parting_line = unproject( ...
-                    interior, ...
-                    uint64( cat( 3, path_height, path_height ) ) ...
-                    );
+                segment = obj.unproject_path( path, height );
+                line( segment ) = i;
                 % TODO add verticals when unprojecting somehow
-                obj.values( unprojected_parting_line > 0 ) = i;
-                %obj.flatness = pl.flatness;
             end
+            obj.cc = label2cc( line );
+            obj.flatness = flatness;
         end
         
         function value = get.count( obj )
-            value = uint64( numel( unique( obj.values ) ) - 1 );
+            value = obj.cc.NumObjects;
         end
         
-        function value = get.label_matrix( obj )
-            value = obj.values;
+        function value = get.label_array( obj )
+            value = labelmatrix( obj.cc );
         end
         
-        function value = get.line( obj )
-            value = obj.values > 0;
+        function value = get.binary_array( obj )
+            value = obj.label_array > 0;
+        end
+        
+        function value = get.draw( obj )
+            bounds = compute_bounds( obj.binary_array );
+            value = double( max( bounds, 'all' ) - min( bounds, 'all' ) + 1 );
         end
     end
     
     properties ( Access = private )
-        values(:,:,:) double {mustBeReal,mustBeFinite,mustBeNonnegative} = []
+        cc(1,1) struct
+    end
+    
+    methods ( Access = private )
+        function [ path, flatness ] = optimize_path( obj, segment, bounds )
+            loop = PerimeterLoop( segment );
+            lower = bounds( :, :, 1 );
+            upper = bounds( :, :, 2 );
+            rbo = analyses.RubberBandOptimizer( ...
+                double( lower( loop.indices ) ), ...
+                double( upper( loop.indices ) ), ...
+                loop.distances ...
+                );
+            path = zeros( size( segment ) );
+            path( loop.indices ) = round( rbo.path );
+            flatness = obj.compute_flatness( rbo.path, loop.distances );
+        end
+    end
+    
+    methods ( Access = private, Static )
+        function segment = unproject_path( path, height )
+            segment = unproject( ...
+                uint64( cat( 3, path, path ) ), ...
+                height ...
+                );
+        end
+        
+        function f = compute_flatness( path, distances )
+            % 1D version of Flatness criterion
+            % from Ravi B and Srinivasa M N, Computer-Aided Design 22(1), pp 11-18
+            h = diff( [ path; path( 1 ) ] );
+            d = sqrt( h .^ 2 + distances .^ 2 );
+            f = sum( d ) ./ sum( distances );
+        end
     end
     
 end

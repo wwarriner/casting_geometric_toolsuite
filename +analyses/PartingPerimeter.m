@@ -1,86 +1,68 @@
 classdef PartingPerimeter < handle
     
-    properties ( GetAccess = public, SetAccess = private, Dependent )
-        count
-        label_matrix
-        perimeter
+    properties ( SetAccess = private )
+        projected(1,1) analyses.ProjectedPerimeter
     end
     
-
-    properties ( GetAccess = public, SetAccess = private )
-        limits(:,:,2) double {mustBeReal,mustBeFinite,mustBeNonnegative} = [];
+    properties ( SetAccess = private, Dependent )
+        count(1,1) uint64
+        label_array(:,:,:) uint64
+        binary_array(:,:,:) logical
+        jog_free(1,1) analyses.JogFreePerimeter
+        line(1,1) analyses.PartingLine
     end
     
-    
-    methods ( Access = public )
-        
-        function obj = PartingPerimeter( interior, projected_perimeter )
+    methods
+        function obj = PartingPerimeter( interior )
             if nargin == 0
                 return;
             end
             
-            assert( ndims( interior ) == 3 );
-            assert( islogical( interior ) );
-            
-            assert( ismatrix( projected_perimeter ) );
-            assert( islogical( projected_perimeter ) );
-            
-            obj.limits = obj.determine_limits( interior, projected_perimeter );
-            perimeter = unproject( interior, uint64( obj.limits ) );
-            obj.values = obj.label( perimeter );
-            
+            pp = analyses.ProjectedPerimeter( interior );
+            [ bounds, height ] = compute_bounds( interior );
+            bounds( ~repmat( pp.binary_array, [ 1 1 2 ] ) ) = 0;
+            perimeter = unproject( bounds, height );
+            label_array = repmat( pp.label_array, [ 1 1 height ] );
+            label_array( ~perimeter ) = 0;
+            obj.cc = label2cc( label_array );
+            obj.bounds = bounds;
+            obj.height = height;
+            obj.projected = pp;
         end
-        
-    end
-    
-    
-    methods % getters
         
         function value = get.count( obj )
-            value = uint64( numel( unique( obj.values ) ) - 1 );
+            value = obj.cc.NumObjects;
         end
         
-        function value = get.label_matrix( obj )
-            value = obj.values;
+        function value = get.label_array( obj )
+            value = labelmatrix( obj.cc );
         end
         
-        function value = get.perimeter( obj )
-            value = obj.values > 0;
+        function value = get.binary_array( obj )
+            value = obj.label_array > 0;
         end
         
+        function value = get.jog_free( obj )
+            value = analyses.JogFreePerimeter( ...
+                obj.projected, ...
+                obj.bounds, ...
+                obj.height ...
+                );
+        end
+        
+        function value = get.line( obj )
+            value = analyses.PartingLine( ...
+                obj.projected, ...
+                obj.bounds, ...
+                obj.height ...
+                );
+        end
     end
-    
     
     properties ( Access = private )
-        values(:,:,:) double {mustBeReal,mustBeFinite,mustBeNonnegative} = []
-    end
-    
-    
-    methods ( Access = private, Static )
-        
-        function limits = determine_limits( interior, projected_perimeter )
-            sz = size( interior );
-            [ ~, ~, Z ] = meshgrid( 1 : sz( 2 ), 1 : sz( 1 ), 1 : sz( 3 ) );
-            sweep = repmat( projected_perimeter, [ 1 1 sz( 3 ) ] );
-            Z( ~( sweep & interior ) ) = nan;
-            lower = min( Z, [], 3 );
-            lower( ~projected_perimeter ) = inf;
-            lower = imerode( lower, conndef( 2, 'maximal' ) );
-            lower( ~projected_perimeter ) = 0;
-            upper = max( Z, [], 3 );
-            upper( ~projected_perimeter ) = -inf;
-            upper = imdilate( upper, conndef( 2, 'maximal' ) );
-            upper( ~projected_perimeter ) = 0;
-            limits = cat( 3, lower, upper );
-        end
-        
-        function labels = label( perimeter )
-            labels = labelmatrix( bwconncomp( ...
-                perimeter, ...
-                conndef( 3, 'maximal' ) ...
-                ) );
-        end
-        
+        cc(1,1) struct
+        bounds(:,:,2) uint64
+        height(1,1) uint64
     end
     
 end

@@ -7,10 +7,14 @@ classdef Table < handle
             if nargin < 2
                 names_prefix = [];
             end
-            v = obj.get_table_values();
             n = obj.get_prefixed_table_names( names_prefix );
+            v = obj.get_table_values();
             assert( size( v, 2 ) == size( n, 2 ) );
-            t = cell2table( v, 'VariableNames', n );
+            if isempty( n )
+                t = table();
+            else
+                t = cell2table( v, 'VariableNames', n );
+            end
             
         end
         

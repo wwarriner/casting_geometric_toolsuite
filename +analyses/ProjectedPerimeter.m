@@ -1,64 +1,37 @@
 classdef ProjectedPerimeter < handle
     
-    properties ( GetAccess = public, SetAccess = private, Dependent )
-        count
-        label_matrix
-        perimeter
+    properties ( SetAccess = private, Dependent )
+        count(1,1) uint64
+        label_array(:,:) uint64
+        binary_array(:,:) logical
     end
     
-    methods ( Access = public )
-        
-        function obj = ProjectedPerimeter( projected_interior )
+    methods
+        function obj = ProjectedPerimeter( interior )
             if nargin == 0
                 return;
             end
             
-            assert( ismatrix( projected_interior ) );
-            assert( islogical( projected_interior ) );
-            
-            perimeter = obj.determine_perimeter( projected_interior );
-            obj.values = obj.label( perimeter );
+            projected = project( interior );
+            perimeter = bwperim( projected );
+            obj.cc = bwconncomp( perimeter );
         end
-        
-    end
-    
-    
-    methods % getters
         
         function value = get.count( obj )
-            value = uint64( numel( unique( obj.values ) ) - 1 );
+            value = obj.cc.NumObjects;
         end
         
-        function value = get.label_matrix( obj )
-            value = obj.values;
+        function value = get.label_array( obj )
+            value = labelmatrix( obj.cc );
         end
         
-        function value = get.perimeter( obj )
-            value = obj.values > 0;
+        function value = get.binary_array( obj )
+            value = obj.label_array > 0;
         end
-        
     end
-    
     
     properties ( Access = private )
-        image(:,:) logical = []
-        values(:,:) double {mustBeReal,mustBeFinite,mustBeNonnegative} = []
-    end
-    
-    
-    methods ( Access = private, Static )
-        
-        function perimeter = determine_perimeter( image )
-            perimeter = bwperim( image, conndef( 2, 'minimal' ) );
-        end
-        
-        function labels = label( perimeter )
-            labels = labelmatrix( bwconncomp( ...
-                perimeter, ...
-                conndef( 2, 'maximal' ) ...
-                ) );
-        end
-        
+        cc(1,1) struct
     end
     
 end

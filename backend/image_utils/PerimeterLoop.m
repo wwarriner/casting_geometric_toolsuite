@@ -1,4 +1,4 @@
-classdef Perimeter < handle
+classdef PerimeterLoop < handle
     
     properties
         perimeter(:,:) logical
@@ -7,7 +7,7 @@ classdef Perimeter < handle
     end
     
     methods
-        function obj = Perimeter( image )
+        function obj = PerimeterLoop( image )
             cc = bwconncomp( image );
             assert( cc.NumObjects == 1 );
             

@@ -7,20 +7,21 @@ classdef RubberBandOptimizer < handle
     
     properties ( SetAccess = private )
         path
-        flatness
     end
     
     methods
         function obj = RubberBandOptimizer( lower, upper, distances )
-            assert( isnumeric( lower ) );
+            assert( isa( lower, 'double' ) );
             assert( isvector( lower ) );
             
-            assert( isnumeric( upper ) );
+            assert( isa( upper, 'double' ) );
             assert( isvector( upper ) );
             assert( length( upper ) == length( lower ) );
+            assert( all( upper >= lower ) );
             
-            assert( isnumeric( distances ) );
+            assert( isa( distances, 'double' ) );
             assert( isvector( distances ) );
+            assert( all( distances > 0 ) );
             assert( length( distances ) == length( lower ) );
             
             obj.lower = fillmissing( lower, 'linear' );
@@ -36,10 +37,8 @@ classdef RubberBandOptimizer < handle
                 path = obj.straighten_path( path, lb, ub, x_scaled );
                 obj.path = obj.prepare_output_path( path );
             end
-            obj.flatness = obj.compute_flatness( obj.path, distances );
             
             assert( all( min( obj.lower ) - 0.5 <= obj.path & obj.path <= max( obj.upper ) + 0.5 ) );
-            assert( obj.flatness >= 1 );
         end
     end
     
@@ -56,7 +55,7 @@ classdef RubberBandOptimizer < handle
         end
         
         function path = generate_mean_path( obj )
-            height = mean( min( obj.upper ), max( obj.lower ) );
+            height = ( min( obj.upper ) + max( obj.lower ) ) ./ 2;
             path = height .* ones( obj.count, 1 );
         end
         
@@ -177,14 +176,6 @@ classdef RubberBandOptimizer < handle
                 'uniformoutput', false ...
                 );
             segments = cell2mat( segments );
-        end
-        
-        function f = compute_flatness( path_height, distances )
-            % 1D version of Flatness criterion
-            % from Ravi B and Srinivasa M N, Computer-Aided Design 22(1), pp 11-18
-            h = diff( [ path_height; path_height( 1 ) ] );
-            d = sqrt( h .^ 2 + distances .^ 2 );
-            f = sum( d ) ./ sum( distances );
         end
     end
     
