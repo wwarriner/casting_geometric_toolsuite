@@ -6,11 +6,8 @@ classdef (Sealed) Parting < Process
         length(1,1) double
         draw(1,1) double
         perimeter_labels(:,:,:) uint64
-        perimeter_binary(:,:,:) logical
         jog_free_labels(:,:,:) uint64
-        jog_free_binary(:,:,:) logical
         line_labels(:,:,:) uint64
-        line_binary(:,:,:) logical
     end
     
     properties ( Constant )
@@ -49,11 +46,11 @@ classdef (Sealed) Parting < Process
         end
         
         function a = to_array( obj )
-            a = double( obj.perimeter.binary_array );
-            a( a ~= 0 ) = obj.PERIMETER;
-            jf = obj.perimeter.jog_free.binary_array;
+            a = double( obj.perimeter_labels );
+            a( a > 0 ) = obj.PERIMETER;
+            jf = obj.jog_free_labels;
             a( jf ) = obj.JOG_FREE;
-            pl = obj.perimeter.line.binary_array;
+            pl = obj.line_labels;
             a( pl ) = obj.LINE;
         end
         
@@ -77,24 +74,12 @@ classdef (Sealed) Parting < Process
             value = obj.perimeter.label_array;
         end
         
-        function value = get.perimeter_binary( obj )
-            value = obj.perimeter.binary_array;
-        end
-        
         function value = get.jog_free_labels( obj )
             value = obj.perimeter.jog_free.label_array;
         end
         
-        function value = get.jog_free_binary( obj )
-            value = obj.perimeter.jog_free.binary_array;
-        end
-        
         function value = get.line_labels( obj )
             value = obj.perimeter.line.label_array;
-        end
-        
-        function value = get.line_binary( obj )
-            value = obj.perimeter.line.binary_array;
         end
     end
     
