@@ -1,5 +1,10 @@
 classdef ProjectedPerimeter < handle
     
+    properties ( SetAccess = private )
+        area(1,1) double % mesh units
+        length(1,1) double % mesh units
+    end
+    
     properties ( SetAccess = private, Dependent )
         count(1,1) uint64
         label_array(:,:) uint64
@@ -13,8 +18,13 @@ classdef ProjectedPerimeter < handle
             end
             
             projected = project( interior );
+            area = sum( projected, 'all' );
             perimeter = bwperim( projected );
+            length = sum( perimeter, 'all' );
             obj.cc = bwconncomp( perimeter );
+            obj.cc.NumObjects = uint64( obj.cc.NumObjects );
+            obj.area = area;
+            obj.length = length;
         end
         
         function value = get.count( obj )

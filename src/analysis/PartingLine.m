@@ -8,7 +8,7 @@ classdef PartingLine < handle
         count(1,1) uint64
         label_array(:,:,:) uint64
         binary_array(:,:,:) logical
-        draw(1,1) double
+        draw(1,1) double % mesh units
     end
     
     methods
@@ -55,8 +55,8 @@ classdef PartingLine < handle
         end
         
         function value = get.draw( obj )
-            bounds = compute_bounds( obj.binary_array );
-            value = double( max( bounds, 'all' ) - min( bounds, 'all' ) + 1 );
+            bounds = double( compute_bounds( obj.binary_array ) );
+            value = max( bounds, [], 'all' ) - min( bounds, [], 'all' ) + 1;
         end
     end
     
