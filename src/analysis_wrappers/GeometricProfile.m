@@ -2,20 +2,21 @@ classdef (Sealed) GeometricProfile < Process
     % GeometricProfile encapsulates the behavior and data of a geometric
     % approach to the solidification profile of castings
     
-    properties ( GetAccess = public, SetAccess = private )
-        scaled
-        scaled_interior
-        filtered
-        filtered_interior
-        filter_amount
-        minimum_thickness
-        maximum_thickness
-        thickness_ratio
+    properties ( SetAccess = private )
+        scaled(:,:,:) double
+        minimum_thickness(1,1) double
+        maximum_thickness(1,1) double
+        thickness_ratio(1,1) double
     end
     
+    properties ( SetAccess = private, Dependent )
+        scaled_interior(:,:,:) double
+        filtered(:,:,:) double
+        filtered_interior(:,:,:) double
+        filter_amount(1,1) double
+    end
     
-    methods ( Access = public )
-        
+    methods
         function obj = GeometricProfile( varargin )
             obj = obj@Process( varargin{ : } );
         end
@@ -44,11 +45,6 @@ classdef (Sealed) GeometricProfile < Process
             a = obj.scaled;
         end
         
-    end
-    
-    
-    methods % getters
-        
         function value = get.scaled( obj )
             value = obj.edt.get();
         end
@@ -68,7 +64,6 @@ classdef (Sealed) GeometricProfile < Process
         function value = get.filter_amount( obj )
             value = obj.compute_filter_amount( obj.mesh.scale );
         end
-        
     end
     
     
@@ -106,7 +101,6 @@ classdef (Sealed) GeometricProfile < Process
     
     
     methods ( Access = private )
-        
         function obtain_inputs( obj )
             if ~isempty( obj.results )
                 mesh_key = ProcessKey( Mesh.NAME );
@@ -139,12 +133,9 @@ classdef (Sealed) GeometricProfile < Process
             obj.thickness_ratio = ...
                 1 - ( obj.minimum_thickness / obj.maximum_thickness );
         end
-        
     end
     
-    
     methods ( Access = private, Static )
-        
         function [ minimum, maximum ] = thickness_analysis( scaled_interior )
             regional_maxima = imregionalmax( scaled_interior );
             scaled_regional_maxima = scaled_interior( regional_maxima );
@@ -156,7 +147,6 @@ classdef (Sealed) GeometricProfile < Process
             TOLERANCE = 1e-4;
             threshold = mesh_scale * ( 1 + TOLERANCE );
         end
-        
     end
     
 end
