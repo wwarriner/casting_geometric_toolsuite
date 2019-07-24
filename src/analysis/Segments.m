@@ -1,14 +1,13 @@
 classdef Segments < handle
-    % Segments encapsulated behavior and data of watershed segments.
+    % @Segments encapsulates behavior and data of watershed segments. These are
+    % intended to mirror isolated sections in casting geometries.
     
-    properties ( GetAccess = public, SetAccess = private, Dependent )
-        count
-        label_matrix
+    properties ( SetAccess = private, Dependent )
+        count(1,1) uint64
+        label_array(:,:,:) double
     end
     
-    
-    methods ( Access = public )
-        
+    methods
         % - @profile is an ND double array representing some watershed-sensible
         % profile.
         % - @mask is a logical array of the same size as @profile of the region
@@ -26,38 +25,23 @@ classdef Segments < handle
             assert( islogical( mask ) );
             assert( all( size( mask ) == size( profile ) ) );
             
-            obj.values = obj.label( profile, mask );
+            segments = watershed_masked( -profile, mask );
+            cc = bwconncomp( segments );
+            cc.NumObjects = uint64( cc.NumObjects );
+            obj.cc = cc;
         end
-        
-    end
-    
-    
-    methods % getters
         
         function value = get.count( obj )
-            value = numel( unique( obj.values ) ) - 1;
+            value = obj.cc.NumObjects;
         end
         
-        function value = get.label_matrix( obj )
-            value = obj.values;
+        function value = get.label_array( obj )
+            value = labelmatrix( obj.cc );
         end
-        
     end
-    
     
     properties ( Access = private )
-        values(:,:,:) double {mustBeReal,mustBeFinite,mustBeNonnegative} = []
-    end
-    
-    
-    methods ( Access = private, Static )
-        
-        function segments = label( profile, mask )
-            profile( ~mask ) = -inf;
-            segments = double( watershed( -profile ) );
-            segments( ~mask ) = 0;
-        end
-        
+        cc(1,1) struct
     end
     
 end
