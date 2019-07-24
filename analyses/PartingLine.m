@@ -17,7 +17,7 @@ classdef PartingLine < handle
                 return;
             end
             
-            assert( isa( projected_perimeter, 'analyses.ProjectedPerimeter' ) );
+            assert( isa( projected_perimeter, 'ProjectedPerimeter' ) );
             
             assert( ndims( bounds ) == 3 );
             assert( size( bounds, 3 ) == 2 );
@@ -69,7 +69,7 @@ classdef PartingLine < handle
             loop = PerimeterLoop( segment );
             lower = bounds( :, :, 1 );
             upper = bounds( :, :, 2 );
-            rbo = analyses.RubberBandOptimizer( ...
+            rbo = RubberBandOptimizer( ...
                 double( lower( loop.indices ) ), ...
                 double( upper( loop.indices ) ), ...
                 loop.distances ...

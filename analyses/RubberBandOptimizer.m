@@ -148,8 +148,8 @@ classdef RubberBandOptimizer < handle
         function [ left, right ] = get_circular_indices( path )
             indices = find( path );
             lengths = diff( [ 0; indices; length( path ) ] );
-            right = analyses.RubberBandOptimizer.create_segments( [ indices; indices( 1 ) ], lengths );
-            left = analyses.RubberBandOptimizer.create_segments( [ indices( end ); indices ], lengths );
+            right = RubberBandOptimizer.create_segments( [ indices; indices( 1 ) ], lengths );
+            left = RubberBandOptimizer.create_segments( [ indices( end ); indices ], lengths );
         end
         
         function displacements = compute_displacements( path, d )

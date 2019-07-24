@@ -1,15 +1,15 @@
 classdef PartingPerimeter < handle
     
     properties ( SetAccess = private )
-        projected(1,1) analyses.ProjectedPerimeter
+        projected(1,1) ProjectedPerimeter
     end
     
     properties ( SetAccess = private, Dependent )
         count(1,1) uint64
         label_array(:,:,:) uint64
         binary_array(:,:,:) logical
-        jog_free(1,1) analyses.JogFreePerimeter
-        line(1,1) analyses.PartingLine
+        jog_free(1,1) JogFreePerimeter
+        line(1,1) PartingLine
     end
     
     methods
@@ -18,7 +18,7 @@ classdef PartingPerimeter < handle
                 return;
             end
             
-            pp = analyses.ProjectedPerimeter( interior );
+            pp = ProjectedPerimeter( interior );
             [ bounds, height ] = compute_bounds( interior );
             bounds( ~repmat( pp.binary_array, [ 1 1 2 ] ) ) = 0;
             perimeter = unproject( bounds, height );
@@ -43,7 +43,7 @@ classdef PartingPerimeter < handle
         end
         
         function value = get.jog_free( obj )
-            value = analyses.JogFreePerimeter( ...
+            value = JogFreePerimeter( ...
                 obj.projected, ...
                 obj.bounds, ...
                 obj.height ...
@@ -51,7 +51,7 @@ classdef PartingPerimeter < handle
         end
         
         function value = get.line( obj )
-            value = analyses.PartingLine( ...
+            value = PartingLine( ...
                 obj.projected, ...
                 obj.bounds, ...
                 obj.height ...

@@ -12,7 +12,7 @@ classdef JogFreePerimeter < handle
                 return;
             end
             
-            assert( isa( projected_perimeter, 'analyses.ProjectedPerimeter' ) );
+            assert( isa( projected_perimeter, 'ProjectedPerimeter' ) );
             
             assert( ndims( bounds ) == 3 );
             assert( size( bounds, 3 ) == 2 );

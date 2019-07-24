@@ -11,7 +11,7 @@
 		"threshold_stl_units":25.0
 		},
 	"mesh":{
-		"element_count":1e6
+		"element_count":1e5
 		},
 	"thin_wall":{
 		"cavity_sweep_coefficient":2.0,
