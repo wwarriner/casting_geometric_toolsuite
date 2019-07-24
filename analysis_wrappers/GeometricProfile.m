@@ -100,8 +100,8 @@ classdef (Sealed) GeometricProfile < Process
     
     properties ( Access = private )
         mesh(1,1) Mesh
-        edt analyses.EdtProfile
-        filter analyses.FilteredProfile
+        edt EdtProfile
+        filter FilteredProfile
     end
     
     
@@ -117,7 +117,7 @@ classdef (Sealed) GeometricProfile < Process
         
         function prepare_edt( obj )
             obj.printf( 'Computing EDT profile...\n' );
-            obj.edt = analyses.EdtProfile( ...
+            obj.edt = EdtProfile( ...
                 obj.mesh.surface, ...
                 obj.mesh.exterior ...
                 );
@@ -126,7 +126,7 @@ classdef (Sealed) GeometricProfile < Process
         
         function prepare_filter( obj )
             obj.printf( 'Filtering profile...\n' );
-            obj.filter = analyses.FilteredProfile( ...
+            obj.filter = FilteredProfile( ...
                 obj.scaled, ...
                 obj.compute_filter_amount( obj.mesh.scale ) ...
                 );

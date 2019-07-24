@@ -25,7 +25,7 @@ classdef (Sealed) PartingPerimeter < Process
                 'Locating parting perimeter...\n', ...
                 obj.parting_dimension ...
                 );
-            obj.perimeter = analyses.PartingPerimeter( obj.mesh.interior );
+            obj.perimeter = PartingPerimeter( obj.mesh.interior );
         end
         
         function legacy_run( obj, mesh )

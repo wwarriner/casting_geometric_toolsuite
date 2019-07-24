@@ -143,7 +143,7 @@ classdef (Sealed) Segmentation < Process
         geometric_profile(1,1) GeometricProfile
         use_thermal_profile(1,1) logical = false
         profile double {mustBeReal,mustBeFinite}
-        segments analyses.Segments
+        segments Segments
     end
     
     
@@ -181,7 +181,7 @@ classdef (Sealed) Segmentation < Process
                 obj.profile = obj.geometric_profile.scaled_interior;
             end
             assert( ~isempty( obj.profile ) );
-            obj.segments = analyses.Segments( ...
+            obj.segments = Segments( ...
                 obj.profile, ...
                 obj.mesh.interior ...
                 );

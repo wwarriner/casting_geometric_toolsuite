@@ -80,7 +80,7 @@ classdef (Sealed) Undercuts < Process
     
     properties ( Access = private )
         mesh(1,1) Mesh
-        undercuts analyses.Undercuts
+        undercuts Undercuts
     end
     
     
@@ -96,7 +96,7 @@ classdef (Sealed) Undercuts < Process
         
         function prepare_undercuts( obj )
             obj.printf( 'Identifying undercuts...\n' );
-            obj.undercuts = analyses.Undercuts( obj.mesh.interior );
+            obj.undercuts = Undercuts( obj.mesh.interior );
         end
         
     end
