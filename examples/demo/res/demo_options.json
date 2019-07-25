@@ -11,13 +11,13 @@
 		"threshold_stl_units":25.0
 		},
 	"mesh":{
-		"element_count":1e5
+		"element_count":1e6
 		},
 	"thin_wall":{
 		"cavity_sweep_coefficient":2.0,
-		"cavity_threshold_stl_units":6.25,
+		"cavity_threshold_stl_units":2.35,
 		"mold_sweep_coefficient":2.0,
-		"mold_threshold_stl_units":2.35
+		"mold_threshold_stl_units":6.25
 		},
 	"parting_line":{
 		"optimize":true

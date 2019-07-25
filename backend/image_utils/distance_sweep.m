@@ -4,8 +4,8 @@ function sweep = distance_sweep( ...
     sweep_distance_in_voxel_units ...
     )
 
-sweep = bwdistgeodesic( space, seeds );
+sweep = bwdistgeodesic( space, seeds, 'quasi-euclidean' );
 sweep( isnan( sweep ) | ~space ) = inf;
-sweep = sweep < sweep_distance_in_voxel_units;
+sweep = sweep <= sweep_distance_in_voxel_units;
 
 end

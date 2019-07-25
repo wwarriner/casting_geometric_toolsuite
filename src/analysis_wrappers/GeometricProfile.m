@@ -10,6 +10,8 @@ classdef (Sealed) GeometricProfile < Process
     end
     
     properties ( SetAccess = private, Dependent )
+        unscaled(:,:,:) double
+        unscaled_interior(:,:,:) double
         scaled_interior(:,:,:) double
         filtered(:,:,:) double
         filtered_interior(:,:,:) double
@@ -43,6 +45,14 @@ classdef (Sealed) GeometricProfile < Process
         
         function a = to_array( obj )
             a = obj.scaled;
+        end
+        
+        function value = get.unscaled( obj )
+            value = obj.mesh.to_mesh_units( obj.scaled );
+        end
+        
+        function value = get.unscaled_interior( obj )
+            value = obj.mesh.to_mesh_units( obj.scaled_interior );
         end
         
         function value = get.scaled( obj )

@@ -21,8 +21,9 @@ classdef ProjectedPerimeter < handle
             area = sum( projected, 'all' );
             perimeter = bwperim( projected );
             length = sum( perimeter, 'all' );
-            obj.cc = bwconncomp( perimeter );
-            obj.cc.NumObjects = uint64( obj.cc.NumObjects );
+            cc = bwconncomp( perimeter );
+            cc.NumObjects = uint64( cc.NumObjects );
+            obj.cc = cc;
             obj.area = area;
             obj.length = length;
         end
