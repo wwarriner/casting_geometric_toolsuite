@@ -37,6 +37,14 @@ classdef (Sealed) MoldThinWall < Process
             a = obj.label_array;
         end
         
+        function value = to_table( obj )
+            value = table( ...
+                obj.count, obj.volume, ...
+                'variablenames', ...
+                { 'count' 'volume' } ...
+                );
+        end
+        
         function value = get.count( obj )
             value = obj.thin_sections.count;
         end
@@ -54,23 +62,6 @@ classdef (Sealed) MoldThinWall < Process
     methods ( Access = public, Static )
         function name = NAME()
             name = mfilename( 'class' );
-        end
-    end
-    
-    
-    methods ( Access = protected )
-        function names = get_table_names( ~ )
-            names = { ...
-                'count' ...
-                'volume' ...
-                };
-        end
-        
-        function values = get_table_values( obj )
-            values = { ...
-                obj.count ...
-                obj.volume ...
-                };
         end
     end
     

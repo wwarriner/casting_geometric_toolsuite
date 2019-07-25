@@ -43,8 +43,16 @@ classdef (Sealed) CavityThinWall < Process
             common_writer.write_table( title, obj.to_table() );
         end
         
-        function a = to_array( obj )
-            a = obj.label_array;
+        function value = to_array( obj )
+            value = obj.label_array;
+        end
+        
+        function value = to_table( obj )
+            value = table( ...
+                obj.count, obj.volume, ...
+                'variablenames', ...
+                { 'count' 'volume' } ...
+                );
         end
         
         function value = get.count( obj )
@@ -64,23 +72,6 @@ classdef (Sealed) CavityThinWall < Process
     methods ( Access = public, Static )
         function name = NAME()
             name = mfilename( 'class' );
-        end
-    end
-    
-    
-    methods ( Access = protected )
-        function names = get_table_names( ~ )
-            names = { ...
-                'count' ...
-                'volume' ...
-                };
-        end
-        
-        function values = get_table_values( obj )
-            values = { ...
-                obj.count ...
-                obj.volume ...
-                };
         end
     end
     

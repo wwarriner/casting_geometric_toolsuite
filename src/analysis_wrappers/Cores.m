@@ -43,6 +43,14 @@ classdef (Sealed) Cores < Process
             a = obj.label_array;
         end
         
+        function value = to_table( obj )
+            value = table( ...
+                obj.count, obj.volume, ...
+                'variablenames', ...
+                { 'count' 'volume' } ...
+                );
+        end
+        
         function value = get.count( obj )
             value = obj.core_segments.count;
         end
@@ -60,22 +68,6 @@ classdef (Sealed) Cores < Process
     methods ( Access = public, Static )
         function name = NAME()
             name = mfilename( 'class' );
-        end
-    end
-    
-    methods ( Access = protected )
-        function names = get_table_names( ~ )
-            names = { ...
-                'count' ...
-                'volume' ...
-                };
-        end
-        
-        function values = get_table_values( obj )
-            values = { ...
-                obj.count ...
-                obj.volume ...
-                };
         end
     end
     
