@@ -1,4 +1,14 @@
 classdef (Sealed) CavityThinWall < Process
+    % @CavityThinWall identifies regions whose local thickness is below the
+    % @threshold property value.
+    % Settings:
+    % - @threshold, determines what regions count as thin in component
+    % units.
+    % - @sweep_coefficient, aggressiveness in determining thin regions, is
+    % unitless.
+    % Dependencies:
+    % - @Mesh
+    % - @GeometricProfile
     
     properties
         threshold(1,1) double {mustBeReal,mustBeFinite,mustBePositive} = 1 % component length units
@@ -21,9 +31,9 @@ classdef (Sealed) CavityThinWall < Process
             obj.prepare_thin_sections();
         end
         
-        function legacy_run( obj, mesh, profile, threshold, sweep_coefficient )
+        function legacy_run( obj, mesh, geometric_profile, threshold, sweep_coefficient )
             obj.mesh = mesh;
-            obj.profile = profile;
+            obj.geometric_profile = geometric_profile;
             obj.threshold = threshold;
             obj.sweep_coefficient = sweep_coefficient;
         end
@@ -76,7 +86,7 @@ classdef (Sealed) CavityThinWall < Process
     
     properties ( Access = private )
         mesh(1,1) Mesh
-        profile(1,1) GeometricProfile
+        geometric_profile(1,1) GeometricProfile
         thin_sections(1,1) ThinSections
     end
     
@@ -86,10 +96,10 @@ classdef (Sealed) CavityThinWall < Process
                 mesh_key = ProcessKey( Mesh.NAME );
                 obj.mesh = obj.results.get( mesh_key );
                 geometric_profile_key = ProcessKey( GeometricProfile.NAME );
-                obj.profile = obj.results.get( geometric_profile_key );
+                obj.geometric_profile = obj.results.get( geometric_profile_key );
             end
             assert( ~isempty( obj.mesh ) );
-            assert( ~isempty( obj.profile ) );
+            assert( ~isempty( obj.geometric_profile ) );
             
             if ~isempty( obj.options )
                 loc = 'processes.thin_wall.cavity_threshold_stl_units';
@@ -108,7 +118,7 @@ classdef (Sealed) CavityThinWall < Process
             amount = [ 1 1 1 ];
             value = 0;
             mask = padarray( obj.mesh.interior, amount, value, 'both' );
-            wall = padarray( obj.profile.unscaled, amount, 0, 'both' );
+            wall = padarray( obj.geometric_profile.unscaled, amount, 0, 'both' );
             ts = ThinSections( ...
                 wall, ...
                 mask, ...
