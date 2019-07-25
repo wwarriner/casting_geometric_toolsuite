@@ -38,9 +38,9 @@ classdef (Sealed) CavityThinWall < Process
             obj.sweep_coefficient = sweep_coefficient;
         end
         
-        function write( obj, title, common_writer )
-            common_writer.write_array( title, obj.to_array() );
-            common_writer.write_table( title, obj.to_table() );
+        function write( obj, common_writer )
+            common_writer.write_array( obj.NAME, obj.to_array() );
+            common_writer.write_table( obj.NAME, obj.to_table() );
         end
         
         function value = to_array( obj )

@@ -126,10 +126,10 @@ classdef (Sealed) Feeders < Process & matlab.mixin.Copyable
         end
         
         
-        function write( obj, title, common_writer )
+        function write( obj, common_writer )
             
-            common_writer.write_fv_sequence( title, obj.to_fvs() );
-            common_writer.write_table( title, obj.to_table() );
+            common_writer.write_fv_sequence( obj.NAME, obj.to_fvs() );
+            common_writer.write_table( obj.NAME, obj.to_table() );
             
         end
         

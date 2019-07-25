@@ -35,12 +35,12 @@ classdef (Sealed) GeometricProfile < Process
             obj.run();
         end
         
-        function write( obj, title, common_writer )
-            scaled_title = [ 'scaled_' title ];
+        function write( obj, common_writer )
+            scaled_title = [ 'scaled_' obj.NAME ];
             common_writer.write_array( scaled_title, obj.scaled );
-            filtered_title = [ 'filtered_' title ];
+            filtered_title = [ 'filtered_' obj.NAME ];
             common_writer.write_array( filtered_title, obj.filtered );
-            common_writer.write_table( title, obj.to_table() );
+            common_writer.write_table( obj.NAME, obj.to_table() );
         end
         
         function a = to_array( obj )

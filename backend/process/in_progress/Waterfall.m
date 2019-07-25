@@ -119,11 +119,11 @@ classdef Waterfall < Process
         end
         
         
-        function write( obj, title, common_writer )
+        function write( obj, common_writer )
             
-            common_writer.write_array( [ title '_local_drop' ], obj.local_drop );
-            common_writer.write_array( [ title '_worst_drop' ], obj.worst_drop );
-            common_writer.write_table( title, obj.to_table() );
+            common_writer.write_array( [ obj.NAME '_local_drop' ], obj.local_drop );
+            common_writer.write_array( [ obj.NAME '_worst_drop' ], obj.worst_drop );
+            common_writer.write_table( obj.NAME, obj.to_table() );
             
         end
         

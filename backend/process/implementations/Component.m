@@ -119,13 +119,13 @@ classdef (Sealed) Component < Process & matlab.mixin.Copyable
         end
         
         
-        function write( obj, title, common_writer )
+        function write( obj, common_writer )
             
             if ~common_writer.copy_file( obj.get_full_path() )
-                common_writer.write_fv( title, obj.fv );
+                common_writer.write_fv( obj.NAME, obj.fv );
             end
-            common_writer.write_colored_fv( [ title '_draft' ], obj.get_draft_fvc() );
-            common_writer.write_table( title, obj.to_table );
+            common_writer.write_colored_fv( [ obj.NAME,  '_draft' ], obj.get_draft_fvc() );
+            common_writer.write_table( obj.NAME, obj.to_table );
             
         end
         

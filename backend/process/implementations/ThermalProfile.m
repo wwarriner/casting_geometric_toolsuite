@@ -197,9 +197,9 @@ classdef ThermalProfile < Process
         end
         
         
-        function write( obj, title, common_writer )
+        function write( obj, common_writer )
             
-            common_writer.write_array( title, obj.solidification_times );
+            common_writer.write_array( obj.NAME, obj.solidification_times );
             
         end
         

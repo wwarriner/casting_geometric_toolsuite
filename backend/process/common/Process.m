@@ -2,7 +2,6 @@ classdef (Abstract) Process < UserInterface & handle
     
     methods ( Abstract, Access = public )
         run( obj );
-        value = to_table( obj );
         value = write( obj, files );
     end
     

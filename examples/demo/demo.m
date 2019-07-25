@@ -20,5 +20,5 @@ options.set( 'processes.thermal_profile.show_dashboard', true ); % set false to 
 pm = ProcessManager( options );
 pm.run();
 pm.write(); % needs output_path defined
-summary_data = pm.generate_summary();
+%summary_data = pm.generate_summary();
 
