@@ -1,5 +1,5 @@
-classdef CoreSegments < handle
-    % @CoreSegments is intended to identify regions in a voxel
+classdef CoreQuery < handle
+    % @CoreQuery is intended to identify regions in a voxel
     % representation of a solid body which roughly approximate the required
     % cores to cast that body. The intent is to take the undercuts and
     % connect them together using an algorithm that expands and merges
@@ -13,13 +13,13 @@ classdef CoreSegments < handle
     methods
         % Inputs:
         % - @undercuts is a logical array representing the undercuts of
-        % some logical image (as from @UndercutSegments).
+        % some logical image (as from @UndercutQuery).
         % - @exterior is a logical array representing the exterior of the
         % same logical image referred to previously. For a casting this
         % would be everything outside the cavity.
         % - @threshold is a real, finite, positive scalar double which
         % determines how far to expand the undercuts when merging.
-        function obj = CoreSegments( undercuts, exterior, threshold )
+        function obj = CoreQuery( undercuts, exterior, threshold )
             if nargin == 0
                 return;
             end

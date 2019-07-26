@@ -1,6 +1,6 @@
-classdef Segments < handle
-    % @Segments encapsulates behavior and data of watershed segments. These are
-    % intended to mirror isolated sections in casting geometries.
+classdef SegmentQuery < handle
+    % @SegmentQuery encapsulates behavior and data of watershed segments. These
+    % are intended to mirror isolated sections in casting geometries.
     
     properties ( SetAccess = private, Dependent )
         count(1,1) uint64
@@ -13,7 +13,7 @@ classdef Segments < handle
         % - @mask is a logical array of the same size as @profile of the region
         % to apply the watershed to. All elements not in the mask are assigned
         % the watershed segment 0, i.e. the boundary value of watershed().
-        function obj = Segments( profile, mask )
+        function obj = SegmentQuery( profile, mask )
             if nargin == 0
                 return;
             end

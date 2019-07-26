@@ -13,9 +13,9 @@ classdef (Sealed) GeometricProfile < Process
         unscaled(:,:,:) double
         unscaled_interior(:,:,:) double
         scaled_interior(:,:,:) double
-        filtered(:,:,:) double
-        filtered_interior(:,:,:) double
-        filter_amount(1,1) double
+        filter_profile_queryed(:,:,:) double
+        filter_profile_queryed_interior(:,:,:) double
+        filter_profile_query_amount(1,1) double
     end
     
     methods
@@ -25,8 +25,8 @@ classdef (Sealed) GeometricProfile < Process
         
         function run( obj )
             obj.obtain_inputs();
-            obj.prepare_edt();
-            obj.prepare_filter();
+            obj.prepare_edt_profile_query();
+            obj.prepare_filter_profile_query();
             obj.compute_statistics();
         end
         
@@ -38,8 +38,8 @@ classdef (Sealed) GeometricProfile < Process
         function write( obj, common_writer )
             scaled_title = [ 'scaled_' obj.NAME ];
             common_writer.write_array( scaled_title, obj.scaled );
-            filtered_title = [ 'filtered_' obj.NAME ];
-            common_writer.write_array( filtered_title, obj.filtered );
+            filter_profile_queryed_title = [ 'filter_profile_queryed_' obj.NAME ];
+            common_writer.write_array( filter_profile_queryed_title, obj.filter_profile_queryed );
             common_writer.write_table( obj.NAME, obj.to_table() );
         end
         
@@ -48,31 +48,34 @@ classdef (Sealed) GeometricProfile < Process
         end
         
         function value = get.unscaled( obj )
-            value = obj.mesh.to_mesh_units( obj.scaled );
+            value = obj.edt_profile_query.get();
         end
         
         function value = get.unscaled_interior( obj )
-            value = obj.mesh.to_mesh_units( obj.scaled_interior );
+            value = obj.edt_profile_query.get( 1.0, obj.mesh.interior );
         end
         
         function value = get.scaled( obj )
-            value = obj.edt.get();
+            value = obj.edt_profile_query.get( obj.mesh.scale );
         end
         
         function value = get.scaled_interior( obj )
-            value = obj.edt.get( obj.mesh.interior );
+            value = obj.edt_profile_query.get( ...
+                obj.mesh.scale, ...
+                obj.mesh.interior ...
+                );
         end
         
-        function value = get.filtered( obj )
-            value = obj.filter.get();
+        function value = get.filter_profile_queryed( obj )
+            value = obj.filter_profile_query.get();
         end
         
-        function value = get.filtered_interior( obj )
-            value = obj.filter.get( obj.mesh.interior );
+        function value = get.filter_profile_queryed_interior( obj )
+            value = obj.filter_profile_query.get( obj.mesh.interior );
         end
         
-        function value = get.filter_amount( obj )
-            value = obj.compute_filter_amount( obj.mesh.scale );
+        function value = get.filter_profile_query_amount( obj )
+            value = obj.compute_filter_profile_query_amount( obj.mesh.scale );
         end
     end
     
@@ -105,8 +108,8 @@ classdef (Sealed) GeometricProfile < Process
     
     properties ( Access = private )
         mesh(1,1) Mesh
-        edt EdtProfile
-        filter FilteredProfile
+        edt_profile_query EdtProfileQuery
+        filter_profile_query FilteredProfileQuery
     end
     
     
@@ -119,20 +122,20 @@ classdef (Sealed) GeometricProfile < Process
             assert( ~isempty( obj.mesh ) );
         end
         
-        function prepare_edt( obj )
+        function prepare_edt_profile_query( obj )
             obj.printf( 'Computing EDT profile...\n' );
-            obj.edt = EdtProfile( ...
+            obj.edt_profile_query = EdtProfileQuery( ...
                 obj.mesh.surface, ...
                 obj.mesh.exterior ...
                 );
-            obj.edt.scale( obj.mesh.scale );
+            obj.edt_profile_query.scale( obj.mesh.scale );
         end
         
-        function prepare_filter( obj )
+        function prepare_filter_profile_query( obj )
             obj.printf( 'Filtering profile...\n' );
-            obj.filter = FilteredProfile( ...
+            obj.filter_profile_query = FilteredProfileQuery( ...
                 obj.scaled, ...
-                obj.compute_filter_amount( obj.mesh.scale ) ...
+                obj.compute_filter_profile_query_amount( obj.mesh.scale ) ...
                 );
         end
         
@@ -153,7 +156,7 @@ classdef (Sealed) GeometricProfile < Process
             maximum = max( scaled_regional_maxima );
         end
         
-        function threshold = compute_filter_amount( mesh_scale )
+        function threshold = compute_filter_profile_query_amount( mesh_scale )
             TOLERANCE = 1e-4;
             threshold = mesh_scale * ( 1 + TOLERANCE );
         end

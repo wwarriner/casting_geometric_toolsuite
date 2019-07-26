@@ -32,7 +32,7 @@ classdef (Sealed) Parting < Process
                 'Locating parting perimeter...\n', ...
                 obj.parting_dimension ...
                 );
-            obj.perimeter = PartingPerimeter( obj.mesh.interior );
+            obj.perimeter = PartingPerimeterQuery( obj.mesh.interior );
         end
         
         function legacy_run( obj, mesh )
@@ -110,8 +110,8 @@ classdef (Sealed) Parting < Process
     end
     
     properties ( Access = private )
-        mesh
-        perimeter
+        mesh(1,1) Mesh
+        perimeter(1,1) PartingPerimeterQuery
     end
     
 end

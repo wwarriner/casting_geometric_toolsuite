@@ -1,5 +1,5 @@
-classdef (Sealed) CavityThinWall < Process
-    % @CavityThinWall identifies regions whose local thickness is below the
+classdef (Sealed) CavityThinSection < Process
+    % @CavityThinSection identifies regions whose local thickness is below the
     % @threshold property value.
     % Settings:
     % - @threshold, determines what regions count as thin in component
@@ -22,7 +22,7 @@ classdef (Sealed) CavityThinWall < Process
     end
     
     methods
-        function obj = CavityThinWall( varargin )
+        function obj = CavityThinSection( varargin )
             obj = obj@Process( varargin{ : } );
         end
         
@@ -110,7 +110,7 @@ classdef (Sealed) CavityThinWall < Process
             value = 0;
             mask = padarray( obj.mesh.interior, amount, value, 'both' );
             wall = padarray( obj.geometric_profile.unscaled, amount, 0, 'both' );
-            ts = ThinSections( ...
+            ts = ThinSectionQuery( ...
                 wall, ...
                 mask, ...
                 obj.mesh.to_mesh_units( obj.threshold ), ...

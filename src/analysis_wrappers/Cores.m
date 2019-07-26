@@ -25,7 +25,7 @@ classdef (Sealed) Cores < Process
         
         function run( obj )
             obj.obtain_inputs();
-            obj.prepare_core_segments();
+            obj.prepare_cores();
         end
         
         function legacy_run( obj, mesh, undercuts, threshold )
@@ -52,15 +52,15 @@ classdef (Sealed) Cores < Process
         end
         
         function value = get.count( obj )
-            value = obj.core_segments.count;
+            value = obj.cores.count;
         end
         
         function value = get.label_array( obj )
-            value = obj.core_segments.label_array;
+            value = obj.cores.label_array;
         end
         
         function value = get.volume( obj )
-            voxel_count = sum( obj.core_segments > 0, 'all' );
+            voxel_count = sum( obj.cores > 0, 'all' );
             value = obj.mesh.to_mesh_volume( voxel_count );
         end
     end
@@ -93,9 +93,9 @@ classdef (Sealed) Cores < Process
             assert( ~isempty( obj.threshold_stl_units ) );
         end
         
-        function prepare_core_segments( obj )
+        function prepare_cores( obj )
             obj.printf( 'Evaluating orientation-independent cores...\n' );
-            obj.core_segments = CoreSegments( ...
+            obj.cores = CoreQuery( ...
                 obj.undercuts.label_array > 0, ...
                 obj.mesh.exterior, ...
                 obj.mesh.to_mesh_units( obj.threshold ) ...
@@ -106,7 +106,7 @@ classdef (Sealed) Cores < Process
     properties ( Access = private )
         mesh(1,1) Mesh
         undercuts(1,1) Undercuts
-        core_segments(1,1) CoreSegments
+        cores(1,1) CoreQuery
     end
     
 end

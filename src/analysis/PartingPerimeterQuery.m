@@ -1,9 +1,9 @@
-classdef PartingPerimeter < handle
+classdef PartingPerimeterQuery < handle
     
     properties ( SetAccess = private )
-        projected(1,1) ProjectedPerimeter
-        jog_free(1,1) JogFreePerimeter
-        line(1,1) PartingLine
+        projected(1,1) ProjectedPerimeterQuery
+        jog_free(1,1) JogFreePerimeterQuery
+        line(1,1) PartingLineQuery
     end
     
     properties ( SetAccess = private, Dependent )
@@ -13,12 +13,12 @@ classdef PartingPerimeter < handle
     end
     
     methods
-        function obj = PartingPerimeter( interior )
+        function obj = PartingPerimeterQuery( interior )
             if nargin == 0
                 return;
             end
             
-            pp = ProjectedPerimeter( interior );
+            pp = ProjectedPerimeterQuery( interior );
             
             [ bounds, height ] = compute_bounds( interior );
             bounds( ~repmat( pp.binary_array, [ 1 1 2 ] ) ) = 0;
@@ -27,8 +27,8 @@ classdef PartingPerimeter < handle
             perimeter = unproject( bounds, height );
             label_array( ~perimeter ) = 0;
             
-            jf = JogFreePerimeter( pp, bounds, height );
-            pl = PartingLine( pp, bounds, height );
+            jf = JogFreePerimeterQuery( pp, bounds, height );
+            pl = PartingLineQuery( pp, bounds, height );
             
             obj.cc = label2cc( label_array );
             obj.projected = pp;

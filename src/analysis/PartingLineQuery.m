@@ -1,4 +1,4 @@
-classdef PartingLine < handle
+classdef PartingLineQuery < handle
     
     properties ( SetAccess = private )
         flatness(:,1) double
@@ -12,12 +12,19 @@ classdef PartingLine < handle
     end
     
     methods
-        function obj = PartingLine( projected_perimeter, bounds, height )
+        function obj = PartingLineQuery( ...
+                projected_perimeter_query, ...
+                bounds, ...
+                height ...
+                )
             if nargin == 0
                 return;
             end
             
-            assert( isa( projected_perimeter, 'ProjectedPerimeter' ) );
+            assert( isa( ...
+                projected_perimeter_query, ...
+                'ProjectedPerimeterQuery' ...
+                ) );
             
             assert( ndims( bounds ) == 3 );
             assert( size( bounds, 3 ) == 2 );
@@ -26,10 +33,11 @@ classdef PartingLine < handle
             assert( isscalar( height ) );
             assert( isa( height, 'uint64' ) );
             
-            line = zeros( [ size( projected_perimeter.label_array ) height ] );
-            flatness = zeros( projected_perimeter.count, 1 );
-            for i = 1 : projected_perimeter.count
-                proj_segment = projected_perimeter.label_array == i;
+            sz = [ size( projected_perimeter_query.label_array ) height ];
+            line = zeros( sz );
+            flatness = zeros( projected_perimeter_query.count, 1 );
+            for i = 1 : projected_perimeter_query.count
+                proj_segment = projected_perimeter_query.label_array == i;
                 [ path, flatness( i ) ] = obj.optimize_path( ...
                     proj_segment, ...
                     bounds ...
@@ -90,7 +98,8 @@ classdef PartingLine < handle
         
         function f = compute_flatness( path, distances )
             % 1D version of Flatness criterion
-            % from Ravi B and Srinivasa M N, Computer-Aided Design 22(1), pp 11-18
+            % from Ravi B and Srinivasa M N, 
+            % Computer-Aided Design 22(1), pp 11-18
             h = diff( [ path; path( 1 ) ] );
             d = sqrt( h .^ 2 + distances .^ 2 );
             f = sum( d ) ./ sum( distances );

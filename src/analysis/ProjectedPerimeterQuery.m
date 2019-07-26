@@ -1,4 +1,4 @@
-classdef ProjectedPerimeter < handle
+classdef ProjectedPerimeterQuery < handle
     
     properties ( SetAccess = private )
         area(1,1) double % mesh units
@@ -12,7 +12,7 @@ classdef ProjectedPerimeter < handle
     end
     
     methods
-        function obj = ProjectedPerimeter( interior )
+        function obj = ProjectedPerimeterQuery( interior )
             if nargin == 0
                 return;
             end

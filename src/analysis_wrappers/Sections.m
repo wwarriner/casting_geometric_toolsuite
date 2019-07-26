@@ -15,7 +15,7 @@ classdef (Sealed) Sections < Process
         
         function run( obj )
             obj.obtain_inputs();
-            obj.prepare_segments();
+            obj.prepare_segment_query();
         end
         
         function legacy_run( obj, geometric_profile, mesh, thermal_profile )
@@ -38,11 +38,11 @@ classdef (Sealed) Sections < Process
         end
         
         function value = get.count( obj )
-            value = obj.segments.count;
+            value = obj.segment_query.count;
         end
         
         function value = get.segment_label( obj )
-            value = obj.segments.label_array;
+            value = obj.segment_query.label_array;
         end
     end
     
@@ -73,7 +73,7 @@ classdef (Sealed) Sections < Process
         geometric_profile(1,1) GeometricProfile
         use_thermal_profile(1,1) logical = false
         profile double {mustBeReal,mustBeFinite}
-        segments Segments
+        segment_query SegmentQuery
     end
     
     
@@ -101,7 +101,7 @@ classdef (Sealed) Sections < Process
             assert( ~isempty( obj.use_thermal_profile ) );
         end
         
-        function prepare_segments( obj )
+        function prepare_segment_query( obj )
             obj.printf( 'Segmenting...\n' );
             if obj.use_thermal_profile
                 thermal_profile_key = ProcessKey( ThermalProfile.NAME );
@@ -111,7 +111,7 @@ classdef (Sealed) Sections < Process
                 obj.profile = obj.geometric_profile.scaled_interior;
             end
             assert( ~isempty( obj.profile ) );
-            obj.segments = Segments( ...
+            obj.segment_query = SegmentQuery( ...
                 obj.profile, ...
                 obj.mesh.interior ...
                 );

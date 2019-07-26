@@ -1,4 +1,4 @@
-classdef FilteredProfile < handle
+classdef FilteredProfileQuery < handle
     % Filters the input profile by the input amount using the imhmax
     % morphological image reconstruction algorithm. Filtering occurs on both the
     % positive and negative values independently using the same input amount.
@@ -9,7 +9,7 @@ classdef FilteredProfile < handle
         % - @amount is a positive double scalar indicating the amount to by
         % which to reduce local peak regions by, in the same units as values in
         % @profile
-        function obj = FilteredProfile( profile, amount )
+        function obj = FilteredProfileQuery( profile, amount )
             if nargin == 0
                 return;
             end
@@ -26,8 +26,8 @@ classdef FilteredProfile < handle
             
             mask = profile >= 0;
             obj.values = ...
-                obj.filter_masked( profile, mask, amount ) ...
-                - obj.filter_masked( -profile, ~mask, amount );
+                filter_masked( profile, mask, amount ) ...
+                - filter_masked( -profile, ~mask, amount );
         end
         
         % - output values is ND array of signed distance field
@@ -43,28 +43,10 @@ classdef FilteredProfile < handle
             values = obj.values;
             values( ~mask_optional ) = 0;
         end
-        
     end
-    
     
     properties ( Access = private )
         values(:,:,:) double {mustBeReal,mustBeFinite} = []
-    end
-    
-    
-    methods ( Access = private, Static )
-        
-        function array = filter_masked( array, mask, amount )
-            array( ~mask ) = 0;
-            max_value = max( array( : ) );
-            % normalized because imhmax only operates on matrices scaled in the
-            % range [ 0, 1 ]
-            array = max_value .* imhmax( ...
-                array ./ max_value, ...
-                amount ./ max_value ...
-                );
-        end
-        
     end
     
 end
