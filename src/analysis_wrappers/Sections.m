@@ -69,11 +69,11 @@ classdef (Sealed) Sections < Process
     end
     
     properties ( Access = private )
-        mesh(1,1) Mesh
-        profile(1,1)
+        mesh Mesh
+        profile %geometric or thermal profile
         use_thermal_profile(1,1) logical = false
-        segment_query(1,1) SegmentQuery
-        hotspot_query(1,1) HotspotQuery
+        segment_query SegmentQuery
+        hotspot_query HotspotQuery
     end
     
     methods ( Access = private )

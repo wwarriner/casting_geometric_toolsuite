@@ -36,6 +36,7 @@ classdef (Sealed) MoldThinWall < Process
             obj.profile = profile;
             obj.threshold = threshold;
             obj.sweep_coefficient = sweep_coefficient;
+            obj.run();
         end
         
         function write( obj, common_writer )
@@ -75,9 +76,9 @@ classdef (Sealed) MoldThinWall < Process
     end
     
     properties ( Access = private )
-        mesh(1,1) Mesh
-        profile(1,1) GeometricProfile
-        thin_sections(1,1) ThinSections
+        mesh Mesh
+        profile GeometricProfile
+        thin_sections ThinSections
     end
     
     methods ( Access = private )

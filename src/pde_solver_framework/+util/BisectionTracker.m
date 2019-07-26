@@ -1,8 +1,8 @@
 classdef (Sealed) BisectionTracker < handle
     
     properties ( SetAccess = private )
-        x_values(1,1) util.StepTracker
-        y_values(1,1) util.StepTracker
+        x_values util.StepTracker
+        y_values util.StepTracker
     end
     
     
@@ -71,7 +71,7 @@ classdef (Sealed) BisectionTracker < handle
     properties ( Access = private )
         lower(1,1) double {mustBeReal,mustBeFinite}
         upper(1,1) double {mustBeReal}
-        compute_y_fn(1,1) function_handle = @()[]
+        compute_y_fn function_handle
         y_target(1,1) double {mustBeReal,mustBeFinite}
         tol(1,1) double {mustBeReal,mustBeFinite,mustBePositive} = 1e-5
     end

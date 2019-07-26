@@ -23,8 +23,8 @@ classdef QualityBisectionIterator < iteration.IteratorBase
     end
     
     properties ( SetAccess = private )
-        qualities(1,1) util.StepTracker
-        bisection_iterations(1,1) util.StepTracker
+        qualities util.StepTracker
+        bisection_iterations util.StepTracker
     end
     
     methods
@@ -69,9 +69,9 @@ classdef QualityBisectionIterator < iteration.IteratorBase
     end
     
     properties ( Access = private )
-        bisector(1,1)
+        bisector BisectionTracker
         computation_time(1,1) double {mustBeReal,mustBeFinite,mustBeNonnegative} = 0.0
-        solver_counts(1,1) util.StepTracker
+        solver_counts util.StepTracker
         status_message(1,1) string
     end
     

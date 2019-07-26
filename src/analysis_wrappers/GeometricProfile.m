@@ -94,9 +94,9 @@ classdef (Sealed) GeometricProfile < Process
     end
     
     properties ( Access = private )
-        mesh(1,1) Mesh
-        edt_profile_query(1,1) EdtProfileQuery
-        filter_profile_query(1,1) FilteredProfileQuery
+        mesh Mesh
+        edt_profile_query EdtProfileQuery
+        filter_profile_query FilteredProfileQuery
     end
     
     methods ( Access = private )

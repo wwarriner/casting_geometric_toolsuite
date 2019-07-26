@@ -36,6 +36,7 @@ classdef (Sealed) CavityThinSection < Process
             obj.geometric_profile = geometric_profile;
             obj.threshold = threshold;
             obj.sweep_coefficient = sweep_coefficient;
+            obj.run();
         end
         
         function write( obj, common_writer )
@@ -75,9 +76,9 @@ classdef (Sealed) CavityThinSection < Process
     end
     
     properties ( Access = private )
-        mesh(1,1) Mesh
-        geometric_profile(1,1) GeometricProfile
-        thin_sections(1,1) ThinSections
+        mesh Mesh
+        geometric_profile GeometricProfile
+        thin_sections ThinSections
     end
     
     methods ( Access = private )

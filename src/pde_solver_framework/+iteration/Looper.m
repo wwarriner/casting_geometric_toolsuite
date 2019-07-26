@@ -27,8 +27,8 @@ classdef Looper < handle
     end
     
     properties ( Access = private )
-        iterator(1,1)
-        finish_check_fn(1,1) function_handle = @()[]
+        iterator % IteratorBase
+        finish_check_fn function_handle
         results(:,1)
     end
     

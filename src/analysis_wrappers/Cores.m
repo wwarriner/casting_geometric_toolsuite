@@ -15,7 +15,7 @@ classdef (Sealed) Cores < Process
     properties ( SetAccess = private, Dependent )
         count(1,1) uint32
         label_array(:,:,:) uint32
-        volume(1,1)
+        volume(1,1) double
     end
     
     methods
@@ -32,6 +32,7 @@ classdef (Sealed) Cores < Process
             obj.mesh = mesh;
             obj.undercuts = undercuts;
             obj.threshold = threshold;
+            obj.run();
         end
         
         function write( obj, common_writer )
@@ -103,9 +104,9 @@ classdef (Sealed) Cores < Process
     end
     
     properties ( Access = private )
-        mesh(1,1) Mesh
-        undercuts(1,1) Undercuts
-        cores(1,1) CoreQuery
+        mesh Mesh
+        undercuts Undercuts
+        cores CoreQuery
     end
     
 end

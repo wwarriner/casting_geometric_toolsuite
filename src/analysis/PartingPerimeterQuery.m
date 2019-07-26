@@ -1,9 +1,9 @@
 classdef PartingPerimeterQuery < handle
     
     properties ( SetAccess = private )
-        projected(1,1) ProjectedPerimeterQuery
-        jog_free(1,1) JogFreePerimeterQuery
-        line(1,1) PartingLineQuery
+        projected ProjectedPerimeterQuery
+        jog_free JogFreePerimeterQuery
+        line PartingLineQuery
     end
     
     properties ( SetAccess = private, Dependent )

@@ -16,9 +16,9 @@ classdef IteratorBase < utils.Printer & handle
     end
     
     properties ( SetAccess = private )
-        simulation_times(1,1) util.StepTracker
-        computation_times(1,1) util.StepTracker
-        solver_iterations(1,1) util.StepTracker
+        simulation_times util.StepTracker
+        computation_times util.StepTracker
+        solver_iterations util.StepTracker
     end
     
     properties ( SetAccess = private, Dependent )
@@ -45,7 +45,7 @@ classdef IteratorBase < utils.Printer & handle
     end
     
     properties ( Access = protected )
-        problem(1,1)
+        problem % ProblemInterface
     end
     
     methods ( Abstract, Access = protected )

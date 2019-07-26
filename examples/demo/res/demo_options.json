@@ -2,9 +2,7 @@
 "manager":{
 	"stl_file":"",
 	"output_folder":"",
-	"user_needs":["Component"],
-	"parting_dimensions":[3],
-	"gravity_directions":["down"]
+	"user_needs":["Component"]
 	},
 "processes":{
 	"core":{

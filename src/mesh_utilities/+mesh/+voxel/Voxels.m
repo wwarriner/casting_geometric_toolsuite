@@ -3,7 +3,7 @@ classdef Voxels < handle
     properties ( GetAccess = public, SetAccess = private )
         scale(1,1) double {mustBeReal,mustBeFinite,mustBePositive} = 1
         origin(1,:) double {mustBeReal,mustBeFinite} = 1
-        envelope(1,1) geometry.Envelope
+        envelope geometry.Envelope
         values double = []
     end
     

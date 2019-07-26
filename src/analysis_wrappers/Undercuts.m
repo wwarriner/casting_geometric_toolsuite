@@ -62,8 +62,8 @@ classdef (Sealed) Undercuts < Process
     end
     
     properties ( Access = private )
-        mesh(1,1) Mesh
-        undercuts(1,1) UndercutQuery
+        mesh Mesh
+        undercuts UndercutQuery
     end
     
     methods ( Access = private )

@@ -35,11 +35,11 @@ classdef SolidificationProblem < problem.ProblemInterface
     
     
     properties ( Access = private )
-        A(1,1) function_handle = @()[]
-        b(1,1) function_handle = @()[]
+        A function_handle
+        b function_handle
         u0(:,1) double
         mesh
-        solver(1,1) solver.LinearSystemSolver
+        solver solver.LinearSystemSolver
         pp
         cavity_id(1,1) uint64 {mustBeNonnegative}
     end

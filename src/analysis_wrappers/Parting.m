@@ -93,8 +93,8 @@ classdef (Sealed) Parting < Process
     end
     
     properties ( Access = private )
-        mesh(1,1) Mesh
-        perimeter(1,1) PartingPerimeterQuery
+        mesh Mesh
+        perimeter PartingPerimeterQuery
     end
     
     methods ( Access = private )
