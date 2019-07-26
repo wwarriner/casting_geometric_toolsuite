@@ -1,7 +1,6 @@
-classdef (Sealed) Segmentation < Process
-    % Segments encapsulates the behavior and data of segments relating to
-    % castings. These segments are similar to isolated heavy sections, and can
-    % be thought of as sections that each must be independently fed to ensure
+classdef (Sealed) Sections < Process
+    % Sections encapsulates the behavior and data of isolated sections relating
+    % to castings. Each isolated sections must be independently fed to ensure
     % sound solidification.
     
     properties ( SetAccess = private )
@@ -10,7 +9,7 @@ classdef (Sealed) Segmentation < Process
     end
     
     methods
-        function obj = Segmentation( varargin )
+        function obj = Sections( varargin )
             obj = obj@Process( varargin{ : } );
         end
         

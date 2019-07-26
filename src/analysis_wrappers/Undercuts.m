@@ -2,14 +2,13 @@ classdef (Sealed) Undercuts < Process
     % Undercuts encapsulates the behavior and data of casting undercuts for
     % two-piece molding or tooling.
     
-    properties ( GetAccess = public, SetAccess = private, Dependent )
-        count
-        volume % stl units
+    properties ( SetAccess = private, Dependent )
+        count(1,1) uint64
+        label_array(:,:,:) uint64
+        volume(1,1) uint64 % stl units
     end
     
-    
-    methods ( Access = public )
-        
+    methods
         function obj = Undercuts( varargin )
             obj = obj@Process( varargin{ : } );
         end
@@ -33,34 +32,27 @@ classdef (Sealed) Undercuts < Process
             a = obj.undercuts.label_matrix;
         end
         
-    end
-    
-    
-    methods % getters
-        
         function value = get.count( obj )
             value = obj.undercuts.count;
+        end
+        
+        function value = get.label_array( obj )
+            value = obj.undercuts.label_array;
         end
         
         function value = get.volume( obj )
             value = sum( obj.undercuts.label_matrix > 0, 'all' );
             value = obj.mesh.to_stl_volume( value ); 
         end
-        
     end
     
-    
     methods ( Access = public, Static )
-        
         function name = NAME()
             name = mfilename( 'class' );
         end
-        
     end
     
-    
     methods ( Access = protected )
-        
         function names = get_table_names( ~ )
             names = { ...
                 'count', ...
@@ -74,18 +66,14 @@ classdef (Sealed) Undercuts < Process
                 obj.volume ...
                 };
         end
-        
     end
-    
     
     properties ( Access = private )
         mesh(1,1) Mesh
         undercuts Undercuts
     end
     
-    
     methods ( Access = private )
-        
         function obtain_inputs( obj )
             if ~isempty( obj.results )
                 mesh_key = ProcessKey( Mesh.NAME );
@@ -98,7 +86,6 @@ classdef (Sealed) Undercuts < Process
             obj.printf( 'Identifying undercuts...\n' );
             obj.undercuts = Undercuts( obj.mesh.interior );
         end
-        
     end
     
 end

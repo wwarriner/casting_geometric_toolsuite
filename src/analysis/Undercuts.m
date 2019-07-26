@@ -3,13 +3,11 @@ classdef Undercuts < handle
     % interior, then finds the resulting connected components.
     
     properties ( GetAccess = public, SetAccess = private, Dependent )
-        count
-        label_matrix
+        count(1,1) uint64
+        label_array(:,:,:) uint64
     end
     
-    
     methods ( Access = public )
-        
         % - @interior is a logical array representing a rasterized solid body.
         function obj = Undercuts( interior )
             if nargin == 0
@@ -19,33 +17,28 @@ classdef Undercuts < handle
             assert( islogical( interior ) );
             
             uc = obj.paint( interior );
-            uc = obj.remove_spurious_undercuts( uc );
-            obj.values = obj.label( uc );
+            uc = remove_small_connected_regions( uc );
+            cc = bwconncomp( uc );
+            cc.NumObjects = uint64( cc.NumObjects );
+            obj.cc = cc;
         end
-        
     end
-    
     
     methods % getters
-        
         function value = get.count( obj )
-            value = numel( unique( obj.values ) ) - 1;
+            value = obj.cc.NumObjects;
         end
         
-        function value = get.label_matrix( obj )
-            value = obj.values;
+        function value = get.label_array( obj )
+            value = labelmatrix( obj.cc );
         end
-        
     end
-    
     
     properties ( Access = private )
-        values(:,:,:) double {mustBeReal,mustBeFinite,mustBeNonnegative} = []
+        cc(1,1) struct
     end
     
-    
     methods ( Access = private, Static )
-        
         function uc = paint( interior )
             [ rotated_interior, inverse ] = rotate_to_dimension( 3, interior );
             sz = size( rotated_interior );
@@ -85,15 +78,6 @@ classdef Undercuts < handle
                 end
             end
         end
-        
-        function uc = remove_spurious_undercuts( uc )
-            uc = remove_small_connected_regions( uc );
-        end
-        
-        function labels = label( uc )
-            labels = labelmatrix( bwconncomp( uc ) );
-        end
-        
     end
     
 end
