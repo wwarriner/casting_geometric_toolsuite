@@ -2,7 +2,7 @@ classdef RubberBandOptimizer < handle
     
     properties
         tolerance(1,1) double {mustBeReal,mustBeFinite,mustBePositive} = 1e-5;
-        maximum_iterations(1,1) uint64 {mustBePositive} = 100;
+        maximum_iterations(1,1) uint32 {mustBePositive} = 100;
     end
     
     properties ( SetAccess = private )

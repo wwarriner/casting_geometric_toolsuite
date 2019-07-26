@@ -3,8 +3,8 @@ classdef SegmentQuery < handle
     % are intended to mirror isolated sections in casting geometries.
     
     properties ( SetAccess = private, Dependent )
-        count(1,1) uint64
-        label_array(:,:,:) double
+        count(1,1) uint32
+        label_array(:,:,:) uint32
     end
     
     methods
@@ -27,16 +27,15 @@ classdef SegmentQuery < handle
             
             segments = watershed_masked( -profile, mask );
             cc = bwconncomp( segments );
-            cc.NumObjects = uint64( cc.NumObjects );
             obj.cc = cc;
         end
         
         function value = get.count( obj )
-            value = obj.cc.NumObjects;
+            value = uint32( obj.cc.NumObjects );
         end
         
         function value = get.label_array( obj )
-            value = labelmatrix( obj.cc );
+            value = uint32( labelmatrix( obj.cc ) );
         end
     end
     

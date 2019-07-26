@@ -1,8 +1,8 @@
 classdef JogFreePerimeterQuery < handle
     
     properties ( SetAccess = private, Dependent )
-        count(1,1) uint64
-        label_array(:,:,:) uint64
+        count(1,1) uint32
+        label_array(:,:,:) uint32
         binary_array(:,:,:) logical
     end
     
@@ -23,10 +23,10 @@ classdef JogFreePerimeterQuery < handle
             
             assert( ndims( bounds ) == 3 );
             assert( size( bounds, 3 ) == 2 );
-            assert( isa( bounds, 'uint64' ) );
+            assert( isa( bounds, 'uint32' ) );
             
             assert( isscalar( height ) );
-            assert( isa( height, 'uint64' ) );
+            assert( isa( height, 'uint32' ) );
             
             sz = [ size( projected_perimeter_query.label_array ) height ];
             jog_free = zeros( sz );
@@ -39,11 +39,11 @@ classdef JogFreePerimeterQuery < handle
         end
         
         function value = get.count( obj )
-            value = obj.cc.NumObjects;
+            value = uint32( obj.cc.NumObjects );
         end
         
         function value = get.label_array( obj )
-            value = labelmatrix( obj.cc );
+            value = uint32( labelmatrix( obj.cc ) );
         end
         
         function value = get.binary_array( obj )
@@ -60,8 +60,8 @@ classdef JogFreePerimeterQuery < handle
             [ infimum, supremum ] = obj.compute_extremes( bounds, segment );
             bounds = cat( ...
                 3, ...
-                infimum * uint64( segment ), ...
-                supremum * uint64( segment ) ...
+                infimum * uint32( segment ), ...
+                supremum * uint32( segment ) ...
                 );
             segment = unproject( bounds, height );
         end

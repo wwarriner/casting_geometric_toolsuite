@@ -5,8 +5,8 @@ classdef PartingLineQuery < handle
     end
     
     properties ( SetAccess = private, Dependent )
-        count(1,1) uint64
-        label_array(:,:,:) uint64
+        count(1,1) uint32
+        label_array(:,:,:) uint32
         binary_array(:,:,:) logical
         draw(1,1) double % mesh units
     end
@@ -28,10 +28,10 @@ classdef PartingLineQuery < handle
             
             assert( ndims( bounds ) == 3 );
             assert( size( bounds, 3 ) == 2 );
-            assert( isa( bounds, 'uint64' ) );
+            assert( isa( bounds, 'uint32' ) );
             
             assert( isscalar( height ) );
-            assert( isa( height, 'uint64' ) );
+            assert( isa( height, 'uint32' ) );
             
             sz = [ size( projected_perimeter_query.label_array ) height ];
             line = zeros( sz );
@@ -51,11 +51,11 @@ classdef PartingLineQuery < handle
         end
         
         function value = get.count( obj )
-            value = obj.cc.NumObjects;
+            value = uint32( obj.cc.NumObjects );
         end
         
         function value = get.label_array( obj )
-            value = labelmatrix( obj.cc );
+            value = uint32( labelmatrix( obj.cc ) );
         end
         
         function value = get.binary_array( obj )
@@ -91,7 +91,7 @@ classdef PartingLineQuery < handle
     methods ( Access = private, Static )
         function segment = unproject_path( path, height )
             segment = unproject( ...
-                uint64( cat( 3, path, path ) ), ...
+                uint32( cat( 3, path, path ) ), ...
                 height ...
                 );
         end

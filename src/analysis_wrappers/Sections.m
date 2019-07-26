@@ -2,10 +2,14 @@ classdef (Sealed) Sections < Process
     % Sections encapsulates the behavior and data of isolated sections relating
     % to castings. Each isolated sections must be independently fed to ensure
     % sound solidification.
+    % Dependencies:
+    % - @Mesh
+    % - @GeometricProfile
     
     properties ( SetAccess = private )
-        count(1,1) uint64
-        segment_label(:,:,:) uint64
+        count(1,1) uint32
+        segments(:,:,:) uint32
+        hotspots(:,:,:) uint32
     end
     
     methods
@@ -16,6 +20,7 @@ classdef (Sealed) Sections < Process
         function run( obj )
             obj.obtain_inputs();
             obj.prepare_segment_query();
+            obj.prepare_hotspot_query();
         end
         
         function legacy_run( obj, geometric_profile, mesh, thermal_profile )
@@ -34,15 +39,26 @@ classdef (Sealed) Sections < Process
         end
         
         function a = to_array( obj )
-            a = obj.segment_label;
+            a = obj.segments;
+        end
+        
+        function value = to_table( obj )
+            value = list2table( ...
+                { 'count' }, ...
+                { obj.count } ...
+                );
         end
         
         function value = get.count( obj )
-            value = obj.segment_query.count;
+            value = uint32( obj.segment_query.count );
         end
         
-        function value = get.segment_label( obj )
-            value = obj.segment_query.label_array;
+        function value = get.segments( obj )
+            value = uint32( obj.segment_query.label_array );
+        end
+        
+        function value = get.hotspots( obj )
+            value = uint32( obj.hotspot_query.label_array );
         end
     end
     
@@ -52,30 +68,13 @@ classdef (Sealed) Sections < Process
         end
     end
     
-    
-    methods ( Access = protected )
-        function names = get_table_names( ~ )
-            names = { ...
-                'count' ...
-                };
-        end
-        
-        function values = get_table_values( obj )
-            values = { ...
-                obj.count ...
-                };
-        end
-    end
-    
-    
     properties ( Access = private )
         mesh(1,1) Mesh
-        geometric_profile(1,1) GeometricProfile
+        profile(1,1)
         use_thermal_profile(1,1) logical = false
-        profile double {mustBeReal,mustBeFinite}
-        segment_query SegmentQuery
+        segment_query(1,1) SegmentQuery
+        hotspot_query(1,1) HotspotQuery
     end
-    
     
     methods ( Access = private )
         function obtain_inputs( obj )
@@ -85,12 +84,6 @@ classdef (Sealed) Sections < Process
             end
             assert( ~isempty( obj.mesh ) );
             
-            if ~isempty( obj.results )
-                geometric_profile_key = ProcessKey( GeometricProfile.NAME );
-                obj.geometric_profile = obj.results.get( geometric_profile_key );
-            end
-            assert( ~isempty( obj.geometric_profile ) );
-            
             if ~isempty( obj.options )
                 FALLBACK_USE_THERMAL_PROFILE = false;
                 obj.use_thermal_profile = obj.options.get( ...
@@ -99,21 +92,32 @@ classdef (Sealed) Sections < Process
                     );
             end
             assert( ~isempty( obj.use_thermal_profile ) );
+            
+            if ~isempty( obj.results )
+                if obj.use_thermal_profile
+                    thermal_key = ProcessKey( ThermalProfile.NAME );
+                    obj.profile = obj.results.get( thermal_key );
+                else
+                    geometric_key = ProcessKey( GeometricProfile.NAME );
+                    obj.profile = obj.results.get( geometric_key );
+                end    
+            end
+            assert( ~isempty( obj.profile ) );
         end
         
         function prepare_segment_query( obj )
             obj.printf( 'Segmenting...\n' );
-            if obj.use_thermal_profile
-                thermal_profile_key = ProcessKey( ThermalProfile.NAME );
-                obj.profile = obj.results.get( thermal_profile_key );
-                % TODO fix incorrect assignment
-            else
-                obj.profile = obj.geometric_profile.scaled_interior;
-            end
-            assert( ~isempty( obj.profile ) );
             obj.segment_query = SegmentQuery( ...
-                obj.profile, ...
+                obj.profile.filtered_interior, ...
                 obj.mesh.interior ...
+                );
+        end
+        
+        function prepare_hotspot_query( obj )
+            obj.printf( 'Finding hotspots...\n' );
+            obj.hotspot_query = HotspotQuery( ...
+                obj.segments, ...
+                obj.profile.filtered_interior ...
                 );
         end
     end

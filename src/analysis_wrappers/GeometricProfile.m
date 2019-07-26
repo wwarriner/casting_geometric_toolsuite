@@ -1,6 +1,8 @@
 classdef (Sealed) GeometricProfile < Process
-    % GeometricProfile encapsulates the behavior and data of a geometric
-    % approach to the solidification profile of castings
+    % @GeometricProfile encapsulates the behavior and data of a geometric
+    % approach to the solidification profile of castings.
+    % Dependencies:
+    % - @Mesh
     
     properties ( SetAccess = private )
         scaled(:,:,:) double
@@ -13,9 +15,9 @@ classdef (Sealed) GeometricProfile < Process
         unscaled(:,:,:) double
         unscaled_interior(:,:,:) double
         scaled_interior(:,:,:) double
-        filter_profile_queryed(:,:,:) double
-        filter_profile_queryed_interior(:,:,:) double
-        filter_profile_query_amount(1,1) double
+        filtered(:,:,:) double
+        filtered_interior(:,:,:) double
+        filter_amount(1,1) double
     end
     
     methods
@@ -38,13 +40,19 @@ classdef (Sealed) GeometricProfile < Process
         function write( obj, common_writer )
             scaled_title = [ 'scaled_' obj.NAME ];
             common_writer.write_array( scaled_title, obj.scaled );
-            filter_profile_queryed_title = [ 'filter_profile_queryed_' obj.NAME ];
-            common_writer.write_array( filter_profile_queryed_title, obj.filter_profile_queryed );
-            common_writer.write_table( obj.NAME, obj.to_table() );
+            filter_title = [ 'filtered_' obj.NAME ];
+            common_writer.write_array( filter_title, obj.filtered );
         end
         
         function a = to_array( obj )
             a = obj.scaled;
+        end
+        
+        function value = to_table( obj )
+            value = list2table( ...
+                { 'thickness_ratio' }, ...
+                { obj.thickness_ratio } ...
+                );
         end
         
         function value = get.unscaled( obj )
@@ -66,52 +74,30 @@ classdef (Sealed) GeometricProfile < Process
                 );
         end
         
-        function value = get.filter_profile_queryed( obj )
+        function value = get.filtered( obj )
             value = obj.filter_profile_query.get();
         end
         
-        function value = get.filter_profile_queryed_interior( obj )
+        function value = get.filtered_interior( obj )
             value = obj.filter_profile_query.get( obj.mesh.interior );
         end
         
-        function value = get.filter_profile_query_amount( obj )
+        function value = get.filter_amount( obj )
             value = obj.compute_filter_profile_query_amount( obj.mesh.scale );
         end
     end
     
-    
     methods ( Access = public, Static )
-        
         function name = NAME()
             name = mfilename( 'class' );
         end
-        
     end
-    
-    
-    methods ( Access = protected )
-        
-        function names = get_table_names( ~ )
-            names = { ...
-                'thickness_ratio' ...
-                };
-        end
-        
-        function values = get_table_values( obj )
-            values = { ...
-                obj.thickness_ratio ...
-                };
-        end
-        
-    end
-    
     
     properties ( Access = private )
         mesh(1,1) Mesh
-        edt_profile_query EdtProfileQuery
-        filter_profile_query FilteredProfileQuery
+        edt_profile_query(1,1) EdtProfileQuery
+        filter_profile_query(1,1) FilteredProfileQuery
     end
-    
     
     methods ( Access = private )
         function obtain_inputs( obj )
@@ -128,7 +114,6 @@ classdef (Sealed) GeometricProfile < Process
                 obj.mesh.surface, ...
                 obj.mesh.exterior ...
                 );
-            obj.edt_profile_query.scale( obj.mesh.scale );
         end
         
         function prepare_filter_profile_query( obj )
@@ -140,7 +125,7 @@ classdef (Sealed) GeometricProfile < Process
         end
         
         function compute_statistics( obj )
-            obj.printf( '  Computing statistics...\n' );
+            obj.printf( 'Computing statistics...\n' );
             [ obj.minimum_thickness, obj.maximum_thickness ] = ...
                 obj.thickness_analysis( obj.scaled_interior );
             obj.thickness_ratio = ...

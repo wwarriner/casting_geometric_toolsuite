@@ -13,8 +13,8 @@ classdef (Sealed) Cores < Process
     end
     
     properties ( SetAccess = private, Dependent )
-        count(1,1) uint64
-        label_array(:,:,:) uint64
+        count(1,1) uint32
+        label_array(:,:,:) uint32
         volume(1,1)
     end
     
@@ -44,10 +44,9 @@ classdef (Sealed) Cores < Process
         end
         
         function value = to_table( obj )
-            value = table( ...
-                obj.count, obj.volume, ...
-                'variablenames', ...
-                { 'count' 'volume' } ...
+            value = list2table( ...
+                { 'count' 'volume' }, ...
+                { obj.count, obj.volume } ...
                 );
         end
         
@@ -77,20 +76,20 @@ classdef (Sealed) Cores < Process
                 mesh_key = ProcessKey( Mesh.NAME );
                 obj.mesh = obj.results.get( mesh_key );
                 
-                undercuts_key = ProcessKey( Undercuts.NAME, obj.parting_dimension );
+                undercuts_key = ProcessKey( Undercuts.NAME );
                 obj.undercuts = obj.results.get( undercuts_key );
             end
             assert( ~isempty( obj.mesh ) );
             assert( ~isempty( obj.undercuts ) );
             
             if ~isempty( obj.options )
-                FALLBACK_THRESHOLD_STL_UNITS = 25; % mm;
-                obj.threshold_stl_units = obj.options.get( ...
+                FALLBACK_THRESHOLD = 25; % mm;
+                obj.threshold = obj.options.get( ...
                     'processes.core.threshold_stl_units', ...
-                    FALLBACK_THRESHOLD_STL_UNITS ...
+                    FALLBACK_THRESHOLD ...
                     );
             end
-            assert( ~isempty( obj.threshold_stl_units ) );
+            assert( ~isempty( obj.threshold ) );
         end
         
         function prepare_cores( obj )

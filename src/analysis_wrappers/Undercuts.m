@@ -1,11 +1,13 @@
 classdef (Sealed) Undercuts < Process
     % Undercuts encapsulates the behavior and data of casting undercuts for
     % two-piece molding or tooling.
+    % Dependencies:
+    % - @Mesh
     
     properties ( SetAccess = private, Dependent )
-        count(1,1) uint64
-        label_array(:,:,:) uint64
-        volume(1,1) uint64 % stl units
+        count(1,1) uint32
+        label_array(:,:,:) uint32
+        volume(1,1) uint32 % stl units
     end
     
     methods
@@ -32,6 +34,13 @@ classdef (Sealed) Undercuts < Process
             a = obj.undercuts.label_matrix;
         end
         
+        function value = to_table( obj )
+            value = list2table( ...
+                { 'count' 'volume' }, ...
+                { obj.count, obj.volume } ...
+                );
+        end
+        
         function value = get.count( obj )
             value = obj.undercuts.count;
         end
@@ -52,25 +61,9 @@ classdef (Sealed) Undercuts < Process
         end
     end
     
-    methods ( Access = protected )
-        function names = get_table_names( ~ )
-            names = { ...
-                'count', ...
-                'volume' ...
-                };
-        end
-        
-        function values = get_table_values( obj )
-            values = { ...
-                obj.count, ...
-                obj.volume ...
-                };
-        end
-    end
-    
     properties ( Access = private )
         mesh(1,1) Mesh
-        undercuts Undercuts
+        undercuts(1,1) UndercutQuery
     end
     
     methods ( Access = private )
@@ -84,7 +77,7 @@ classdef (Sealed) Undercuts < Process
         
         function prepare_undercuts( obj )
             obj.printf( 'Identifying undercuts...\n' );
-            obj.undercuts = Undercuts( obj.mesh.interior );
+            obj.undercuts = UndercutQuery( obj.mesh.interior );
         end
     end
     

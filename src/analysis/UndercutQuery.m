@@ -1,15 +1,16 @@
-classdef Undercuts < handle
-    % Undercuts identifies regions in any column lying between two points in the
-    % interior, then finds the resulting connected components.
+classdef UndercutQuery < handle
+    % @Undercuts identifies regions in any column lying between two points in
+    % the interior, then finds the resulting connected components.
     
-    properties ( GetAccess = public, SetAccess = private, Dependent )
-        count(1,1) uint64
-        label_array(:,:,:) uint64
+    properties ( SetAccess = private, Dependent )
+        count(1,1) uint32
+        label_array(:,:,:) uint32
     end
     
-    methods ( Access = public )
+    methods
+        % Inputs:
         % - @interior is a logical array representing a rasterized solid body.
-        function obj = Undercuts( interior )
+        function obj = UndercutQuery( interior )
             if nargin == 0
                 return;
             end
@@ -19,18 +20,16 @@ classdef Undercuts < handle
             uc = obj.paint( interior );
             uc = remove_small_connected_regions( uc );
             cc = bwconncomp( uc );
-            cc.NumObjects = uint64( cc.NumObjects );
+            cc.NumObjects = uint32( cc.NumObjects );
             obj.cc = cc;
         end
-    end
-    
-    methods % getters
+        
         function value = get.count( obj )
-            value = obj.cc.NumObjects;
+            value = uint32( obj.cc.NumObjects );
         end
         
         function value = get.label_array( obj )
-            value = labelmatrix( obj.cc );
+            value = uint32( labelmatrix( obj.cc ) );
         end
     end
     
@@ -40,37 +39,49 @@ classdef Undercuts < handle
     
     methods ( Access = private, Static )
         function uc = paint( interior )
-            [ rotated_interior, inverse ] = rotate_to_dimension( 3, interior );
-            sz = size( rotated_interior );
+            [ rotated, inverse ] = rotate_to_dimension( 3, interior );
+            sz = size( rotated );
             uc = zeros( sz );
             for k = 1 : sz( 3 )
                 for j = 1 : sz( 2 )
                     painting = false;
-                    [ uc, painting ] = obj.paint_forward( rotated_interior, uc, j, k, painting );
-                    uc = obj.unpaint_reverse( rotated_interior, uc, j, k, painting );
+                    [ uc, painting ] = UndercutQuery.paint_forward( ...
+                        rotated, ...
+                        uc, ...
+                        j, ...
+                        k, ...
+                        painting ...
+                        );
+                    uc = UndercutQuery.unpaint_reverse( ...
+                        rotated, ...
+                        uc, ...
+                        j, ...
+                        k, ...
+                        painting ...
+                        );
                 end
             end
             uc = rotate_from_dimension( uc, inverse );
         end
         
-        function [ uc, painting ] = paint_forward( interior, uc, j, k, painting )
-            for i = 1 : size( interior, 1 )
-                if ~painting && interior( i, j, k )
+        function [ uc, painting ] = paint_forward( image, uc, j, k, painting )
+            for i = 1 : size( image, 1 )
+                if ~painting && image( i, j, k )
                     painting = true;
                 end
-                if painting == true && ~interior( i, j, k )
+                if painting == true && ~image( i, j, k )
                     uc( i, j, k ) = 1;
                 end
             end
         end
         
-        function uc = unpaint_reverse( interior, uc, j, k, painting )
+        function uc = unpaint_reverse( image, uc, j, k, painting )
             if ~painting
                 return;
             end
-            for i = size( interior, 1 ) : -1 : 1
+            for i = size( image, 1 ) : -1 : 1
                 if painting == true
-                    if ~interior( i, j, k )
+                    if ~image( i, j, k )
                         uc( i, j, k ) = 0;
                     else
                         break;

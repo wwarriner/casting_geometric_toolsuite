@@ -17,8 +17,8 @@ upper = max( Z, [], 3 );
 %upper = imdilate( upper, conndef( 2, 'maximal' ) );
 %upper( ~projected_perimeter ) = 0;
 
-bounds = uint64( cat( 3, lower, upper ) );
-height = uint64( sz( 3 ) );
+bounds = uint32( cat( 3, lower, upper ) );
+height = uint32( sz( 3 ) );
 
 end
 

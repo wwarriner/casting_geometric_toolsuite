@@ -1,6 +1,6 @@
 classdef (Sealed) CavityThinSection < Process
     % @CavityThinSection identifies regions whose local thickness is below the
-    % @threshold property value.
+    % @threshold property value in the mesh interior.
     % Settings:
     % - @threshold, determines what regions count as thin in component
     % units.
@@ -16,8 +16,8 @@ classdef (Sealed) CavityThinSection < Process
     end
     
     properties ( SetAccess = private, Dependent )
-        count(1,1) uint64
-        label_array(:,:,:) uint64
+        count(1,1) uint32
+        label_array(:,:,:) uint32
         volume(1,1) double
     end
     
@@ -48,10 +48,9 @@ classdef (Sealed) CavityThinSection < Process
         end
         
         function value = to_table( obj )
-            value = table( ...
-                obj.count, obj.volume, ...
-                'variablenames', ...
-                { 'count' 'volume' } ...
+            value = list2table( ...
+                { 'count' 'volume' }, ...
+                { obj.count, obj.volume } ...
                 );
         end
         

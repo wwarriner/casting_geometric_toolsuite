@@ -25,9 +25,11 @@ classdef FilteredProfileQuery < handle
             assert( 0.0 < amount );
             
             mask = profile >= 0;
-            obj.values = ...
-                filter_masked( profile, mask, amount ) ...
-                - filter_masked( -profile, ~mask, amount );
+            positive = filter_masked( profile, mask, amount );
+            positive( ~mask ) = 0;
+            negative = filter_masked( -profile, ~mask, amount );
+            negative( mask ) = 0;
+            obj.values = positive - negative;
         end
         
         % - output values is ND array of signed distance field

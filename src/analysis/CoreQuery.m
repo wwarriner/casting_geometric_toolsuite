@@ -6,8 +6,8 @@ classdef CoreQuery < handle
     % them.
     
     properties ( SetAccess = private )
-        count(1,1) uint64
-        label_array(:,:,:) uint64
+        count(1,1) uint32
+        label_array(:,:,:) uint32
     end
     
     methods
@@ -41,11 +41,11 @@ classdef CoreQuery < handle
         end
         
         function value = get.count( obj )
-            value = uint64( obj.cc.NumObjects );
+            value = uint32( obj.cc.NumObjects );
         end
         
         function value = get.label_array( obj )
-            value = uint64( labelmatrix( obj.cc ) );
+            value = uint32( labelmatrix( obj.cc ) );
         end
     end
     

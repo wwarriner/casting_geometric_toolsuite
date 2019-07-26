@@ -3,7 +3,7 @@ classdef PerimeterLoop < handle
     properties
         perimeter(:,:) logical
         distances(:,1) double {mustBeReal,mustBeFinite,mustBePositive}
-        indices(:,1) uint64 {mustBePositive}
+        indices(:,1) uint32 {mustBePositive}
     end
     
     methods
@@ -43,7 +43,7 @@ classdef PerimeterLoop < handle
                 itr = itr + 1;
             end
             assert( indices( 1 ) == indices( end ) );
-            indices = uint64( indices( 1 : end - 1 ) );
+            indices = uint32( indices( 1 : end - 1 ) );
         end
         
         function [ distance, index ] = get_next( obj, index, perimeter )

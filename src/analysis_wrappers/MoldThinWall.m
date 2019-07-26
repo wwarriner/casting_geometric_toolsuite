@@ -1,4 +1,14 @@
 classdef (Sealed) MoldThinWall < Process
+    % @MoldThinSection identifies regions whose local thickness is below the
+    % @threshold property value in the mesh exterior.
+    % Settings:
+    % - @threshold, determines what regions count as thin in component
+    % units.
+    % - @sweep_coefficient, aggressiveness in determining thin regions, is
+    % unitless.
+    % Dependencies:
+    % - @Mesh
+    % - @GeometricProfile
     
     properties
         threshold(1,1) double {mustBeReal,mustBeFinite,mustBePositive} = 1 % component length units
@@ -6,8 +16,8 @@ classdef (Sealed) MoldThinWall < Process
     end
     
     properties ( SetAccess = private, Dependent )
-        count(1,1) uint64
-        label_array(:,:,:) uint64
+        count(1,1) uint32
+        label_array(:,:,:) uint32
         volume(1,1) double
     end
     
@@ -38,10 +48,9 @@ classdef (Sealed) MoldThinWall < Process
         end
         
         function value = to_table( obj )
-            value = table( ...
-                obj.count, obj.volume, ...
-                'variablenames', ...
-                { 'count' 'volume' } ...
+            value = list2table( ...
+                { 'count' 'volume' }, ...
+                { obj.count, obj.volume } ...
                 );
         end
         

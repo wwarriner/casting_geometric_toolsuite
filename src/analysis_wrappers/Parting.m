@@ -1,19 +1,24 @@
 classdef (Sealed) Parting < Process
+    % @Parting encapsulates the behavior and data of a parting line related
+    % features. Finds the projected area, projected parting line length, tooling
+    % draw, any jog-free perimeters, and flattest parting line.
+    % Dependencies:
+    % - @Mesh
     
     properties ( SetAccess = private, Dependent )
-        count(1,1) uint64
+        count(1,1) uint32
         area(1,1) double
         length(1,1) double
         draw(1,1) double
-        perimeter_labels(:,:,:) uint64
-        jog_free_labels(:,:,:) uint64
-        line_labels(:,:,:) uint64
+        perimeter_labels(:,:,:) uint32
+        jog_free_labels(:,:,:) uint32
+        line_labels(:,:,:) uint32
     end
     
     properties ( Constant )
-        PERIMETER uint64 = 1
-        JOG_FREE uint64 = 2
-        LINE uint64 = 3
+        PERIMETER uint32 = 1
+        JOG_FREE uint32 = 2
+        LINE uint32 = 3
     end
     
     methods
@@ -22,17 +27,8 @@ classdef (Sealed) Parting < Process
         end
         
         function run( obj )
-            if ~isempty( obj.results )
-                mesh_key = ProcessKey( Mesh.NAME );
-                obj.mesh = obj.results.get( mesh_key );
-            end
-            assert( ~isempty( obj.mesh ) );
-            
-            obj.printf( ...
-                'Locating parting perimeter...\n', ...
-                obj.parting_dimension ...
-                );
-            obj.perimeter = PartingPerimeterQuery( obj.mesh.interior );
+            obj.obtain_inputs();
+            obj.prepare_parting_perimeter();
         end
         
         function legacy_run( obj, mesh )
@@ -52,6 +48,13 @@ classdef (Sealed) Parting < Process
             a( jf ) = obj.JOG_FREE;
             pl = obj.line_labels;
             a( pl ) = obj.LINE;
+        end
+        
+        function value = to_table( obj )
+            value = list2table( ...
+                { 'count' 'area' 'length' 'draw' }, ...
+                { obj.count obj.area obj.length obj.draw } ...
+                );
         end
         
         function value = get.count( obj )
@@ -89,29 +92,27 @@ classdef (Sealed) Parting < Process
         end
     end
     
-    methods ( Access = protected )
-        function names = get_table_names( ~ )
-            names = { ...
-                'count' ...
-                'area' ...
-                'length' ...
-                'draw' ...
-                };
-        end
-        
-        function values = get_table_values( obj )
-            values = { ...
-                obj.draw ...
-                obj.area ...
-                obj.length ...
-                obj.draw ...
-                }; % TODO
-        end
-    end
-    
     properties ( Access = private )
         mesh(1,1) Mesh
         perimeter(1,1) PartingPerimeterQuery
+    end
+    
+    methods ( Access = private )
+        function obtain_inputs( obj )
+            if ~isempty( obj.results )
+                mesh_key = ProcessKey( Mesh.NAME );
+                obj.mesh = obj.results.get( mesh_key );
+            end
+            assert( ~isempty( obj.mesh ) );
+        end
+        
+        function prepare_parting_perimeter( obj )
+            obj.printf( ...
+                'Locating parting perimeter...\n', ...
+                obj.parting_dimension ...
+                );
+            obj.perimeter = PartingPerimeterQuery( obj.mesh.interior );
+        end
     end
     
 end

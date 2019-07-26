@@ -2,10 +2,10 @@ function unprojected = unproject( bounds, height )
 
 assert( ndims( bounds ) == 3 );
 assert( size( bounds, 3 ) == 2 );
-assert( isa( bounds, 'uint64' ) );
+assert( isa( bounds, 'uint32' ) );
 
 assert( isscalar( height ) );
-assert( isa( height, 'uint64' ) );
+assert( isa( height, 'uint32' ) );
 
 sz = [ size( bounds, 1 ) size( bounds, 2 ) height ];
 unprojected = false( sz );

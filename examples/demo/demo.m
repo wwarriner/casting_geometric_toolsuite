@@ -2,9 +2,9 @@
 % reset_default_options();
 option_path = which( 'demo_options.json' );
 stl_path = which( 'steering_column_mount.stl' );
-output_path = fullfile( 'C:\Users\William Warriner\Desktop\a' );
+output_path = fullfile( 'C:\Users\wwarr\Desktop\a' );
 user_needs = { ...
-    MoldThinWall.NAME ...
+    Cores.NAME ...
     };
 
 %% OPTIONS
