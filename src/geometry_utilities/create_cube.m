@@ -41,7 +41,8 @@ fv.faces = [ ...
     3 5 8 ...
     ];
 
-cube = geometry.Component( fv, name );
+cube = Body( fv );
+cube.name = name;
 
 end
 
