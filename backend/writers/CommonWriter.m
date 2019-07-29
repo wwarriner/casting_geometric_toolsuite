@@ -9,6 +9,8 @@ classdef (Sealed) CommonWriter < handle
         function obj = CommonWriter( output_folder, name )
             assert( ~isfile( output_folder ) );
             obj.path = output_folder;
+            
+            assert( ~isempty( name ) );
             obj.name = name;
         end
         
