@@ -1,7 +1,7 @@
 classdef UniformVoxelMesh < mesh.MeshInterface
     
-    properties ( Access = public )
-        default_component_id(1,1) uint64 {mustBeNonnegative} = 1
+    properties
+        default_body_id(1,1) uint64 {mustBeNonnegative} = 1
     end
     
     properties ( SetAccess = private, Dependent )
@@ -10,7 +10,7 @@ classdef UniformVoxelMesh < mesh.MeshInterface
         volumes
     end
     
-    methods ( Access = public )
+    methods
         
         % - material_id_array is an array of values representing materials
         % - scale is a finite double greater than zero indicating
@@ -25,11 +25,6 @@ classdef UniformVoxelMesh < mesh.MeshInterface
             obj.desired_element_count = element_count;
         end
         
-    end
-    
-    
-    methods % getters
-        
         function value = get.connectivity( obj )
             value = obj.internal_interfaces.element_ids;
         end
@@ -42,15 +37,8 @@ classdef UniformVoxelMesh < mesh.MeshInterface
             value = obj.elements.volumes;
         end
         
-    end
-    
-    
-    % base class implementations
-    % see base class definition for documentation
-    methods ( Access = public )
-        
-        function add_component( obj, component )
-            obj.component_list = [ obj.component_list component ];
+        function add_body( obj, body )
+            obj.body_list = [ obj.body_list body ];
         end
         
         function build( obj )
@@ -165,22 +153,14 @@ classdef UniformVoxelMesh < mesh.MeshInterface
             end
         end
         
-    end
-    
-    
-    % class specific methods
-    methods ( Access = public )
-        
         function field = reshape( obj, values )
             field = reshape( values, obj.voxels.shape );
         end
-        
     end
-    
     
     properties ( Access = private )
         dimension_count
-        component_list
+        body_list
         voxels
         material_ids
         elements
@@ -189,11 +169,9 @@ classdef UniformVoxelMesh < mesh.MeshInterface
         desired_element_count
     end
     
-    
     methods ( Access = private )
-        
         function ids = get_material_ids( obj )
-            id_list = [ obj.component_list.id ];
+            id_list = [ obj.body_list.id ];
             ids = nan( max( id_list ), 1 );
             ids( id_list ) = id_list;
         end
@@ -203,23 +181,22 @@ classdef UniformVoxelMesh < mesh.MeshInterface
             voxels = mesh.voxel.Voxels( ...
                 obj.desired_element_count, ...
                 envelope, ...
-                obj.default_component_id ...
+                obj.default_body_id ...
                 );
-            for i = 1 : numel( obj.component_list )
-                c = obj.component_list( i );
+            for i = 1 : numel( obj.body_list )
+                c = obj.body_list( i );
                 voxels.paint( c.fv, c.id );
             end
             assert( ~any( voxels.values == 0, 'all' ) );
         end
         
         function envelope = unify_envelopes( obj )
-            envelope = obj.component_list( 1 ).envelope.copy();
-            for i = 2 : numel( obj.component_list )
-                component = obj.component_list( 1 );
-                envelope = envelope.union( component.envelope );
+            envelope = obj.body_list( 1 ).envelope.copy();
+            for i = 2 : numel( obj.body_list )
+                body = obj.body_list( 1 );
+                envelope = envelope.union( body.envelope );
             end
         end
-        
     end
     
 end

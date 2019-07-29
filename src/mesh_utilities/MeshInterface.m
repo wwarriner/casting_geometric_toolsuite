@@ -9,7 +9,7 @@ classdef (Abstract) MeshInterface < handle
     
     methods ( Access = public )
         
-        add_component( obj, component );
+        add_body( obj, body );
         build( obj );
         
         assign_uniform_external_boundary_id( obj, id );

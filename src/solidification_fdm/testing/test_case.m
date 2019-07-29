@@ -14,9 +14,9 @@ mold.id = mold_id;
 
 element_count = 1e5;
 ufv = mesh.UniformVoxelMesh( element_count );
-ufv.default_component_id = mold.id;
-ufv.add_component( mold );
-ufv.add_component( cavity );
+ufv.default_body_id = mold.id;
+ufv.add_body( mold );
+ufv.add_body( cavity );
 ufv.build();
 ufv.assign_uniform_external_boundary_id( 1 );
 

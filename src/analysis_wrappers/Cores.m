@@ -3,13 +3,13 @@ classdef (Sealed) Cores < Process
     % undercuts.
     % Settings:
     % - @threshold, determines cutoff distance for undercut expansion in
-    % component units.
+    % casting units.
     % Dependencies:
     % - @Mesh
     % - @Undercuts
     
     properties
-        threshold(1,1) double {mustBeReal,mustBeFinite,mustBePositive} = 1 % component units
+        threshold(1,1) double {mustBeReal,mustBeFinite,mustBePositive} = 1 % casting units
     end
     
     properties ( SetAccess = private, Dependent )

@@ -1,7 +1,7 @@
 classdef Elements < handle
     
     properties ( Access = public )
-        component_ids(:,1) uint64 {mustBePositive} = 1
+        body_ids(:,1) uint64 {mustBePositive} = 1
         material_ids(:,1) uint64 {mustBePositive} = 1
         volumes(:,1) double {mustBeReal,mustBeFinite,mustBePositive} = 1
     end
@@ -16,15 +16,15 @@ classdef Elements < handle
     
     methods ( Access = public )
         
-        function obj = Elements( component_ids, material_ids, volumes )
+        function obj = Elements( body_ids, material_ids, volumes )
             if nargin == 0
                 return;
             end
             
-            assert( numel( component_ids ) == numel( material_ids ) );
-            assert( numel( component_ids ) == numel( volumes ) );
+            assert( numel( body_ids ) == numel( material_ids ) );
+            assert( numel( body_ids ) == numel( volumes ) );
             
-            obj.component_ids = component_ids;
+            obj.body_ids = body_ids;
             obj.material_ids = material_ids;
             obj.volumes = volumes;
         end
@@ -35,7 +35,7 @@ classdef Elements < handle
     methods % getters
         
         function value = get.count( obj )
-            value = uint64( numel( obj.component_ids ) );
+            value = uint64( numel( obj.body_ids ) );
         end
         
         function value = get.material_id_count( obj )

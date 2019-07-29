@@ -2,8 +2,7 @@ classdef (Sealed) MoldThinWall < Process
     % @MoldThinSection identifies regions whose local thickness is below the
     % @threshold property value in the mesh exterior.
     % Settings:
-    % - @threshold, determines what regions count as thin in component
-    % units.
+    % - @threshold, determines what regions count as thin in casting units.
     % - @sweep_coefficient, aggressiveness in determining thin regions, is
     % unitless.
     % Dependencies:
@@ -11,7 +10,7 @@ classdef (Sealed) MoldThinWall < Process
     % - @GeometricProfile
     
     properties
-        threshold(1,1) double {mustBeReal,mustBeFinite,mustBePositive} = 1 % component length units
+        threshold(1,1) double {mustBeReal,mustBeFinite,mustBePositive} = 1 % casting length units
         sweep_coefficient(1,1) double {mustBeReal,mustBeFinite,mustBePositive} = 2 % unitless
     end
     
