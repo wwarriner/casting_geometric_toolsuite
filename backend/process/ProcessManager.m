@@ -82,26 +82,26 @@ classdef (Sealed) ProcessManager < Cancelable & Notifier & handle
         end
         
         function write_process_keys( obj, process_keys )
-            writer = obj.prepare_writer();
+            output_files = obj.prepare_output_files();
             for i = 1 : numel( process_keys )
-                obj.write_result( process_keys{ i }, writer );
+                obj.write_result( process_keys{ i }, output_files );
             end
         end
         
-        function write_result( obj, process_key, writer )
+        function write_result( obj, process_key, output_files )
             if obj.has_observer()
                 obj.notify_observer( 'Writing :%s', process_key );
             end
             result = obj.results.get( process_key );
-            result.write( writer );
+            result.write( output_files );
         end
         
-        function writer = prepare_writer( obj )
+        function output_files = prepare_output_files( obj )
             name = obj.get_name();
             output_folder = obj.options.get( 'manager.output_folder' );
             write_folder = fullfile( output_folder, name );
-            writer = CommonWriter( write_folder, name );
-            writer.prepare_output_path();
+            output_files = OutputFiles( write_folder, name );
+            output_files.prepare_output_path();
         end
         
         function name = get_name( obj )

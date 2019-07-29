@@ -1,4 +1,4 @@
-classdef (Sealed) CommonWriter < handle
+classdef OutputFiles < handle
     
     properties ( SetAccess = private )
         path
@@ -6,7 +6,7 @@ classdef (Sealed) CommonWriter < handle
     end
     
     methods ( Access = public )
-        function obj = CommonWriter( output_folder, name )
+        function obj = OutputFiles( output_folder, name )
             assert( ~isfile( output_folder ) );
             obj.path = output_folder;
             
