@@ -4,13 +4,11 @@ classdef UniformVoxelMesh < mesh.MeshInterface
         default_component_id(1,1) uint64 {mustBeNonnegative} = 1
     end
     
-    
     properties ( SetAccess = private, Dependent )
         connectivity
         count
         volumes
     end
-    
     
     methods ( Access = public )
         
