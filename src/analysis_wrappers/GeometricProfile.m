@@ -39,9 +39,9 @@ classdef (Sealed) GeometricProfile < Process
         
         function write( obj, common_writer )
             scaled_title = [ 'scaled_' obj.NAME ];
-            common_writer.write_array( scaled_title, obj.scaled );
+            common_writer.write_array( scaled_title, obj.scaled, obj.mesh.spacing, obj.mesh.origin );
             filter_title = [ 'filtered_' obj.NAME ];
-            common_writer.write_array( filter_title, obj.filtered );
+            common_writer.write_array( filter_title, obj.filtered, obj.mesh.spacing, obj.mesh.origin );
         end
         
         function a = to_array( obj )
@@ -89,7 +89,7 @@ classdef (Sealed) GeometricProfile < Process
     
     methods ( Access = public, Static )
         function name = NAME()
-            name = mfilename( 'class' );
+            name = string( mfilename( 'class' ) );
         end
     end
     

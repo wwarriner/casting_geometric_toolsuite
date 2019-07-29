@@ -1,5 +1,9 @@
 function edges = determine_edges( fv )
 
+assert( isstruct( fv ) );
+assert( isfield( fv, 'faces' ) );
+assert( isfield( fv, 'vertices' ) );
+
 count = size( fv.faces, 1 );
 edges = zeros( 3 * count, 2 );
 edges( 1 : count, : ) = fv.faces( :, [ 1 2 ] );

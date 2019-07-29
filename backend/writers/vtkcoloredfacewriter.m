@@ -5,8 +5,8 @@ function vtkcoloredfacewriter( ...
     fvc ...
     )
 
-assert( ischar( file_title ) );
-assert( ischar( scalar_title ) );
+assert( ischar( file_title ) || isstring( file_title ) );
+assert( ischar( scalar_title ) || isstring( scalar_title ) );
 
 DOUBLE_SPEC = '%18.17e';
 

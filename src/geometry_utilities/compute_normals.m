@@ -1,5 +1,9 @@
 function n = compute_normals( fv )
 
+assert( isstruct( fv ) );
+assert( isfield( fv, 'faces' ) );
+assert( isfield( fv, 'vertices' ) );
+
 e1 = fv.vertices( fv.faces( :, 1 ), : ) ...
     - fv.vertices( fv.faces( :, 2 ), : );
 e1 = e1 ./ vecnorm( e1, 2, 2 );

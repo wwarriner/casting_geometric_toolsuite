@@ -1,8 +1,13 @@
-function fv = compute_convex_hull( fv )
+function cfv = compute_convex_hull( fv )
 
-fv = convhulln( fv );
-removed = setdiff( 1 : size( fv.vertices, 1 ), unique( fv.faces ) );
-fv.vertices( removed ) = [];
+assert( isstruct( fv ) );
+assert( isfield( fv, 'faces' ) );
+assert( isfield( fv, 'vertices' ) );
+
+faces = convhulln( fv.vertices );
+[ u, ~, i ] = unique( faces );
+cfv.vertices = fv.vertices( u, : );
+cfv.faces = reshape( i, size( faces ) );
 
 end
 

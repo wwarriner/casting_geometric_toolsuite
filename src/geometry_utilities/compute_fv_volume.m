@@ -3,14 +3,18 @@ function [ volume, centroid ] = compute_fv_volume( fv )
 % see https://wwwf.imperial.ac.uk/~rn/centroid.pdf
 % and http://www.alecjacobson.com/weblog/?p=3854
 
+assert( isstruct( fv ) );
+assert( isfield( fv, 'faces' ) );
+assert( isfield( fv, 'vertices' ) );
+
 A = fv.vertices( fv.faces( :, 1 ), : );
 B = fv.vertices( fv.faces( :, 2 ), : );
 C = fv.vertices( fv.faces( :, 3 ), : );
 
 N = cross( B - A, C - A, 2 );
 
-V = dot( A, N );
-volume = sum( V( : ) ) / 6.0;
+V = dot( A, N, 2 );
+volume = abs( sum( V ) / 6.0 );
 
 centroid = ...
     ( 1 / ( 48 * volume ) ) ...

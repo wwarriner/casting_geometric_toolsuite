@@ -1,5 +1,9 @@
 function count = count_holes( fv )
 
+assert( isstruct( fv ) );
+assert( isfield( fv, 'faces' ) );
+assert( isfield( fv, 'vertices' ) );
+
 % Counts holes using euler characteristic Chi
 V = size( fv.vertices, 1 );
 F = size( fv.faces, 1 );

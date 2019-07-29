@@ -97,23 +97,17 @@ classdef (Sealed) ProcessManager < Cancelable & Notifier & handle
         end
         
         function writer = prepare_writer( obj )
-            mesh_key = ProcessKey( Mesh.NAME );
-            assert( obj.results.exists( mesh_key ) );
-            
-            name_of_component = obj.get_name();
-            output_path = obj.options.get( 'manager.output_folder' );
-            writer = CommonWriter( ...
-                fullfile( output_path, name_of_component ), ...
-                name_of_component, ...
-                obj.results.get( mesh_key ) ...
-                );
+            name = obj.get_name();
+            output_folder = obj.options.get( 'manager.output_folder' );
+            write_folder = fullfile( output_folder, name );
+            writer = CommonWriter( write_folder, name );
             writer.prepare_output_path();
         end
         
         function name = get_name( obj )
-            component_key = ProcessKey( Component.NAME );
-            assert( obj.results.exists( component_key ) );
-            name = obj.results.get( component_key ).name;
+            casting_key = ProcessKey( Casting.NAME );
+            assert( obj.results.exists( casting_key ) );
+            name = obj.results.get( casting_key ).name;
         end
     end
     

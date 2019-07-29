@@ -1,5 +1,5 @@
 function angles = compute_draft_angles( normals, up_vector )
-% @compute_draft_angles computes the draft angles of of faces represented by the
+% @compute_draft_angles computes the draft angles of faces represented by the
 % input normals, with respect to the up vector. The angles returned is pi/2 
 % minus the plane angle lying between the up_vector and the normal. Draft is
 % minimized when normal is perpendicular to up, and maximized when parallel. The
@@ -11,11 +11,11 @@ function angles = compute_draft_angles( normals, up_vector )
 
 assert( ismatrix( normals ) );
 assert( isa( normals, 'double' ) );
-assert( isreal( double ) );
-assert( all( isfinite( double ) ) );
+assert( isreal( normals ) );
+assert( all( isfinite( normals ), 'all' ) );
 
 assert( isrow( up_vector ) );
-assert( isa( up_vector, double ) );
+assert( isa( up_vector, 'double' ) );
 assert( isreal( up_vector ) );
 assert( all( isfinite( up_vector ) ) );
 

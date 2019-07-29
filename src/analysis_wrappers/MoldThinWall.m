@@ -40,7 +40,7 @@ classdef (Sealed) MoldThinWall < Process
         end
         
         function write( obj, common_writer )
-            common_writer.write_array( obj.NAME, obj.to_array() );
+            common_writer.write_array( obj.NAME, obj.to_array(), obj.mesh.spacing, obj.mesh.origin );
             common_writer.write_table( obj.NAME, obj.to_table() );
         end
         
@@ -71,7 +71,7 @@ classdef (Sealed) MoldThinWall < Process
     
     methods ( Access = public, Static )
         function name = NAME()
-            name = mfilename( 'class' );
+            name = string( mfilename( 'class' ) );
         end
     end
     

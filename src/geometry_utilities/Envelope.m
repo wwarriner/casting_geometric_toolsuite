@@ -42,12 +42,8 @@ classdef Envelope < handle & matlab.mixin.Copyable
     
     methods ( Access = private )
         function construct_from_fv( obj, fv )
-            assert( isstruct( fv ) || isobject( fv ) );
-            if isstruct( fv )
-                assert( isfield( fv, 'vertices' ) );
-            elseif isobject( fv )
-                assert( isprop( fv, 'vertices' ) );
-            end
+            assert( isstruct( fv ) );
+            assert( isfield( fv, 'vertices' ) );
             
             obj.dimension_count = size( fv.vertices, 2 );
             obj.min_point = min( fv.vertices, [], 1 );
@@ -60,6 +56,8 @@ classdef Envelope < handle & matlab.mixin.Copyable
             
             min = varargin{ 1 };
             max = varargin{ 2 };
+            assert( isvector( min ) );
+            assert( isvector( max ) );
             assert( numel( min ) == numel( max ) );
             
             obj.dimension_count = numel( min );
