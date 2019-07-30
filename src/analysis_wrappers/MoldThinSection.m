@@ -1,4 +1,4 @@
-classdef (Sealed) MoldThinWall < Process
+classdef (Sealed) MoldThinSection < Process
     % @MoldThinSection identifies regions whose local thickness is below the
     % @threshold property value in the mesh exterior.
     % Settings:
@@ -21,18 +21,18 @@ classdef (Sealed) MoldThinWall < Process
     end
     
     methods
-        function obj = MoldThinWall( varargin )
+        function obj = MoldThinSection( varargin )
             obj = obj@Process( varargin{ : } );
         end
         
         function run( obj )
             obj.obtain_inputs();
-            obj.prepare_thin_sections();
+            obj.prepare_thin_section_query();
         end
         
-        function legacy_run( obj, mesh, profile, threshold, sweep_coefficient )
+        function legacy_run( obj, mesh, geometric_profile, threshold, sweep_coefficient )
             obj.mesh = mesh;
-            obj.profile = profile;
+            obj.geometric_profile = geometric_profile;
             obj.threshold = threshold;
             obj.sweep_coefficient = sweep_coefficient;
             obj.run();
@@ -55,11 +55,11 @@ classdef (Sealed) MoldThinWall < Process
         end
         
         function value = get.count( obj )
-            value = obj.thin_sections.count;
+            value = obj.thin_section_query.count;
         end
         
         function value = get.label_array( obj )
-            value = obj.thin_sections.label_array;
+            value = obj.thin_section_query.label_array;
         end
         
         function value = get.volume( obj )
@@ -76,8 +76,8 @@ classdef (Sealed) MoldThinWall < Process
     
     properties ( Access = private )
         mesh Mesh
-        profile GeometricProfile
-        thin_sections ThinSections
+        geometric_profile GeometricProfile
+        thin_section_query ThinSectionQuery
     end
     
     methods ( Access = private )
@@ -86,10 +86,10 @@ classdef (Sealed) MoldThinWall < Process
                 mesh_key = ProcessKey( Mesh.NAME );
                 obj.mesh = obj.results.get( mesh_key );
                 geometric_profile_key = ProcessKey( GeometricProfile.NAME );
-                obj.profile = obj.results.get( geometric_profile_key );
+                obj.geometric_profile = obj.results.get( geometric_profile_key );
             end
             assert( ~isempty( obj.mesh ) );
-            assert( ~isempty( obj.profile ) );
+            assert( ~isempty( obj.geometric_profile ) );
             
             if ~isempty( obj.options )
                 loc = 'processes.thin_wall.mold_threshold_stl_units';
@@ -103,19 +103,19 @@ classdef (Sealed) MoldThinWall < Process
             assert( ~isempty( obj.sweep_coefficient ) );
         end
         
-        function prepare_thin_sections( obj )
+        function prepare_thin_section_query( obj )
             obj.printf( 'Locating mold thin wall sections...\n' );
             amount = [ 1 1 1 ];
             value = 1;
             mask = padarray( obj.mesh.exterior, amount, value, 'both' );
-            wall = padarray( -obj.profile.unscaled, amount, inf, 'both' );
-            ts = ThinSections( ...
+            wall = padarray( -obj.geometric_profile.unscaled, amount, inf, 'both' );
+            ts = ThinSectionQuery( ...
                 wall, ...
                 mask, ...
-                obj.mesh.to_mesh_units( obj.threshold ), ...
+                obj.mesh.to_mesh_length( obj.threshold ), ...
                 obj.sweep_coefficient ...
                 );
-            obj.thin_sections = ts;
+            obj.thin_section_query = ts;
         end
     end
     

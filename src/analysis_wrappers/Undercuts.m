@@ -31,7 +31,7 @@ classdef (Sealed) Undercuts < Process
         end
         
         function a = to_array( obj )
-            a = obj.undercuts.label_matrix;
+            a = obj.undercuts.label_array;
         end
         
         function value = to_table( obj )
@@ -50,8 +50,8 @@ classdef (Sealed) Undercuts < Process
         end
         
         function value = get.volume( obj )
-            value = sum( obj.undercuts.label_matrix > 0, 'all' );
-            value = obj.mesh.to_stl_volume( value ); 
+            value = sum( obj.undercuts.label_array > 0, 'all' );
+            value = obj.mesh.to_casting_volume( value ); 
         end
     end
     

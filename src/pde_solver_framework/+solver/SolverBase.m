@@ -9,11 +9,11 @@ classdef (Abstract) SolverBase < handle
     
     properties
         tolerance(1,1) double {mustBeReal,mustBeFinite,mustBePositive} = 1e-4
-        maximum_iteration_count(1,1) uint64 {mustBePositive} = 100
+        maximum_iteration_count(1,1) uint32 {mustBePositive} = 100
     end
     
     properties ( SetAccess = private )
-        iteration_count(1,1) uint64 {mustBeNonnegative} = 0
+        iteration_count(1,1) uint32 {mustBeNonnegative} = 0
         time(1,1) double {mustBeReal,mustBeFinite,mustBeNonnegative} = 0.0
     end
     

@@ -1,8 +1,8 @@
 classdef Elements < handle
     
     properties ( Access = public )
-        body_ids(:,1) uint64 {mustBePositive} = 1
-        material_ids(:,1) uint64 {mustBePositive} = 1
+        body_ids(:,1) uint32 {mustBePositive} = 1
+        material_ids(:,1) uint32 {mustBePositive} = 1
         volumes(:,1) double {mustBeReal,mustBeFinite,mustBePositive} = 1
     end
     
@@ -35,11 +35,11 @@ classdef Elements < handle
     methods % getters
         
         function value = get.count( obj )
-            value = uint64( numel( obj.body_ids ) );
+            value = uint32( numel( obj.body_ids ) );
         end
         
         function value = get.material_id_count( obj )
-            value = uint64( numel( obj.material_id_list ) );
+            value = uint32( numel( obj.material_id_list ) );
         end
         
         function value = get.material_id_list( obj )

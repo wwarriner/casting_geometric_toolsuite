@@ -27,7 +27,7 @@ classdef (Sealed) CavityThinSection < Process
         
         function run( obj )
             obj.obtain_inputs();
-            obj.prepare_thin_sections();
+            obj.prepare_thin_section_query();
         end
         
         function legacy_run( obj, mesh, geometric_profile, threshold, sweep_coefficient )
@@ -55,11 +55,11 @@ classdef (Sealed) CavityThinSection < Process
         end
         
         function value = get.count( obj )
-            value = obj.thin_sections.count;
+            value = obj.thin_section_query.count;
         end
         
         function value = get.label_array( obj )
-            value = obj.thin_sections.label_array;
+            value = obj.thin_section_query.label_array;
         end
         
         function value = get.volume( obj )
@@ -77,7 +77,7 @@ classdef (Sealed) CavityThinSection < Process
     properties ( Access = private )
         mesh Mesh
         geometric_profile GeometricProfile
-        thin_sections ThinSections
+        thin_section_query ThinSectionQuery
     end
     
     methods ( Access = private )
@@ -103,7 +103,7 @@ classdef (Sealed) CavityThinSection < Process
             assert( ~isempty( obj.sweep_coefficient ) );
         end
         
-        function prepare_thin_sections( obj )
+        function prepare_thin_section_query( obj )
             obj.printf( 'Locating cavity thin wall sections...\n' );
             amount = [ 1 1 1 ];
             value = 0;
@@ -112,10 +112,10 @@ classdef (Sealed) CavityThinSection < Process
             ts = ThinSectionQuery( ...
                 wall, ...
                 mask, ...
-                obj.mesh.to_mesh_units( obj.threshold ), ...
+                obj.mesh.to_mesh_length( obj.threshold ), ...
                 obj.sweep_coefficient ...
                 );
-            obj.thin_sections = ts;
+            obj.thin_section_query = ts;
         end
     end
     

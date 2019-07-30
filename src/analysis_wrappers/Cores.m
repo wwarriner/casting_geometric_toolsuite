@@ -60,7 +60,7 @@ classdef (Sealed) Cores < Process
         end
         
         function value = get.volume( obj )
-            voxel_count = sum( obj.cores > 0, 'all' );
+            voxel_count = sum( obj.label_array > 0, 'all' );
             value = obj.mesh.to_mesh_volume( voxel_count );
         end
     end
@@ -98,7 +98,7 @@ classdef (Sealed) Cores < Process
             obj.cores = CoreQuery( ...
                 obj.undercuts.label_array > 0, ...
                 obj.mesh.exterior, ...
-                obj.mesh.to_mesh_units( obj.threshold ) ...
+                obj.mesh.to_mesh_length( obj.threshold ) ...
                 );
         end
     end

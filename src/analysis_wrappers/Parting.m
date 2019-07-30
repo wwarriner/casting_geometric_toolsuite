@@ -41,13 +41,13 @@ classdef (Sealed) Parting < Process
             common_writer.write_table( obj.NAME, obj.to_table() );
         end
         
-        function a = to_array( obj )
-            a = double( obj.perimeter_labels );
-            a( a > 0 ) = obj.PERIMETER;
+        function value = to_array( obj )
+            value = double( obj.perimeter_labels );
+            value( value > 0 ) = obj.PERIMETER;
             jf = obj.jog_free_labels;
-            a( jf ) = obj.JOG_FREE;
+            value( jf > 0 ) = obj.JOG_FREE;
             pl = obj.line_labels;
-            a( pl ) = obj.LINE;
+            value( pl > 0 ) = obj.LINE;
         end
         
         function value = to_table( obj )
@@ -62,15 +62,15 @@ classdef (Sealed) Parting < Process
         end
         
         function value = get.area( obj )
-            value = obj.mesh.to_stl_area( obj.perimeter.projected.area );
+            value = obj.mesh.to_casting_area( obj.perimeter.projected.area );
         end
         
         function value = get.length( obj )
-            value = obj.mesh.to_stl_units( obj.perimeter.projected.area );
+            value = obj.mesh.to_casting_length( obj.perimeter.projected.length );
         end
         
         function value = get.draw( obj )
-            value = obj.mesh.to_stl_units( obj.perimeter.line.draw );
+            value = obj.mesh.to_casting_length( obj.perimeter.line.draw );
         end
         
         function value = get.perimeter_labels( obj )
@@ -107,10 +107,7 @@ classdef (Sealed) Parting < Process
         end
         
         function prepare_parting_perimeter( obj )
-            obj.printf( ...
-                'Locating parting perimeter...\n', ...
-                obj.parting_dimension ...
-                );
+            obj.printf( "Locating parting perimeter...\n" );
             obj.perimeter = PartingPerimeterQuery( obj.mesh.interior );
         end
     end

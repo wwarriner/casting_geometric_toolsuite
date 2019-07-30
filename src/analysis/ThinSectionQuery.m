@@ -1,4 +1,4 @@
-classdef ThinSections < handle
+classdef ThinSectionQuery < handle
     % @ThicknessThreshold is intended to identify regions in a voxel
     % representation of a solid body which are above and below some
     % threshold local wall thickness. The intent is to identify thin wall
@@ -22,12 +22,12 @@ classdef ThinSections < handle
         % - @sweep_coefficient (optional) is a real, finite, positive
         % scalar double which determines how aggressively to sweep. Lower
         % values tend to undersegment, and higher values oversegment.
-        function obj = ThinSections( edt, mask, threshold, sweep_coefficient )
+        function obj = ThinSectionQuery( edt, mask, threshold, sweep_coefficient )
             if nargin == 0
                 return;
             end
             
-            if nargin < 5
+            if nargin < 4
                 sweep_coefficient = 2; % seems to work well
             end
             

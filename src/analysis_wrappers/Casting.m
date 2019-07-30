@@ -1,4 +1,7 @@
 classdef Casting < Process
+% @Casting contains information on the geometric abstraction of the shape to be
+% cast during the casting process. It is the starting point for all downstream
+% operations.
     
     properties ( SetAccess = private, Dependent )
         name(1,1) string
@@ -133,17 +136,21 @@ classdef Casting < Process
         end
         
         function read_data( obj )
+            obj.printf( "Reading casting geometry from file...\n" );
             stl_file_in = StlFile( obj.file );
             body_in = Body( stl_file_in.fv );
+            body_in.name = stl_file_in.name;
             obj.stl_file = stl_file_in;
             obj.body = body_in;
         end
         
         function prepare_shape_descriptors( obj )
+            obj.printf( "  Computing shape descriptors...\n" );
             obj.shape_invariant_query = ShapeInvariantQuery( obj.body );
         end
         
         function prepare_draft( obj )
+            obj.printf( "  Computing draft...\n" );
             obj.draft_query = DraftQuery( obj.body.normals, [ 0 0 1 ] );
         end
     end

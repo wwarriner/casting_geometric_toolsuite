@@ -1,17 +1,16 @@
 classdef UniformVoxelMesh < mesh.MeshInterface
     
     properties
-        default_body_id(1,1) uint64 {mustBeNonnegative} = 1
+        default_body_id(1,1) uint32 {mustBeNonnegative} = 1
     end
     
     properties ( SetAccess = private, Dependent )
-        connectivity
-        count
-        volumes
+        connectivity(:,1) uint32 {mustBePositive}
+        count(1,1) uint32
+        volumes(:,1) double {mustBeReal,mustBeFinite,mustBePositive}
     end
     
     methods
-        
         % - material_id_array is an array of values representing materials
         % - scale is a finite double greater than zero indicating
         % the separation of voxels from center to center along any one axis
@@ -21,7 +20,6 @@ classdef UniformVoxelMesh < mesh.MeshInterface
             assert( isfinite( element_count ) );
             assert( 0.0 < element_count );
             
-            obj.dimension_count = 3;
             obj.desired_element_count = element_count;
         end
         
@@ -51,7 +49,7 @@ classdef UniformVoxelMesh < mesh.MeshInterface
                 );
             % external
             element_ids = cell2mat( obj.voxels.external_elements );
-            areas = obj.voxels.interface_area .* ones( size( element_ids ) );
+            areas = obj.voxels.element_area .* ones( size( element_ids ) );
             distances = 0.5 .* obj.voxels.scale .* ones( size( element_ids ) );
             obj.external_interfaces = mesh.utils.ExternalInterfaces( ...
                 obj.elements, ...
@@ -61,7 +59,7 @@ classdef UniformVoxelMesh < mesh.MeshInterface
                 );
             % internal
             element_ids = obj.voxels.neighbor_pairs;
-            areas = obj.voxels.interface_area .* ones( size( element_ids, 1 ), 1 );
+            areas = obj.voxels.element_area .* ones( size( element_ids, 1 ), 1 );
             distances = 0.5 .* obj.voxels.scale .* ones( size( element_ids ) );
             obj.internal_interfaces = mesh.utils.InternalInterfaces( ...
                 obj.elements, ...
@@ -159,14 +157,14 @@ classdef UniformVoxelMesh < mesh.MeshInterface
     end
     
     properties ( Access = private )
-        dimension_count
-        body_list
-        voxels
-        material_ids
-        elements
-        internal_interfaces
-        external_interfaces
-        desired_element_count
+        dimension_count(1,1) uint32 {mustBePositive} = 3
+        body_list(:,1) Body
+        voxels Voxels
+        material_ids(:,1) uint32 {mustBePositive}
+        elements Elements
+        internal_interfaces InternalInterfaces
+        external_interfaces ExternalInterfaces
+        desired_element_count(1,1) double {mustBeReal,mustBeFinite,mustBePositive}
     end
     
     methods ( Access = private )

@@ -1,9 +1,9 @@
 classdef (Abstract) MeshInterface < handle
     
     properties ( Abstract, SetAccess = private, Dependent )
-        connectivity
-        count
-        volumes
+        connectivity(:,1) uint32 {mustBePositive}
+        count(1,1) uint32
+        volumes(:,1) double {mustBeReal,mustBeFinite,mustBePositive}
     end
     
     

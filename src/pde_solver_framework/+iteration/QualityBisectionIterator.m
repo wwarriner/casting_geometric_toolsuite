@@ -11,7 +11,7 @@ classdef QualityBisectionIterator < iteration.IteratorBase
     properties
         % @maximum_iterations controls how many bisection algorithm
         % iterations are allowed before forcibly stopping computation.
-        maximum_iterations(1,1) uint64 {mustBePositive} = 100
+        maximum_iterations(1,1) uint32 {mustBePositive} = 100
         % @quality_tolerance controls how close quality must be to zero
         % before stopping.
         quality_tolerance(1,1) double {mustBeReal,mustBeFinite,mustBePositive} = 0.2

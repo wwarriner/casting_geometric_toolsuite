@@ -1,11 +1,11 @@
 classdef Interfaces < handle
     
     properties ( GetAccess = public, SetAccess = private )
-        count(1,1) uint64 {mustBePositive} = 1
-        element_ids(:,:) uint64 {mustBePositive} = 1
+        count(1,1) uint32 {mustBePositive} = 1
+        element_ids(:,:) uint32 {mustBePositive} = 1
         areas(:,1) double {mustBeReal,mustBeFinite,mustBePositive} = 1
         distances(:,:) double {mustBeReal,mustBeFinite,mustBePositive} = 1
-        boundary_ids(:,1) uint64 {mustBeNonnegative} = 0
+        boundary_ids(:,1) uint32 {mustBeNonnegative} = 0
     end
     
     

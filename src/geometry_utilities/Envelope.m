@@ -1,7 +1,7 @@
 classdef Envelope < handle & matlab.mixin.Copyable
     
     properties ( SetAccess = private )
-        dimension_count(1,1) uint64 {mustBePositive} = 1
+        dimension_count(1,1) uint32 {mustBePositive} = 1
         min_point(1,:) double {mustBeReal,mustBeFinite} = []
         max_point(1,:) double {mustBeReal,mustBeFinite} = []
         lengths(1,:) double {mustBeReal,mustBeFinite,mustBeNonnegative} = []

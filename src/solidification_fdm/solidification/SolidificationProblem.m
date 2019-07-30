@@ -41,7 +41,7 @@ classdef SolidificationProblem < problem.ProblemInterface
         mesh
         solver solver.LinearSystemSolver
         pp
-        cavity_id(1,1) uint64 {mustBeNonnegative}
+        cavity_id(1,1) uint32 {mustBeNonnegative}
     end
     
     

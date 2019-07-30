@@ -33,6 +33,9 @@ classdef PerimeterLoop < handle
             
             while true
                 previous = indices( itr - 1 );
+                if previous == 18
+                    drawnow();
+                end
                 [ distance, next ] = obj.get_next( previous, perimeter );
                 if isempty( next )
                     break;
@@ -48,15 +51,19 @@ classdef PerimeterLoop < handle
         
         function [ distance, index ] = get_next( obj, index, perimeter )
             neighbors = index + generate_neighbor_offsets( perimeter );
+            neighbors = neighbors( obj.preferred_neighbors );
+            remove = neighbors < 1 | numel( perimeter ) < neighbors;
+            neighbors( remove ) = [];
             valid_neighbors = perimeter( neighbors ) == true;
-            next = find( valid_neighbors( obj.preferred_neighbors ), 1 );
+            next = find( valid_neighbors, 1 );
             if isempty( next )
                 index = [];
                 distance = [];
             else
-                preference = obj.preferred_neighbors( next );
-                index = neighbors( preference );
-                distance = obj.neighbor_distances( preference );
+                index = neighbors( next );
+                nd = obj.neighbor_distances( obj.preferred_neighbors );
+                nd( remove ) = [];
+                distance = nd( next );
             end
         end
     end

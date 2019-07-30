@@ -1,65 +1,56 @@
 classdef Voxels < handle
     
-    properties ( GetAccess = public, SetAccess = private )
-        scale(1,1) double {mustBeReal,mustBeFinite,mustBePositive} = 1
-        origin(1,:) double {mustBeReal,mustBeFinite} = 1
-        envelope geometry.Envelope
-        values double = []
+    properties ( SetAccess = private )
+        scale(1,1) double {mustBeReal,mustBeFinite,mustBePositive} = 1.0
+        origin(1,:) double {mustBeReal,mustBeFinite}
+        values double
     end
-    
     
     properties ( SetAccess = private, Dependent )
-        dimension_count
-        element_count
-        shape
-        strides
-        interface_area
-        element_volume
-        external_elements
-        neighbor_pairs
+        dimension_count(1,1) uint32 {mustBeNonnegative}
+        element_count(1,1) uint32 {mustBePositive}
+        shape(1,:) uint32 {mustBeNonnegative}
+        element_area(1,1) double {mustBeReal,mustBeFinite,mustBePositive}
+        element_volume(1,1) double {mustBeReal,mustBeFinite,mustBePositive}
+        external_elements(:,1) cell
+        neighbor_pairs(:,2) uint32 {mustBePositive}
     end
     
-    
-    methods ( Access = public )
-        
+    methods
         function obj = Voxels( element_count, envelope, default_value )
             if nargin < 3
                 default_value = 0;
             end
             
-            obj.desired_element_count = element_count;
-            obj.envelope = envelope;
-            obj.default_value = default_value;
-            obj.scale = obj.compute_scale( ...
-                obj.envelope, ...
-                obj.desired_element_count ...
-                );
-            obj.desired_shape = obj.compute_desired_shape( ...
-                obj.envelope, ...
-                obj.scale ...
-                );
-            obj.origin = obj.compute_origin( ...
-                obj.envelope, ...
-                obj.desired_shape, ...
-                obj.scale ...
-                );
-            obj.points = obj.compute_points( ...
-                obj.desired_shape, ...
-                obj.origin, ...
-                obj.scale ...
-                );
-            obj.values = obj.default_value .* ones( cellfun( @numel, obj.points ) );
+            assert( isscalar( element_count ) )
+            assert( isa( element_count, 'double' ) );
+            assert( isreal( element_count ) );
+            assert( isfinite( element_count ) );
+            assert( 0.0 < element_count );
+            
+            assert( isscalar( envelope ) );
+            assert( isa( envelope, 'Envelope' ) );
+            
+            assert( isscalar( default_value ) );
+            assert( isa( default_value, 'double' ) );
+            
+            scale = obj.compute_scale( envelope, element_count );
+            desired_shape = obj.compute_desired_shape( envelope, scale );
+            origin = obj.compute_origin( envelope, desired_shape, scale );
+            points = obj.compute_points( desired_shape, origin, scale );
+            values = obj.create_array( points, default_value );
+            
+            obj.scale = scale;
+            obj.origin = origin;
+            obj.values = values;
+            obj.points = points;
+            
         end
         
         function paint( obj, fv, value )
             to_paint = obj.rasterize( fv );
             obj.values( to_paint ) = value;
         end
-        
-    end
-    
-    
-    methods % getters
         
         function value = get.dimension_count( obj )
             value = ndims( obj.values );
@@ -80,7 +71,7 @@ classdef Voxels < handle
             end
         end
         
-        function value = get.interface_area( obj )
+        function value = get.element_area( obj )
             value = obj.scale .^ 2;
         end
         
@@ -137,29 +128,21 @@ classdef Voxels < handle
             [ lhs, rhs ] = find( connectivity );
             pairs = [ lhs rhs ];
         end
-        
     end
-    
     
     properties ( Access = private )
-        desired_element_count(1,1) uint64 {mustBeNonnegative} = 1
-        desired_shape(1,:) uint64 {mustBeNonnegative} = 1
-        points(1,:) cell = {}
-        default_value(1,1) double = 0.0
+        desired_element_count(1,1) uint32 {mustBeNonnegative}
+        strides(1,:) uint32 {mustBeNonnegative}
+        points(:,1) cell
     end
-    
     
     methods ( Access = private )
-        
         function array = rasterize( obj, fv )
-            array = mesh.voxel.rasterize_fv( fv, obj.points );
+            array = rasterize_fv( fv, obj.points );
         end
-        
     end
     
-    
     methods ( Access = private, Static )
-        
         function scale = compute_scale( envelope, count )
             scale = ( envelope.volume / double( count ) ) .^ ( 1.0 / 3.0 );
         end
@@ -183,6 +166,9 @@ classdef Voxels < handle
                 );
         end
         
+        function array = create_array( points, value )
+            array = value .* ones( cellfun( @numel, points ) );
+        end
     end
     
 end

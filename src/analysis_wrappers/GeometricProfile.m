@@ -38,9 +38,9 @@ classdef (Sealed) GeometricProfile < Process
         end
         
         function write( obj, common_writer )
-            scaled_title = [ 'scaled_' obj.NAME ];
+            scaled_title = strjoin( [ "scaled" obj.NAME ], "_" );
             common_writer.write_array( scaled_title, obj.scaled, obj.mesh.spacing, obj.mesh.origin );
-            filter_title = [ 'filtered_' obj.NAME ];
+            filter_title = strjoin( [ "filtered" obj.NAME ], "_" );
             common_writer.write_array( filter_title, obj.filtered, obj.mesh.spacing, obj.mesh.origin );
         end
         

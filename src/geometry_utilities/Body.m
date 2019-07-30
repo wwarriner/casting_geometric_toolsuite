@@ -1,12 +1,12 @@
 classdef Body < handle
     
     properties
-        id(1,1) uint64 {mustBePositive} = 1
+        id(1,1) uint32 {mustBePositive} = 1
         name(1,1) string = ""
     end
     
     properties ( SetAccess = private )
-        faces(:,3) uint64 {mustBePositive}
+        faces(:,3) uint32 {mustBePositive}
         vertices(:,3) double {mustBeReal,mustBeFinite}
         normals(:,3) double {mustBeReal,mustBeFinite}
         facevertexcdata(1,:) double {mustBeReal,mustBeFinite} = Body.DEFAULT_COLOR
