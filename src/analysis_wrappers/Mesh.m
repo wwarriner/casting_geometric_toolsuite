@@ -21,10 +21,9 @@ classdef Mesh < Process
             obj.prepare_voxels();
         end
         
-        function legacy_run( obj, casting, desired_element_count, envelope )
+        function legacy_run( obj, casting, desired_element_count )
             obj.casting = casting;
             obj.desired_element_count = desired_element_count;
-            obj.desired_envelope = envelope;
             obj.run();
         end
         
