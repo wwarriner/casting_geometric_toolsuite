@@ -1,4 +1,4 @@
-classdef (Sealed) Sections < Process
+classdef Sections < Process
     % Sections encapsulates the behavior and data of isolated sections relating
     % to castings. Each isolated sections must be independently fed to ensure
     % sound solidification.

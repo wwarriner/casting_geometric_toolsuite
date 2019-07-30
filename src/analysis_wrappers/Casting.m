@@ -14,8 +14,8 @@ classdef Casting < Process
         flatness(1,1) double {mustBeReal,mustBeFinite}
         ranginess(1,1) double {mustBeReal,mustBeFinite}
         solidity(1,1) double {mustBeReal,mustBeFinite}
-        draft_angles(:,1) double {mustBeReal,mustBeFinite}
-        draft_fv(1,1) struct
+        %draft_angles(:,1) double {mustBeReal,mustBeFinite} % TODO move into own wrapper
+        %draft_fv(1,1) struct
     end
     
     methods
@@ -27,7 +27,7 @@ classdef Casting < Process
             obj.obtain_inputs();
             obj.read_data();
             obj.prepare_shape_descriptors();
-            obj.prepare_draft();
+            %obj.prepare_draft();
         end
         
         function legacy_run( obj, file )
@@ -36,15 +36,15 @@ classdef Casting < Process
         end
         
         function rotate( obj, rotation )
-            obj.body.rotate( rotation );
+            obj.body = obj.body.rotate( rotation );
         end
         
         function scale( obj, scaling )
-            obj.body.scale( scaling );
+            obj.body = obj.body.scale( scaling );
         end
         
         function translate( obj, translation )
-            obj.body.translate( translation );
+            obj.body = obj.body.translate( translation );
         end
         
         function value = to_table( obj )
@@ -58,7 +58,7 @@ classdef Casting < Process
         
         function write( obj, writer )
             writer.write_fv( obj.NAME, obj.fv )
-            writer.write_colored_fv( strjoin( [ obj.NAME "draft" ], "_" ), obj.draft_fv );
+            %writer.write_colored_fv( strjoin( [ obj.NAME "draft" ], "_" ), obj.draft_fv );
             writer.write_table( obj.NAME, obj.to_table );
         end
         
@@ -102,14 +102,14 @@ classdef Casting < Process
             value = obj.shape_invariant_query.solidity;
         end
         
-        function value = get.draft_angles( obj )
-            value = obj.draft_query.angles;
-        end
-        
-        function value = get.draft_fv( obj )
-            value = obj.body.fv;
-            value.facevertexcdata = obj.draft_angles;
-        end
+%         function value = get.draft_angles( obj )
+%             value = obj.draft_query.angles;
+%         end
+%         
+%         function value = get.draft_fv( obj )
+%             value = obj.body.fv;
+%             value.facevertexcdata = obj.draft_angles;
+%         end
     end
     
     methods ( Access = public, Static )
@@ -149,10 +149,10 @@ classdef Casting < Process
             obj.shape_invariant_query = ShapeInvariantQuery( obj.body );
         end
         
-        function prepare_draft( obj )
-            obj.printf( "  Computing draft...\n" );
-            obj.draft_query = DraftQuery( obj.body.normals, [ 0 0 1 ] );
-        end
+%         function prepare_draft( obj )
+%             obj.printf( "  Computing draft...\n" );
+%             obj.draft_query = DraftQuery( obj.body.normals, [ 0 0 1 ] );
+%         end
     end
     
 end

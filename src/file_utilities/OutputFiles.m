@@ -82,6 +82,10 @@ classdef OutputFiles < handle
             assert( isscalar( title ) );
             assert( isstring( title ) );
             
+            assert( iscell( fvs ) || isstruct( fvs ) );
+            if isstruct( fvs )
+                fvs = num2cell( fvs );
+            end
             assert( iscell( fvs ) );
             
             if isempty( fvs ); return; end
@@ -90,7 +94,7 @@ classdef OutputFiles < handle
                 stlwrite( file_path, fvs{ 1 } );
             else
                 for i = 1 : numel( fvs )
-                    fv = fvs{ 1 };
+                    fv = fvs{ i };
                     file_path = obj.compose_file_path( '%s_%s_%i.stl', title, i );
                     stlwrite( file_path, fv );
                 end

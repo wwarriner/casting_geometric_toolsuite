@@ -83,25 +83,25 @@ classdef Body < handle
             obj.facevertexcdata = value;
         end
         
-        function rotate( obj, rotation )
+        function clone = rotate( obj, rotation )
             assert( isscalar( rotation ) );
             assert( isa( rotation, 'Rotation' ) );
             
-            obj.apply_transformation( rotation );
+            clone = obj.apply_transformation( rotation );
         end
         
-        function scale( obj, scaling )
+        function clone = scale( obj, scaling )
             assert( isscalar( scaling ) );
             assert( isa( scaling, 'Scaling' ) );
             
-            obj.apply_transformation( scaling );
+            clone = obj.apply_transformation( scaling );
         end
         
-        function translate( obj, translation )
+        function clone = translate( obj, translation )
             assert( isscalar( translation ) );
             assert( isa( translation, 'Translation' ) );
             
-            obj.apply_transformation( translation );
+            clone = obj.apply_transformation( translation );
         end
         
         function gobj = plot( obj, axh )
@@ -119,17 +119,10 @@ classdef Body < handle
     end
     
     methods ( Access = private )
-        function apply_transformation( obj, transformation )
+        function clone = apply_transformation( obj, transformation )
             new_fv = obj.fv;
             new_fv.vertices = transformation.apply( new_fv.vertices );
-            n = compute_normals( new_fv );
-            [ ~, c ] = compute_fv_volume( new_fv );
-            e = Envelop( new_fv );
-            
-            obj.vertices = new_fv.vertices;
-            obj.normals = n;
-            obj.centroid = c;
-            obj.envelope = e;
+            clone = Body( new_fv );
         end
     end
     
