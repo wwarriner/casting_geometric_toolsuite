@@ -1,5 +1,8 @@
 classdef Feeders < Process
-    % TODO intersection volume, interface area, accessibility
+    properties ( SetAccess = private )
+        intersection_volume(:,1) double {mustBeReal,mustBeFinite,mustBeNonnegative}
+        interface_area(:,1) double {mustBeReal,mustBeFinite,mustBeNonnegative}
+    end
     
     properties ( SetAccess = private, Dependent )
         count(1,1) uint32
@@ -10,6 +13,7 @@ classdef Feeders < Process
         height(:,1) double {mustBeReal,mustBeFinite,mustBePositive}
         area(:,1) double {mustBeReal,mustBeFinite,mustBePositive}
         volume(:,1) double {mustBeReal,mustBeFinite,mustBePositive}
+        accessibility(:,1) double {mustBeReal,mustBeFinite,mustBeNonnegative}
     end
     
     methods
@@ -20,6 +24,7 @@ classdef Feeders < Process
         function run( obj )
             obj.obtain_inputs();
             obj.prepare_bodies();
+            obj.prepare_boolean_values();
         end
         
         function legacy_run( obj, mesh, sections, geometric_profile )
@@ -27,6 +32,11 @@ classdef Feeders < Process
             obj.sections = sections;
             obj.geometric_profile = geometric_profile;
             obj.run();
+        end
+        
+        function rotate( obj, rotation )
+            obj.bodies.rotate( rotation );
+            obj.prepare_boolean_values();
         end
         
         function value = get.count( obj )
@@ -61,16 +71,9 @@ classdef Feeders < Process
             value = obj.mesh.to_casting_volume( obj.feeder_query.volume );
         end
         
-        function rotate( obj, rotation )
-            obj.bodies.rotate( rotation );
-        end
-        
-        function scale( obj, scaling )
-            obj.bodies.scale( scaling );
-        end
-        
-        function translate( obj, translation )
-            obj.bodies.translate( translation );
+        function value = get.accessibility( obj )
+            value = obj.intersection_volume ./ obj.volume;
+            value = min( max( value, 0 ), 1 );
         end
         
         function value = to_table( obj )
@@ -126,16 +129,44 @@ classdef Feeders < Process
                 );
             bodies_in = Body.empty( fq.count, 0 );
             fvs = fq.fv;
-            % have to scale from axes origin because feeder position is in 
+            % have to scale from axes origin because feeder position is in
             % mesh units and must also be scaled
             scale_origin = [ 0 0 0 ];
             for i = 1 : fq.count
-                 body = Body( fvs( i ) );
-                 body = obj.mesh.move_to_casting( body, scale_origin );
-                 bodies_in( i ) = body;
+                body = Body( fvs( i ) );
+                body = obj.mesh.move_to_casting( body, scale_origin );
+                bodies_in( i ) = body;
             end
             obj.feeder_query = fq;
             obj.bodies = bodies_in;
+        end
+        
+        function prepare_boolean_values( obj )
+            obj.printf( "  Determining interaction with cavity...\n" );
+            iv = zeros( obj.count, 1 );
+            ia = zeros( obj.count, 1 );
+            for i = 1 : obj.count
+                v = obj.mesh.voxelize( obj.bodies( i ) );
+                iv( i ) = obj.compute_intersection_volume( v );
+                ia( i ) = obj.compute_interface_area( v );
+            end
+            assert( numel( iv ) == obj.count );
+            assert( numel( ia ) == obj.count );
+            
+            obj.intersection_volume = iv;
+            obj.interface_area = ia;
+        end
+        
+        function volume = compute_intersection_volume( obj, voxels )
+            intersection = obj.mesh.intersect( voxels.values > 0 );
+            intersection_count = sum( intersection, 'all' );
+            volume = obj.mesh.to_casting_volume( intersection_count );
+        end
+        
+        function area = compute_interface_area( obj, voxels )
+            interface = obj.mesh.intersect( voxels.values > 0 );
+            interface_count = sum( interface, 'all' );
+            area = obj.mesh.to_casting_volume( interface_count );
         end
     end
     

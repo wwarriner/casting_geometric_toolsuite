@@ -1,4 +1,4 @@
-classdef Voxels < handle
+classdef Voxels < handle & matlab.mixin.Copyable
     
     properties ( SetAccess = private )
         scale(1,1) double {mustBeReal,mustBeFinite,mustBePositive} = 1.0
@@ -44,12 +44,15 @@ classdef Voxels < handle
             obj.origin = origin;
             obj.values = values;
             obj.points = points;
-            
         end
         
         function paint( obj, fv, value )
             to_paint = obj.rasterize( fv );
             obj.values( to_paint ) = value;
+        end
+        
+        function erase( obj, value )
+            obj.values( : ) = value;
         end
         
         function value = get.dimension_count( obj )
@@ -127,6 +130,14 @@ classdef Voxels < handle
                 );
             [ lhs, rhs ] = find( connectivity );
             pairs = [ lhs rhs ];
+        end
+        
+        function clone = copy_blank( obj, value )
+            if nargin < 2
+                value = 0;
+            end
+            clone = obj.copy();
+            clone.erase( value );
         end
     end
     

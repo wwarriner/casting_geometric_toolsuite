@@ -6,6 +6,7 @@ classdef Mesh < Process
         scale(1,1) double {mustBeReal,mustBeFinite,mustBePositive} % casting units
         spacing(1,3) double {mustBeReal,mustBeFinite,mustBePositive}
         origin(1,3) double {mustBeReal,mustBeFinite}
+        envelope Envelope
         interior(:,:,:) logical
         exterior(:,:,:) logical
         surface(:,:,:) logical
@@ -91,6 +92,41 @@ classdef Mesh < Process
             t = Translation;
             t.shift = obj.origin;
             casting_body = s_body.translate( t );
+        end
+        
+        function v = voxelize( obj, body )
+            v = obj.voxels.copy_blank( false );
+            v.paint( body.fv, true );
+        end
+        
+        function im = unite( obj, im )
+            assert( islogical( im ) );
+            assert( all( size( im ) == obj.shape ) );
+            
+            im = im | obj.interior;
+        end
+        
+        function im = intersect( obj, im )
+            assert( islogical( im ) );
+            assert( all( size( im ) == obj.shape ) );
+            
+            im = im & obj.interior;
+        end
+        
+        function im = subtract( obj, im )
+            assert( islogical( im ) );
+            assert( all( size( im ) == obj.shape ) );
+            
+            im = im & ~obj.interior;
+        end
+        
+        function im = interface( obj, im )
+            assert( islogical( im ) );
+            assert( all( size( im ) == obj.shape ) );
+            
+            inds = find_interface( obj.interior, im );
+            im = false( obj.shape );
+            im( inds ) = true;
         end
         
         function value = to_array( obj )

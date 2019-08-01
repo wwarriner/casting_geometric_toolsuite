@@ -39,14 +39,6 @@ classdef Casting < Process
             obj.body = obj.body.rotate( rotation );
         end
         
-        function scale( obj, scaling )
-            obj.body = obj.body.scale( scaling );
-        end
-        
-        function translate( obj, translation )
-            obj.body = obj.body.translate( translation );
-        end
-        
         function value = to_table( obj )
             value = list2table( ...
                 { 'surface_area' 'volume' 'hole_count' ...

@@ -50,7 +50,7 @@ classdef FeederQuery < handle
         end
         
         function value = get.height( obj )
-            value = obj.HEIGHT_DIAMETER_RATIO .* obj.diameter + obj.height_offset;
+            value = obj.HEIGHT_DIAMETER_RATIO .* obj.diameter;
         end
         
         function value = get.area( obj )
