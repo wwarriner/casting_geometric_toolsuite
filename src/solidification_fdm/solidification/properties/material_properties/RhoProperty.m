@@ -1,6 +1,4 @@
-classdef (Sealed) RhoProperty < property.MaterialProperty
-    
+classdef (Sealed) RhoProperty < MaterialProperty
     % units are kg / m ^ 3
-    
 end
 

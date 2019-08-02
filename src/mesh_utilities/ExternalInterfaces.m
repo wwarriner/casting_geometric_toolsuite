@@ -1,19 +1,17 @@
-classdef ExternalInterfaces < mesh.utils.Interfaces
+classdef ExternalInterfaces < Interfaces
     
     properties ( Dependent )
         bc_id_list
     end
     
-    
-    methods ( Access = public )
-        
+    methods
         function obj = ExternalInterfaces( ...
                 elements, ...
                 element_ids, ...
                 areas, ...
                 distances ...
                 )
-            obj = obj@mesh.utils.Interfaces( ...
+            obj = obj@Interfaces( ...
                 elements, ...
                 element_ids, ...
                 areas, ...
@@ -21,17 +19,10 @@ classdef ExternalInterfaces < mesh.utils.Interfaces
                 );
         end
         
-    end
-    
-    
-    methods % getters
-        
         function value = get.bc_id_list( obj )
             value = unique( obj.boundary_ids );
         end
-        
     end
-    
     
     properties ( Access = protected, Constant )
         COLUMN_COUNT = 1;

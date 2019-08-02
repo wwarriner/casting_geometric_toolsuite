@@ -1,6 +1,4 @@
-classdef (Sealed) KProperty < property.MaterialProperty
-    
+classdef (Sealed) KProperty < MaterialProperty
     % units are W / m * K
-    
 end
 

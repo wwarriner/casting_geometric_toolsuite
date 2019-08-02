@@ -1,4 +1,4 @@
-classdef (Sealed) LinearSystemSolver < solver.SolverBase
+classdef (Sealed) LinearSystemSolver < SolverBase
     
     methods ( Access = protected )
         function [ x, iteration_count ] = solve_impl( obj, A, b, x0 )

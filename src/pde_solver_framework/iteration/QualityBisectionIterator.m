@@ -1,4 +1,4 @@
-classdef QualityBisectionIterator < iteration.IteratorBase
+classdef QualityBisectionIterator < IteratorBase
     % @QualityBisectionIterator is a @IteratorBase which implements a
     % bisection method for finding an optimal time step quality. To do so,
     % @problem must have a public property @quality. The value of quality
@@ -23,8 +23,8 @@ classdef QualityBisectionIterator < iteration.IteratorBase
     end
     
     properties ( SetAccess = private )
-        qualities util.StepTracker
-        bisection_iterations util.StepTracker
+        qualities StepTracker
+        bisection_iterations StepTracker
     end
     
     methods
@@ -34,9 +34,9 @@ classdef QualityBisectionIterator < iteration.IteratorBase
         function obj = QualityBisectionIterator( problem )
             assert( isprop( problem, 'quality' ) );
             
-            obj@iteration.IteratorBase( problem );
-            obj.qualities = util.StepTracker();
-            obj.bisection_iterations = util.StepTracker();
+            obj@IteratorBase( problem );
+            obj.qualities = StepTracker();
+            obj.bisection_iterations = StepTracker();
         end
     end
     
@@ -44,7 +44,7 @@ classdef QualityBisectionIterator < iteration.IteratorBase
         function iterate_impl( obj )
             tic;
             obj.bisector = obj.create_bisector();
-            obj.solver_counts = util.StepTracker();
+            obj.solver_counts = StepTracker();
             while ~obj.update( obj.bisector ); end
             obj.qualities.append( obj.bisector.y );
             obj.bisection_iterations.append( obj.bisector.count );
@@ -71,7 +71,7 @@ classdef QualityBisectionIterator < iteration.IteratorBase
     properties ( Access = private )
         bisector BisectionTracker
         computation_time(1,1) double {mustBeReal,mustBeFinite,mustBeNonnegative} = 0.0
-        solver_counts util.StepTracker
+        solver_counts StepTracker
         status_message(1,1) string
     end
     
@@ -80,7 +80,7 @@ classdef QualityBisectionIterator < iteration.IteratorBase
             LOWER_BOUND = 0;
             UPPER_BOUND = inf;
             TARGET_QUALITY = 0;
-            bisector = util.BisectionTracker( ...
+            bisector = BisectionTracker( ...
                 obj.initial_time_step, ...
                 LOWER_BOUND, ...
                 UPPER_BOUND, ...

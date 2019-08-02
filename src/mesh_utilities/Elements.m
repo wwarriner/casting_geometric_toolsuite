@@ -6,16 +6,13 @@ classdef Elements < handle
         volumes(:,1) double {mustBeReal,mustBeFinite,mustBePositive} = 1
     end
     
-    
     properties ( Dependent )
         count
         material_id_count
         material_id_list
     end
     
-    
-    methods ( Access = public )
-        
+    methods
         function obj = Elements( body_ids, material_ids, volumes )
             if nargin == 0
                 return;
@@ -29,11 +26,6 @@ classdef Elements < handle
             obj.volumes = volumes;
         end
         
-    end
-    
-    
-    methods % getters
-        
         function value = get.count( obj )
             value = uint32( numel( obj.body_ids ) );
         end
@@ -45,7 +37,6 @@ classdef Elements < handle
         function value = get.material_id_list( obj )
             value = unique( obj.material_ids );
         end
-        
     end
     
 end

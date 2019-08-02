@@ -129,6 +129,13 @@ classdef Mesh < Process
             im( inds ) = true;
         end
         
+        function value = to_pde_mesh( obj )
+            id_list = unique( obj.voxels.values );
+            material_ids = nan( max( id_list ), 1 );
+            material_ids( id_list ) = id_list;
+            value = UniformVoxelMesh( obj.voxels, material_ids );
+        end
+        
         function value = to_array( obj )
             value = obj.interior;
         end

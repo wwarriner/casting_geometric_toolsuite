@@ -1,10 +1,9 @@
 classdef (Sealed) BisectionTracker < handle
     
     properties ( SetAccess = private )
-        x_values util.StepTracker
-        y_values util.StepTracker
+        x_values StepTracker
+        y_values StepTracker
     end
-    
     
     properties ( SetAccess = private, Dependent )
         x
@@ -13,9 +12,7 @@ classdef (Sealed) BisectionTracker < handle
         count
     end
     
-    
-    methods ( Access = public )
-        
+    methods
         % -inf < x_lower
         % x_upper <= inf
         function obj = BisectionTracker( ...
@@ -26,8 +23,9 @@ classdef (Sealed) BisectionTracker < handle
                 y_target, ...
                 tol ...
                 )
-            obj.x_values = util.StepTracker();
+            obj.x_values = StepTracker();
             obj.x_values.append( x_initial );
+            obj.y_values = StepTracker();
             obj.lower = x_lower;
             obj.upper = x_upper;
             obj.compute_y_fn = compute_y_fn;
@@ -44,11 +42,6 @@ classdef (Sealed) BisectionTracker < handle
             end
         end
         
-    end
-    
-    
-    methods % getters
-        
         function value = get.x( obj )
             value = obj.x_values.values( end );
         end
@@ -64,9 +57,7 @@ classdef (Sealed) BisectionTracker < handle
         function value = get.count( obj )
             value = obj.x_values.count;
         end
-        
     end
-    
     
     properties ( Access = private )
         lower(1,1) double {mustBeReal,mustBeFinite}
@@ -76,9 +67,7 @@ classdef (Sealed) BisectionTracker < handle
         tol(1,1) double {mustBeReal,mustBeFinite,mustBePositive} = 1e-5
     end
     
-    
     methods ( Access = private )
-        
         function within_tolerance = update_y( obj )
             xv = obj.x_values.values( end );
             yv = obj.compute_y_fn( xv );
@@ -116,7 +105,6 @@ classdef (Sealed) BisectionTracker < handle
             obj.upper = obj.x;
             xv = mean( [ obj.lower obj.upper ] );
         end
-        
     end
     
 end

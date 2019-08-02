@@ -36,7 +36,7 @@ classdef Envelope < handle & matlab.mixin.Copyable
             
             new_min = min( obj.min_point, envelope.min_point );
             new_max = max( obj.max_point, envelope.max_point );
-            u = geometry.Envelope( new_min, new_max );
+            u = Envelope( new_min, new_max );
         end
     end
     

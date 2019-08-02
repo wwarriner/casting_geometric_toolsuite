@@ -1,6 +1,4 @@
-classdef (Sealed) MoldMaterial < property.Material
-    
+classdef (Sealed) MoldMaterial < Material
     % no definition required
-    
 end
 

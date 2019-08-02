@@ -1,4 +1,4 @@
-classdef IteratorBase < utils.Printer & handle
+classdef IteratorBase < Printer & handle
     % @IteratorBase is a base class which should be extended to create
     % various types of time stepping iterators. The class is intended to
     % facilitate use of a pde problem by updating the system of equations, 
@@ -16,9 +16,9 @@ classdef IteratorBase < utils.Printer & handle
     end
     
     properties ( SetAccess = private )
-        simulation_times util.StepTracker
-        computation_times util.StepTracker
-        solver_iterations util.StepTracker
+        simulation_times StepTracker
+        computation_times StepTracker
+        solver_iterations StepTracker
     end
     
     properties ( SetAccess = private, Dependent )
@@ -29,7 +29,7 @@ classdef IteratorBase < utils.Printer & handle
         % @iterate updates the pde system, generates a new time step, and
         % applies it to the problem
         function iterate( obj )
-            assert( isa( obj.problem, 'problem.ProblemInterface' ) );
+            assert( isa( obj.problem, 'ProblemInterface' ) );
             
             obj.problem.prepare_system();
             obj.iterate_impl();
@@ -81,9 +81,9 @@ classdef IteratorBase < utils.Printer & handle
     
     methods ( Access = protected )
         function obj = IteratorBase( problem )
-            obj.simulation_times = util.StepTracker();
-            obj.computation_times = util.StepTracker();
-            obj.solver_iterations = util.StepTracker();
+            obj.simulation_times = StepTracker();
+            obj.computation_times = StepTracker();
+            obj.solver_iterations = StepTracker();
             obj.problem = problem;
         end
         

@@ -1,26 +1,52 @@
-classdef UniformVoxelMesh < mesh.MeshInterface
+classdef UniformVoxelMesh < MeshInterface
     
     properties
         default_body_id(1,1) uint32 {mustBeNonnegative} = 1
     end
     
     properties ( SetAccess = private, Dependent )
-        connectivity(:,1) uint32 {mustBePositive}
-        count(1,1) uint32
-        volumes(:,1) double {mustBeReal,mustBeFinite,mustBePositive}
+        connectivity%(:,1) uint32 {mustBePositive}
+        count%(1,1) uint32
+        volumes%(:,1) double {mustBeReal,mustBeFinite,mustBePositive}
     end
     
     methods
-        % - material_id_array is an array of values representing materials
-        % - scale is a finite double greater than zero indicating
-        % the separation of voxels from center to center along any one axis
-        function obj = UniformVoxelMesh( element_count )
-            assert( isa( element_count, 'double' ) );
-            assert( isscalar( element_count ) );
-            assert( isfinite( element_count ) );
-            assert( 0.0 < element_count );
+        % @voxels is a Voxels object
+        % @material_ids is a vector with a material_id at each body_id
+        % index, and zero elsewhere.
+        function obj = UniformVoxelMesh( voxels, material_ids )
+            material_values = material_ids( voxels.values( : ) );
+            assert( ~any( material_values == 0, 'all' ) );
+            elements = Elements( ...
+                voxels.values( : ), ...
+                material_values, ...
+                voxels.element_volume .* ones( voxels.element_count, 1 ) ...
+                );
+            % external
+            element_ids = cell2mat( voxels.external_elements );
+            areas = voxels.element_area .* ones( size( element_ids ) );
+            distances = 0.5 .* voxels.scale .* ones( size( element_ids ) );
+            external_interfaces = ExternalInterfaces( ...
+                elements, ...
+                element_ids, ...
+                areas, ...
+                distances ...
+                );
+            % internal
+            element_ids = voxels.neighbor_pairs;
+            areas = voxels.element_area .* ones( size( element_ids, 1 ), 1 );
+            distances = 0.5 .* voxels.scale .* ones( size( element_ids ) );
+            internal_interfaces = InternalInterfaces( ...
+                elements, ...
+                element_ids, ...
+                areas, ...
+                distances ...
+                );
             
-            obj.desired_element_count = element_count;
+            obj.shape = voxels.shape;
+            obj.elements = elements;
+            obj.external_interfaces = external_interfaces;
+            obj.internal_interfaces = internal_interfaces;
         end
         
         function value = get.connectivity( obj )
@@ -33,40 +59,6 @@ classdef UniformVoxelMesh < mesh.MeshInterface
         
         function value = get.volumes( obj )
             value = obj.elements.volumes;
-        end
-        
-        function add_body( obj, body )
-            obj.body_list = [ obj.body_list body ];
-        end
-        
-        function build( obj )
-            obj.material_ids = obj.get_material_ids();
-            obj.voxels = obj.paint_voxels();
-            obj.elements = mesh.utils.Elements( ...
-                obj.voxels.values( : ), ...
-                obj.material_ids( obj.voxels.values( : ) ), ...
-                obj.voxels.element_volume .* ones( obj.voxels.element_count, 1 ) ...
-                );
-            % external
-            element_ids = cell2mat( obj.voxels.external_elements );
-            areas = obj.voxels.element_area .* ones( size( element_ids ) );
-            distances = 0.5 .* obj.voxels.scale .* ones( size( element_ids ) );
-            obj.external_interfaces = mesh.utils.ExternalInterfaces( ...
-                obj.elements, ...
-                element_ids, ...
-                areas, ...
-                distances ...
-                );
-            % internal
-            element_ids = obj.voxels.neighbor_pairs;
-            areas = obj.voxels.element_area .* ones( size( element_ids, 1 ), 1 );
-            distances = 0.5 .* obj.voxels.scale .* ones( size( element_ids ) );
-            obj.internal_interfaces = mesh.utils.InternalInterfaces( ...
-                obj.elements, ...
-                element_ids, ...
-                areas, ...
-                distances ...
-                );
         end
         
         function assign_uniform_external_boundary_id( obj, id )
@@ -152,49 +144,16 @@ classdef UniformVoxelMesh < mesh.MeshInterface
         end
         
         function field = reshape( obj, values )
-            field = reshape( values, obj.voxels.shape );
+            field = reshape( values, obj.shape );
         end
     end
     
     properties ( Access = private )
-        dimension_count(1,1) uint32 {mustBePositive} = 3
-        body_list(:,1) Body
-        voxels Voxels
-        material_ids(:,1) uint32 {mustBePositive}
+        shape(3,1) uint32 {mustBePositive}
         elements Elements
         internal_interfaces InternalInterfaces
         external_interfaces ExternalInterfaces
-        desired_element_count(1,1) double {mustBeReal,mustBeFinite,mustBePositive}
-    end
-    
-    methods ( Access = private )
-        function ids = get_material_ids( obj )
-            id_list = [ obj.body_list.id ];
-            ids = nan( max( id_list ), 1 );
-            ids( id_list ) = id_list;
-        end
-        
-        function voxels = paint_voxels( obj )
-            envelope = obj.unify_envelopes();
-            voxels = mesh.voxel.Voxels( ...
-                obj.desired_element_count, ...
-                envelope, ...
-                obj.default_body_id ...
-                );
-            for i = 1 : numel( obj.body_list )
-                c = obj.body_list( i );
-                voxels.paint( c.fv, c.id );
-            end
-            assert( ~any( voxels.values == 0, 'all' ) );
-        end
-        
-        function envelope = unify_envelopes( obj )
-            envelope = obj.body_list( 1 ).envelope.copy();
-            for i = 2 : numel( obj.body_list )
-                body = obj.body_list( 1 );
-                envelope = envelope.union( body.envelope );
-            end
-        end
+        desired_element_count(1,1) double {mustBeReal,mustBeFinite,mustBePositive} = 1.0
     end
     
 end

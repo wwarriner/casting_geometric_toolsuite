@@ -8,19 +8,15 @@ classdef Interfaces < handle
         boundary_ids(:,1) uint32 {mustBeNonnegative} = 0
     end
     
-    
     properties ( Dependent )
         bc_id_count
     end
     
-    
-    properties ( Dependent, Abstract )
+    properties ( Abstract, Dependent )
         bc_id_list
     end
     
-    
-    methods ( Access = public )
-        
+    methods
         function obj = Interfaces( ...
                 elements, ...
                 element_ids, ...
@@ -56,22 +52,14 @@ classdef Interfaces < handle
             obj.boundary_ids( interface_ids ) = id;
         end
         
-    end
-    
-    
-    methods % getters
-        
         function value = get.bc_id_count( obj )
             value = size( obj.bc_id_list, 1 );
         end
-        
     end
-    
     
     properties ( Access = protected )
-        elements mesh.utils.Elements
+        elements Elements
     end
-    
     
     properties ( Abstract, Access = protected, Constant )
         COLUMN_COUNT

@@ -1,34 +1,27 @@
-classdef (Sealed) GeometricProfile < Process
+classdef (Sealed) ThermalProfile < Process
     % @GeometricProfile encapsulates the behavior and data of a geometric
     % approach to the solidification profile of castings.
     % Dependencies:
     % - @Mesh
     
     properties ( SetAccess = private )
-        scaled(:,:,:) double
-        minimum_thickness(1,1) double
-        maximum_thickness(1,1) double
-        thickness_ratio(1,1) double
+        values(:,:,:) double
     end
     
     properties ( SetAccess = private, Dependent )
-        unscaled(:,:,:) double
-        unscaled_interior(:,:,:) double
-        scaled_interior(:,:,:) double
         filtered(:,:,:) double
         filtered_interior(:,:,:) double
         filter_amount(1,1) double
     end
     
     methods
-        function obj = GeometricProfile( varargin )
+        function obj = ThermalProfile( varargin )
             obj = obj@Process( varargin{ : } );
         end
         
         function run( obj )
             obj.obtain_inputs();
-            obj.prepare_edt_profile_query();
-            obj.prepare_filter_profile_query();
+            obj.prepare_thermal_profile_query()
             obj.compute_statistics();
         end
         
@@ -95,8 +88,7 @@ classdef (Sealed) GeometricProfile < Process
     
     properties ( Access = private )
         mesh Mesh
-        edt_profile_query EdtProfileQuery
-        filter_profile_query FilteredProfileQuery
+        thermal_profile_query ThermalProfileQuery
     end
     
     methods ( Access = private )
@@ -106,41 +98,19 @@ classdef (Sealed) GeometricProfile < Process
                 obj.mesh = obj.results.get( mesh_key );
             end
             assert( ~isempty( obj.mesh ) );
+            
+            % options
         end
         
-        function prepare_edt_profile_query( obj )
-            obj.printf( 'Computing EDT profile...\n' );
-            obj.edt_profile_query = EdtProfileQuery( ...
-                obj.mesh.surface, ...
-                obj.mesh.exterior ...
-                );
-        end
-        
-        function prepare_filter_profile_query( obj )
-            obj.printf( 'Filtering profile...\n' );
-            obj.filter_profile_query = FilteredProfileQuery( ...
-                obj.scaled, ...
-                obj.compute_filter_amount( obj.mesh.scale ) ...
-                );
-        end
-        
-        function compute_statistics( obj )
-            obj.printf( 'Computing statistics...\n' );
-            [ obj.minimum_thickness, obj.maximum_thickness ] = ...
-                obj.thickness_analysis( obj.scaled_interior );
-            obj.thickness_ratio = ...
-                1 - ( obj.minimum_thickness / obj.maximum_thickness );
+        function prepare_thermal_profile_query( obj )
+            obj.printf( 'Computing thermal profile...\n' );
+            tpq = ThermalProfileQuery();
+            % settings for tpq
+            % compute
         end
     end
     
     methods ( Access = private, Static )
-        function [ minimum, maximum ] = thickness_analysis( scaled_interior )
-            regional_maxima = imregionalmax( scaled_interior );
-            scaled_regional_maxima = scaled_interior( regional_maxima );
-            minimum = min( scaled_regional_maxima );
-            maximum = max( scaled_regional_maxima );
-        end
-        
         function threshold = compute_filter_amount( mesh_scale )
             TOLERANCE = 1e-4;
             threshold = mesh_scale * ( 1 + TOLERANCE );
