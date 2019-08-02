@@ -5,12 +5,16 @@ classdef SolidificationProblem < ProblemInterface
     end
     
     properties ( SetAccess = private )
-        u(:,1) double
-        u_prev(:,1) double
-        quality(1,1) double
+        u
+        u_prev
+        quality(1,1) double {mustBeReal,mustBeFinite}
     end
     
-    methods ( Access = public )
+    properties ( SetAccess = private, Dependent )
+        stop_temperature(1,1) double {mustBeReal,mustBeFinite}
+    end
+    
+    methods
         function obj = SolidificationProblem( mesh, pp, cavity_id, u_init )
             obj.u = u_init;
             obj.mesh = mesh;
@@ -29,15 +33,24 @@ classdef SolidificationProblem < ProblemInterface
             obj.u = obj.solver.solve( obj.A( dt ), obj.b( dt ), obj.u0 );
             obj.quality = obj.compute_quality( obj.u );
         end
+        
+        function finished = is_finished( obj )
+            stop_temperature = obj.stop_temperature();
+            finished = all( double( obj.u <= stop_temperature ), 'all' );
+        end
+        
+        function value = get.stop_temperature( obj )
+            value = obj.pp.get_liquidus_temperature( obj.cavity_id );
+        end
     end
     
     properties ( Access = private )
         A function_handle
         b function_handle
-        u0(:,1) double
+        u0
         mesh
         solver LinearSystemSolver
-        pp
+        pp PhysicalProperties
         cavity_id(1,1) uint32 {mustBeNonnegative}
     end
     

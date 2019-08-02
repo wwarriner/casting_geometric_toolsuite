@@ -1,21 +1,13 @@
 classdef SolidificationKernel < handle
     
-    methods ( Access = public )
-        
+    methods
         function obj = SolidificationKernel( physical_properties, mesh, u )
             obj.pp = physical_properties;
             obj.mesh = mesh;
             obj.u = u;
         end
         
-    end
-    
-    
-    % abstract superclass methods
-    methods ( Access = public )
-        
         function [ A, b, x0 ] = create_system( obj )
-
             % material properties
             rho_fn = @(id,locations)obj.pp.lookup_values( id, 'rho', obj.u( locations ) );
             rho = obj.mesh.apply_material_property_fn( rho_fn );
@@ -52,21 +44,16 @@ classdef SolidificationKernel < handle
             b = @(dt) rho_cp_v .* obj.u ...
                 + dt .* ext_flow .* obj.pp.get_ambient_temperature();
             x0 = obj.u;
-            
         end
-        
     end
     
-    
     properties ( Access = private )
-        pp
+        pp PhysicalProperties
         mesh
         u
     end
     
-    
     methods ( Access = private )
-        
         function values = internal_resistance_fn( obj, element_ids, distances, areas, k )
             values = distances ./ k( element_ids ) ./ areas;
             values = sum( values, 2 );
@@ -88,7 +75,6 @@ classdef SolidificationKernel < handle
                 );
             values = values ./ areas;
         end
-        
     end
     
 end

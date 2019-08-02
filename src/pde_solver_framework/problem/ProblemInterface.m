@@ -32,9 +32,14 @@ classdef (Abstract) ProblemInterface < handle
         % equations using stored kernels.
         prepare_system( obj );
         
-        % @solve provides a hook for computing the relevant
-        % fields from any stored kernels using relevant solvers.
+        % @solve provides a hook for computing the relevant fields from any
+        % stored kernels using relevant solvers.
         solve( obj, dt );
+        
+        % @is_finished provides a hook for determining when the problem has
+        % finished solving. This function is used by @Looper to determine a
+        % successful stopping point.
+        finished = is_finished( obj );
     end
     
 end

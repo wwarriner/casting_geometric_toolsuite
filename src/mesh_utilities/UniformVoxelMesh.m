@@ -143,13 +143,17 @@ classdef UniformVoxelMesh < MeshInterface
             end
         end
         
+        function values = map( obj, fn )
+            values = fn( obj.elements.material_ids );
+        end
+        
         function field = reshape( obj, values )
             field = reshape( values, obj.shape );
         end
     end
     
     properties ( Access = private )
-        shape(3,1) uint32 {mustBePositive}
+        shape(1,3) uint32 {mustBePositive} = [ 1 1 1 ]
         elements Elements
         internal_interfaces InternalInterfaces
         external_interfaces ExternalInterfaces

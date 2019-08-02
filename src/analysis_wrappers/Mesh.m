@@ -129,11 +129,48 @@ classdef Mesh < Process
             im( inds ) = true;
         end
         
+        % Same as calling @to_pde_mesh_by_ratio with input value 0.144.
+        % This multiplies the total number of voxels by approximately 1.5.
         function value = to_pde_mesh( obj )
-            id_list = unique( obj.voxels.values );
+            value = obj.to_pde_mesh_by_ratio( 0.144 );
+        end
+        
+        % @ratio is a double scalar or 1 by 3 double vector, unitless,
+        % which is converted to a length with units of @Casting length
+        % proportionally based on @Casting envelope.
+        function value = to_pde_mesh_by_ratio( obj, pad_ratio, varargin )
+            pad_length = obj.casting.envelope.lengths .* pad_ratio;
+            value = obj.to_pde_mesh_by_length( pad_length, varargin{ : } );
+        end
+        
+        % @length is a double scalar or 1 by 3 double vector with units of
+        % @Casting length. Scalar values are replicated.
+        function value = to_pde_mesh_by_length( obj, pad_length, varargin )
+            pad_count = round( obj.to_mesh_length( pad_length ) );
+            value = obj.to_pde_mesh_by_count( uint32( pad_count ), varargin{ : } );
+        end
+        
+        % @pad_count is a double scalar or 1 by 3 uint32 vector, e.g. input
+        % to padarray. Scalar values are replicated.
+        function value = to_pde_mesh_by_count( obj, pad_count, melt_id, mold_id )
+            assert( isa( pad_count, 'uint32' ) );
+            assert( isscalar( pad_count ) || isvector( pad_count ) );
+            if isscalar( pad_count )
+                pad_count = repmat( pad_count, [ 1 3 ] );
+            end
+            if isvector( pad_count )
+                assert( length( pad_count ) == 3 );
+            end
+            
+            mesh_voxels = obj.voxels.copy();
+            mesh_voxels.default_value = mold_id;
+            mesh_voxels.values( obj.interior ) = melt_id;
+            mesh_voxels.values( obj.exterior ) = mold_id;
+            mesh_voxels = mesh_voxels.pad( pad_count );
+            id_list = unique( mesh_voxels.values );
             material_ids = nan( max( id_list ), 1 );
             material_ids( id_list ) = id_list;
-            value = UniformVoxelMesh( obj.voxels, material_ids );
+            value = UniformVoxelMesh( mesh_voxels, material_ids );
         end
         
         function value = to_array( obj )

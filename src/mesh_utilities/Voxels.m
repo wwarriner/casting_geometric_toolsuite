@@ -1,15 +1,19 @@
 classdef Voxels < handle & matlab.mixin.Copyable
     
+    properties
+        default_value(1,1) double
+        values double
+    end
+    
     properties ( SetAccess = private )
+        shape(1,:) uint32 {mustBeNonnegative}
         scale(1,1) double {mustBeReal,mustBeFinite,mustBePositive} = 1.0
         origin(1,:) double {mustBeReal,mustBeFinite}
-        values double
     end
     
     properties ( SetAccess = private, Dependent )
         dimension_count(1,1) uint32 {mustBeNonnegative}
         element_count(1,1) uint32 {mustBePositive}
-        shape(1,:) uint32 {mustBeNonnegative}
         element_area(1,1) double {mustBeReal,mustBeFinite,mustBePositive}
         element_volume(1,1) double {mustBeReal,mustBeFinite,mustBePositive}
         external_elements(:,1) cell
@@ -19,7 +23,7 @@ classdef Voxels < handle & matlab.mixin.Copyable
     methods
         function obj = Voxels( element_count, envelope, default_value )
             if nargin < 3
-                default_value = 0;
+                default_value = 0.0;
             end
             
             assert( isscalar( element_count ) )
@@ -40,10 +44,12 @@ classdef Voxels < handle & matlab.mixin.Copyable
             points = obj.compute_points( desired_shape, origin, scale );
             values = obj.create_array( points, default_value );
             
+            obj.shape = size( values );
             obj.scale = scale;
             obj.origin = origin;
             obj.values = values;
             obj.points = points;
+            obj.default_value = default_value;
         end
         
         function paint( obj, fv, value )
@@ -51,8 +57,25 @@ classdef Voxels < handle & matlab.mixin.Copyable
             obj.values( to_paint ) = value;
         end
         
-        function erase( obj, value )
-            obj.values( : ) = value;
+        function clear( obj )
+            obj.values( : ) = obj.default_value;
+        end
+        
+        function clone = pad( obj, padsize )
+            clone = obj.copy();
+            new_origin = obj.origin - ( obj.scale .* double( padsize ) );
+            new_values = padarray( obj.values, double( padsize ), obj.default_value );
+            new_shape = size( new_values );
+            new_points = obj.compute_points( new_shape, new_origin, obj.scale );
+            clone.shape = new_shape;
+            clone.origin = new_origin;
+            clone.values = new_values;
+            clone.points = new_points;
+        end
+        
+        function set.values( obj, value )
+            assert( all( size( value ) == obj.shape ) ); %#ok<MCSUP>
+            obj.values = value;
         end
         
         function value = get.dimension_count( obj )
@@ -61,10 +84,6 @@ classdef Voxels < handle & matlab.mixin.Copyable
         
         function value = get.element_count( obj )
             value = numel( obj.values );
-        end
-        
-        function value = get.shape( obj )
-            value = size( obj.values );
         end
         
         function value = get.strides( obj )
@@ -132,17 +151,13 @@ classdef Voxels < handle & matlab.mixin.Copyable
             pairs = [ lhs rhs ];
         end
         
-        function clone = copy_blank( obj, value )
-            if nargin < 2
-                value = 0;
-            end
+        function clone = copy_blank( obj )
             clone = obj.copy();
-            clone.erase( value );
+            clone.clear();
         end
     end
     
     properties ( Access = private )
-        desired_element_count(1,1) uint32 {mustBeNonnegative}
         strides(1,:) uint32 {mustBeNonnegative}
         points(:,1) cell
     end

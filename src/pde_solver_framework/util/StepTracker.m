@@ -1,13 +1,13 @@
 classdef (Sealed) StepTracker < handle
     
     properties ( SetAccess = private )
-        values(:,1) double = []
+        values(:,1) {mustBeNumeric,mustBeReal,mustBeFinite} = []
     end
     
     properties ( SetAccess = private, Dependent )
-        running_totals
-        total
-        count
+        running_totals(:,1) {mustBeNumeric,mustBeReal,mustBeFinite}
+        total(1,1) {mustBeNumeric,mustBeReal,mustBeFinite}
+        count(1,1) uint32
     end
     
     methods
@@ -20,7 +20,7 @@ classdef (Sealed) StepTracker < handle
         end
         
         function value = get.count( obj )
-            value = numel( obj.values );
+            value = uint32( numel( obj.values ) );
         end
     end
     

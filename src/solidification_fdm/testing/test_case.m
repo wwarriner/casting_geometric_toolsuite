@@ -57,7 +57,7 @@ qbi.quality_tolerance = 0.2;
 qbi.stagnation_tolerance = 1e-2;
 qbi.initial_time_step = pp.compute_initial_time_step();
 
-finish_check_fn = @()all(smk.u<=pp.get_liquidus_temperature(cavity_id),'all');
-lp = Looper( qbi, finish_check_fn );
+lp = Looper( qbi, @smk.is_finished );
+lp.add_result( SolidificationTimeResult( uvm, pp, smk, qbi ) );
 lp.run();
 

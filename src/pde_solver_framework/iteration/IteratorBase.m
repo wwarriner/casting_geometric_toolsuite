@@ -22,7 +22,10 @@ classdef IteratorBase < Printer & handle
     end
     
     properties ( SetAccess = private, Dependent )
-        count
+        count(1,1) uint32
+        t(1,1) double {mustBeReal,mustBeFinite}
+        t_prev(1,1) double {mustBeReal,mustBeFinite}
+        dt(1,1) double {mustBeReal,mustBeFinite}
     end
     
     methods
@@ -41,6 +44,22 @@ classdef IteratorBase < Printer & handle
         
         function value = get.count( obj )
             value = obj.simulation_times.count;
+        end
+        
+        function value = get.t( obj )
+            value = double( obj.simulation_times.total );
+        end
+        
+        function value = get.t_prev( obj )
+            if obj.simulation_times.count <= 1
+                value = 0;
+            else
+                value = double( obj.simulation_times.running_totals( end - 1 ) );
+            end
+        end
+        
+        function value = get.dt( obj )
+            value = double( obj.simulation_times.values( end ) );
         end
     end
     

@@ -2,9 +2,7 @@
 "manager":{
 	"stl_file":"",
 	"output_folder":"",
-	"user_needs":["Component"],
-	"parting_dimensions":[3],
-	"gravity_directions":["down"]
+	"user_needs":["Component"]
 	},
 "processes":{
 	"core":{
@@ -15,9 +13,9 @@
 		},
 	"thin_wall":{
 		"cavity_sweep_coefficient":2.0,
-		"cavity_threshold_stl_units":6.25,
+		"cavity_threshold_stl_units":2.35,
 		"mold_sweep_coefficient":2.0,
-		"mold_threshold_stl_units":2.35
+		"mold_threshold_stl_units":6.25
 		},
 	"parting_line":{
 		"optimize":true
@@ -26,10 +24,13 @@
 		"use":true,
 		"mold_material":"silica_dry.txt",
 		"melt_material":"cf3mn.txt",
-		"mold_melt_convection":"steel_sand_htc.txt",
+		"mold_melt_h":"steel_sand_htc.txt",
 		"melt_initial_temperature_c":1600,
+		"melt_feeding_effectivity":0.5,
+		"ambient_temperature_c":25,
 		"mold_pad_type":"ratio",
 		"mold_pad_amounts":[0.125],
+		"ambient_h_w_per_m_k":10,
 		"show_dashboard":false
 		}
 	}

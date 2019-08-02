@@ -4,6 +4,8 @@ classdef Property < dynamicprops
         
         function add( obj, key, value )
             
+            key = char( key );
+            
             if isempty( key ); return; end
             
             [ first, rest ] = obj.split( key );
@@ -27,12 +29,16 @@ classdef Property < dynamicprops
         
         function set( obj, key, value )
             
+            key = char( key );
+            
             obj.set_impl( key, key, value );
             
         end
         
         
         function value = get( obj, key, fallback )
+            
+            key = char( key );
             
             if nargin < 3
                 fallback = [];
@@ -109,7 +115,7 @@ classdef Property < dynamicprops
             first = extractBefore( key, '.' );
             if isempty( first ); first = key; end
             if ~isvarname( first )
-                error( 'Invalid key: %s\n', first );
+                error( 'Invalid key: %s\n', char( first ) );
             end
             rest = extractAfter( key, '.' );
             

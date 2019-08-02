@@ -5,6 +5,10 @@ classdef Looper < handle
     % TODO: Add callback functionality for per-iteration updates for, say,
     % a dashboard, visualizations, etc.
     
+    properties ( SetAccess = private )
+        results(:,1)
+    end
+    
     methods
         % Inputs:
         % - iterator is derived from @IteratorBase
@@ -12,6 +16,8 @@ classdef Looper < handle
         % returning a logical value indicating looping should stop when
         % true and should continue when false.
         function obj = Looper( iterator, finish_check_fn )
+            assert( isa( iterator, 'IteratorBase' ) );
+            
             obj.iterator = iterator;
             obj.finish_check_fn = finish_check_fn;
         end
@@ -24,12 +30,19 @@ classdef Looper < handle
                 obj.update_results();
             end
         end
+        
+        function add_result( obj, result )
+            if isempty( obj.results )
+                obj.results = result;
+            else
+                obj.results( end + 1 ) = result;
+            end
+        end
     end
     
     properties ( Access = private )
         iterator % IteratorBase
         finish_check_fn function_handle
-        results(:,1)
     end
     
     methods ( Access = private )

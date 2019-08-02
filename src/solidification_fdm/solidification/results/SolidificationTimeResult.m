@@ -1,82 +1,56 @@
-classdef SolidificationTimeResult < modeler.super.Result
+classdef SolidificationTimeResult < ResultInterface
     
-    methods ( Access = public )
-        
-        function obj = SolidificationTimeResult( ...
-                shape, ...
-                stop_temperature ...
-                )
-            
-            assert( isscalar( stop_temperature ) );
-            assert( isa( stop_temperature, 'double' ) );
-            assert( 0 < stop_temperature );
-            
-            obj.stop_temperature = stop_temperature;
-            obj.values = nan( shape );
-            
-        end
-        
-        
-        function update( ...
-                obj, ...
-                mesh, ...
-                physical_properties, ...
-                iterator, ...
-                problem ...
-                )
-            
-            % setup
-            u = problem.get_temperature();
-            u_prev = problem.get_previous_temperature();
-            times = iterator.get_simulation_times();
-            t = times.get_time( 1 );
-            t_prev = times.get_time( 2 );
-            
-            % compute
-            sol_times = ( ( obj.stop_temperature - u_prev ) ./ ...
-                ( u - u_prev ) .* ...
-                ( t - t_prev ) ) + ...
-                t_prev;
-            
-            % update
-            is_melt = physical_properties.is_primary_melt( mesh );
-            past_threshold = u <= obj.stop_temperature;
-            unrecorded = isnan( obj.values );
-            needs_update = is_melt & past_threshold & unrecorded;
-            obj.values( needs_update ) = sol_times( needs_update );
-            
-        end
-        
-        
-        function field = get_scalar_field( obj )
-            
-            field = obj.values;
-            
-        end
-        
-        
-        function finished = is_finished( obj, fdm_mesh, melt_id )
-            
-            finished = all( fdm_mesh ~= melt_id | obj.values > 0 );
-            
-        end
-        
-        
-        function time = get_final_time( obj )
-            
-            time = max( obj.values( : ) );
-            
-        end
-        
+    properties ( SetAccess = private )
+        values
     end
     
+    properties ( SetAccess = private, Dependent )
+        modulus
+    end
+    
+    methods
+        function obj = SolidificationTimeResult( mesh, pp, problem, iterator )
+            assert( isa( mesh, 'MeshInterface' ) );
+            
+            assert( isa( iterator, 'IteratorBase' ) );
+            
+            obj.values = nan( mesh.count, 1 );
+            obj.problem = problem;
+            obj.pp = pp;
+            obj.mesh = mesh;
+            obj.iterator = iterator;
+        end
+        
+        function update( obj )
+            % which
+            is_melt = obj.mesh.map( @(x)obj.pp.is_primary_melt(x) );
+            past_threshold = obj.problem.u <= obj.problem.stop_temperature;
+            unrecorded = isnan( obj.values );
+            needs_update = is_melt & past_threshold & unrecorded;
+            
+            % compute
+            u_prev = obj.problem.u_prev( needs_update );
+            u = obj.problem.u( needs_update );
+            du_stop = obj.problem.stop_temperature - u_prev;
+            du = u - u_prev;
+            dt = obj.iterator.dt;
+            t = obj.iterator.t_prev;
+            sol_times = ( du_stop ./ du ) .* dt + t;
+            
+            % update
+            obj.values( needs_update ) = sol_times;
+        end
+        
+        function value = get.modulus( obj )
+            value = sqrt( obj.values );
+        end
+    end
     
     properties ( Access = private )
-        
-        problem
-        stop_temperature
-        values
-        
+        problem SolidificationProblem
+        pp PhysicalProperties
+        mesh
+        iterator
     end
     
 end
