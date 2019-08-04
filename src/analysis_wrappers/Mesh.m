@@ -138,16 +138,16 @@ classdef Mesh < Process
         % @ratio is a double scalar or 1 by 3 double vector, unitless,
         % which is converted to a length with units of @Casting length
         % proportionally based on @Casting envelope.
-        function value = to_pde_mesh_by_ratio( obj, pad_ratio, varargin )
+        function [ value, pad_count ] = to_pde_mesh_by_ratio( obj, pad_ratio, varargin )
             pad_length = obj.casting.envelope.lengths .* pad_ratio;
-            value = obj.to_pde_mesh_by_length( pad_length, varargin{ : } );
+            [ value, pad_count ] = obj.to_pde_mesh_by_length( pad_length, varargin{ : } );
         end
         
         % @length is a double scalar or 1 by 3 double vector with units of
         % @Casting length. Scalar values are replicated.
-        function value = to_pde_mesh_by_length( obj, pad_length, varargin )
-            pad_count = round( obj.to_mesh_length( pad_length ) );
-            value = obj.to_pde_mesh_by_count( uint32( pad_count ), varargin{ : } );
+        function [ value, pad_count ] = to_pde_mesh_by_length( obj, pad_length, varargin )
+            pad_count = uint32( round( obj.to_mesh_length( pad_length ) ) );
+            value = obj.to_pde_mesh_by_count( pad_count, varargin{ : } );
         end
         
         % @pad_count is a double scalar or 1 by 3 uint32 vector, e.g. input

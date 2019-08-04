@@ -4,6 +4,7 @@ classdef (Abstract) MeshInterface < handle
         connectivity(:,1) uint32 {mustBePositive}
         count(1,1) uint32
         volumes(:,1) double {mustBeReal,mustBeFinite,mustBePositive}
+        distances(:,1) double {mustBeReal,mustBeFinite,mustBePositive}
     end
     
     

@@ -4,13 +4,7 @@ classdef (Sealed) PhysicalProperties < handle
     % TODO name XBase
     
     methods ( Access = public )
-        function obj = PhysicalProperties( space_step_in_m )
-            assert( isscalar( space_step_in_m ) );
-            assert( isa( space_step_in_m, 'double' ) );
-            assert( isfinite( space_step_in_m ) );
-            assert( 0 < space_step_in_m );
-            
-            obj.space_step = space_step_in_m;
+        function obj = PhysicalProperties()
             obj.materials = containers.Map( 'KeyType', 'double', 'ValueType', 'any' );
             obj.ambient_id = [];
             obj.melt_ids = [];
@@ -20,10 +14,6 @@ classdef (Sealed) PhysicalProperties < handle
             obj.ambient_material_set = false;
             obj.prepared = false;
             obj.temperature_range = [];
-        end
-        
-        function space_step = get_space_step( obj )
-            space_step = obj.space_step;
         end
         
         function add_material( obj, material )
@@ -108,7 +98,7 @@ classdef (Sealed) PhysicalProperties < handle
             temperature = obj.materials( obj.ambient_id ).get_initial_temperature();
         end
         
-        function initial_time_step = compute_initial_time_step( obj )
+        function initial_time_step = compute_initial_time_step( obj, dx )
             % based on p421 of Ozisik _Heat Conduction_ 2e, originally from
             % Gupta and Kumar ref 79
             % Int J Heat Mass Transfer, 24, 251-259, 1981
@@ -116,7 +106,6 @@ classdef (Sealed) PhysicalProperties < handle
             rho = max( obj.materials( obj.primary_melt_id ).get( 'rho' ).values );
             [ L, S ] = obj.get_min_latent_heat();
             L = max( L, S ); % if latent heat very small, use sensible heat over freezing range instead
-            dx = obj.get_space_step();
             h = -inf;
             ids = obj.materials.keys();
             for i = 1 : obj.materials.Count

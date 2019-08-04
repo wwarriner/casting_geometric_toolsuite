@@ -8,6 +8,7 @@ classdef UniformVoxelMesh < MeshInterface
         connectivity%(:,1) uint32 {mustBePositive}
         count%(1,1) uint32
         volumes%(:,1) double {mustBeReal,mustBeFinite,mustBePositive}
+        distances%(:,1) double {mustBeReal,mustBeFinite,mustBePositive}
     end
     
     methods
@@ -17,15 +18,20 @@ classdef UniformVoxelMesh < MeshInterface
         function obj = UniformVoxelMesh( voxels, material_ids )
             material_values = material_ids( voxels.values( : ) );
             assert( ~any( material_values == 0, 'all' ) );
+            
+            length = voxels.scale ./ 1000; % m <- mm
+            area = length .^ 2;
+            volume = length .^ 3;
+            
             elements = Elements( ...
                 voxels.values( : ), ...
                 material_values, ...
-                voxels.element_volume .* ones( voxels.element_count, 1 ) ...
+                volume .* ones( voxels.element_count, 1 ) ...
                 );
             % external
             element_ids = cell2mat( voxels.external_elements );
-            areas = voxels.element_area .* ones( size( element_ids ) );
-            distances = 0.5 .* voxels.scale .* ones( size( element_ids ) );
+            areas = area .* ones( size( element_ids ) );
+            distances = 0.5 .* length .* ones( size( element_ids ) );
             external_interfaces = ExternalInterfaces( ...
                 elements, ...
                 element_ids, ...
@@ -34,8 +40,8 @@ classdef UniformVoxelMesh < MeshInterface
                 );
             % internal
             element_ids = voxels.neighbor_pairs;
-            areas = voxels.element_area .* ones( size( element_ids, 1 ), 1 );
-            distances = 0.5 .* voxels.scale .* ones( size( element_ids ) );
+            areas = area .* ones( size( element_ids, 1 ), 1 );
+            distances = 0.5 .* length .* ones( size( element_ids ) );
             internal_interfaces = InternalInterfaces( ...
                 elements, ...
                 element_ids, ...
@@ -59,6 +65,10 @@ classdef UniformVoxelMesh < MeshInterface
         
         function value = get.volumes( obj )
             value = obj.elements.volumes;
+        end
+        
+        function value = get.distances( obj )
+            value = obj.internal_interfaces.distances;
         end
         
         function assign_uniform_external_boundary_id( obj, id )

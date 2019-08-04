@@ -12,9 +12,16 @@ classdef QualityBisectionIterator < IteratorBase
         % @maximum_iterations controls how many bisection algorithm
         % iterations are allowed before forcibly stopping computation.
         maximum_iterations(1,1) uint32 {mustBePositive} = 100
-        % @quality_tolerance controls how close quality must be to zero
-        % before stopping.
-        quality_tolerance(1,1) double {mustBeReal,mustBeFinite,mustBePositive} = 0.2
+        % @quality_target indirectly determines the time step used at each
+        % step based on some fraction of latent heat. The larger this value
+        % is, the longer the time step. The smaller, the more accurate the
+        % solution is.Note the relationship between quality and time step
+        % is highly non-linear, so it is recommended to use the default
+        % value.
+        quality_target(1,1) double {mustBeReal,mustBeFinite,mustBePositive} = 0.2
+        % @quality_tolerance controls how close quality must be to
+        % @quality_target before stopping.
+        quality_tolerance(1,1) double {mustBeReal,mustBeFinite,mustBePositive} = 0.01
         % @stagnation_tolerance controls how close the current quality must
         % be to the previous quality before forcibly stopping computation.
         % Stagnation checking is required as there is no guarantee the
@@ -79,13 +86,12 @@ classdef QualityBisectionIterator < IteratorBase
         function bisector = create_bisector( obj )
             LOWER_BOUND = 0;
             UPPER_BOUND = inf;
-            TARGET_QUALITY = 0;
             bisector = BisectionTracker( ...
-                obj.initial_time_step, ...
+                obj.get_starting_time_step(), ...
                 LOWER_BOUND, ...
                 UPPER_BOUND, ...
                 @obj.update_quality, ...
-                TARGET_QUALITY, ...
+                obj.quality_target, ...
                 obj.quality_tolerance ...
                 );
         end
@@ -105,9 +111,9 @@ classdef QualityBisectionIterator < IteratorBase
             elseif obj.stagnated( bisector.x, bisector.x_previous )
                 finished = true;
                 message = obj.STAGNATION_STATUS;
-            elseif obj.is_finished()
-                finished = true;
-                message = obj.FINISHED_STATUS;
+%             elseif obj.is_finished()
+%                 finished = true;
+%                 message = obj.FINISHED_STATUS;
             else
                 finished = false;
                 message = obj.CONTINUING_STATUS;
@@ -125,8 +131,15 @@ classdef QualityBisectionIterator < IteratorBase
         end
         
         function below = is_finished( obj )
-            below = false;
-            %below = obj.problem.is_finished();
+            below = obj.problem.is_finished();
+        end
+        
+        function step = get_starting_time_step( obj )
+            if obj.simulation_times.count == 0
+                step = obj.initial_time_step;
+            else
+                step = obj.dt;
+            end
         end
     end
     

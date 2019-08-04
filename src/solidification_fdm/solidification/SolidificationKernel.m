@@ -30,7 +30,6 @@ classdef SolidificationKernel < handle
             int_flow = 1 ./ ( int_res + int_bc_res );
             
             ids = obj.mesh.connectivity;
-            %dt = 1;
             lhs = sparse2( ids( :, 1 ), ids( :, 2 ), int_flow, obj.mesh.count, obj.mesh.count );
             lhs = lhs + lhs.';
             
@@ -40,7 +39,7 @@ classdef SolidificationKernel < handle
             ext_flow( ~isfinite( ext_flow ) ) = 0;
             
             d = sum( lhs, 2 ) + ext_flow;
-            A = @(dt) dt.*spdiags2( rho_cp_v + d, 0, -lhs );
+            A = @(dt) spdiags2( rho_cp_v + d .* dt, 0, -lhs .* dt );
             b = @(dt) rho_cp_v .* obj.u ...
                 + dt .* ext_flow .* obj.pp.get_ambient_temperature();
             x0 = obj.u;
