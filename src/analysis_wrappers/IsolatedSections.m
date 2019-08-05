@@ -1,10 +1,17 @@
-classdef Sections < Process
-    % Sections encapsulates the behavior and data of isolated sections relating
-    % to castings. Each isolated sections must be independently fed to ensure
-    % sound solidification.
+classdef IsolatedSections < Process
+    % IsolatedSections encapsulates the behavior and data of isolated sections
+    % relating to castings. Each isolated sections must be independently fed to
+    % ensure sound solidification.
+    % Setting:
+    % - @use_thermal_profile, dictates whether to make the @ThermalProfile
+    % available for certain downstream analyses.
     % Dependencies:
     % - @Mesh
     % - @GeometricProfile
+    
+    properties
+        use_thermal_profile(1,1) logical = false
+    end
     
     properties ( SetAccess = private )
         count(1,1) uint32
@@ -13,12 +20,11 @@ classdef Sections < Process
     end
     
     methods
-        function obj = Sections( varargin )
+        function obj = IsolatedSections( varargin )
             obj = obj@Process( varargin{ : } );
         end
         
         function run( obj )
-            obj.obtain_inputs();
             obj.prepare_segment_query();
             obj.prepare_hotspot_query();
         end
@@ -70,41 +76,31 @@ classdef Sections < Process
     
     properties ( Access = private )
         mesh Mesh
-        profile %geometric or thermal profile
-        use_thermal_profile(1,1) logical = false
+        profile % @GeometricProfile or @ThermalProfile
         segment_query SegmentQuery
         hotspot_query HotspotQuery
     end
     
-    methods ( Access = private )
-        function obtain_inputs( obj )
-            if ~isempty( obj.results )
-                mesh_key = ProcessKey( Mesh.NAME );
-                obj.mesh = obj.results.get( mesh_key );
-            end
-            assert( ~isempty( obj.mesh ) );
-            
-            if ~isempty( obj.options )
-                FALLBACK_USE_THERMAL_PROFILE = false;
-                obj.use_thermal_profile = obj.options.get( ...
-                    'processes.thermal_profile.use', ...
-                    FALLBACK_USE_THERMAL_PROFILE ...
-                    );
-            end
-            assert( ~isempty( obj.use_thermal_profile ) );
-            
-            if ~isempty( obj.results )
-                if obj.use_thermal_profile
-                    thermal_key = ProcessKey( ThermalProfile.NAME );
-                    obj.profile = obj.results.get( thermal_key );
-                else
-                    geometric_key = ProcessKey( GeometricProfile.NAME );
-                    obj.profile = obj.results.get( geometric_key );
-                end    
-            end
-            assert( ~isempty( obj.profile ) );
+    methods ( Access = protected )
+        function check_settings( ~ )
+            % no settings need checking
         end
         
+        function update_dependencies( obj )
+            mesh_key = ProcessKey( Mesh.NAME );
+            obj.mesh = obj.results.get( mesh_key );
+
+            if obj.use_thermal_profile
+                thermal_key = ProcessKey( ThermalProfile.NAME );
+                obj.profile = obj.results.get( thermal_key );
+            else
+                geometric_key = ProcessKey( GeometricProfile.NAME );
+                obj.profile = obj.results.get( geometric_key );
+            end  
+        end
+    end
+    
+    methods ( Access = private )
         function prepare_segment_query( obj )
             obj.printf( 'Segmenting...\n' );
             obj.segment_query = SegmentQuery( ...

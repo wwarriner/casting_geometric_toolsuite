@@ -16,7 +16,6 @@ classdef (Sealed) Undercuts < Process
         end
         
         function run( obj )
-            obj.obtain_inputs();
             obj.prepare_undercuts();
         end
         
@@ -58,6 +57,19 @@ classdef (Sealed) Undercuts < Process
     methods ( Access = public, Static )
         function name = NAME()
             name = string( mfilename( 'class' ) );
+        end
+    end
+    
+    methods ( Access = protected )
+        function update_dependencies( obj )
+            mesh_key = ProcessKey( Mesh.NAME );
+            obj.mesh = obj.results.get( mesh_key );
+            
+            assert( ~isempty( obj.mesh ) );
+        end
+        
+        function check_settings( ~ )
+            % no settings require checking
         end
     end
     

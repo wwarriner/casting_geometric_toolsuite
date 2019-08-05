@@ -6,10 +6,15 @@ classdef (Abstract) Process < UserInterface & handle
     end
     
     methods
-        function obj = Process( results, options )
+        function obj = Process( results, settings )
             if nargin == 0; return; end
             obj.results = results;
-            obj.options = options;
+            obj.settings = settings;
+            if ~isempty( obj.settings )
+                obj.settings.apply( obj );
+            end
+            obj.check_settings();
+            obj.update_dependencies();
         end
     end
     
@@ -17,16 +22,19 @@ classdef (Abstract) Process < UserInterface & handle
         name = NAME(); % MUST be implemented as
         %{
         function name = NAME()
-            
             [ ~, name ] = fileparts( mfilename( 'full' ) );
-            
         end
         %}
     end
     
     properties ( Access = protected )
         results
-        options
+        settings
+    end
+    
+    methods ( Abstract, Access = protected )
+        check_settings( obj )
+        update_dependencies( obj )
     end
     
 end

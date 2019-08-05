@@ -1,21 +1,20 @@
 %% SETUP
 % reset_default_options();
-option_path = which( 'demo_options.json' );
-stl_path = which( 'steering_column_mount.stl' );
-output_path = fullfile( 'C:\Users\William Warriner\Desktop\a' );
+settings_file = string( which( "demo_options.json" ) );
+input_file = string( which( "steering_column_mount.stl" ) );
+output_folder = fullfile( "C:\Users\wwarr\Desktop\a" );
 user_needs = { ...
     ThermalProfile.NAME ...
     };
 
 %% OPTIONS
-options = Options( option_path );
-keys = options.list();
-options.set( 'manager.stl_file', stl_path );
-options.set( 'manager.output_folder', output_path ); % needs output path defined
-options.set( 'manager.user_needs', user_needs );
+settings = Settings( settings_file );
+settings.processes.Casting.input_file = input_file;
+settings.manager.output_folder = output_folder;
+settings.manager.user_needs = user_needs;
 
 %% ANALYSIS
-pm = ProcessManager( options );
+pm = ProcessManager( settings );
 pm.run();
 pm.write(); % needs output_path defined
 %summary_data = pm.generate_summary();

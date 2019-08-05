@@ -15,9 +15,7 @@ classdef OutputFiles < handle
         end
         
         function prepare_output_path( obj )
-            if ~isfolder( obj.path )
-                mkdir( obj.path );
-            end
+            prepare_folder( obj.path );
         end
         
         function write_array( obj, title, a, spacing, origin )

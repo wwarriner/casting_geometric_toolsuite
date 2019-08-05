@@ -1,8 +1,17 @@
 classdef Casting < Process
-% @Casting contains information on the geometric abstraction of the shape to be
-% cast during the casting process. It is the starting point for all downstream
-% operations.
-    
+    % @Casting contains information on the geometric abstraction of the shape
+    % to be cast during the casting process. It is the starting point for all 
+    % downstream operations.
+    % Settings:
+    % - @input_file, REQUIRED, denotes location in file system for geometry
+    % file. Currently only *.stl is supported.
+    % Dependencies:
+    % - None
+
+    properties
+        input_file(1,1) string = ""
+    end
+
     properties ( SetAccess = private, Dependent )
         name(1,1) string
         fv(1,1) struct
@@ -24,14 +33,12 @@ classdef Casting < Process
         end
         
         function run( obj )
-            obj.obtain_inputs();
             obj.read_data();
             obj.prepare_shape_descriptors();
             %obj.prepare_draft();
         end
         
-        function legacy_run( obj, file )
-            obj.file = file;
+        function legacy_run( obj )
             obj.run();
         end
         
@@ -110,8 +117,17 @@ classdef Casting < Process
         end
     end
     
+    methods ( Access = protected )
+        function update_dependencies( ~ )
+            % none required
+        end
+        
+        function check_settings( obj )
+            assert( obj.input_file ~= "" );
+        end
+    end
+    
     properties ( Access = private )
-        file(1,1) string
         stl_file StlFile
         body Body
         shape_invariant_query ShapeInvariantQuery
@@ -119,17 +135,9 @@ classdef Casting < Process
     end
     
     methods ( Access = private )
-        function obtain_inputs( obj )
-            if ~isempty( obj.options )
-                loc = 'manager.stl_file';
-                obj.file = obj.options.get( loc );
-            end
-            assert( ~isempty( obj.file ) );
-        end
-        
         function read_data( obj )
             obj.printf( "Reading casting geometry from file...\n" );
-            stl_file_in = StlFile( obj.file );
+            stl_file_in = StlFile( obj.input_file );
             body_in = Body( stl_file_in.fv );
             body_in.name = stl_file_in.name;
             obj.stl_file = stl_file_in;

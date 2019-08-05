@@ -1,18 +1,17 @@
 classdef (Sealed) Results < handle
     
     properties ( Access = private )
-        options
+        settings
         results
     end
     
     methods ( Access = public )
-        
-        function obj = Results( options )
+        function obj = Results( settings )
             obj.results = containers.Map( ...
                 'keytype', 'char', ...
                 'valuetype', 'any' ...
                 );
-            obj.options = options;
+            obj.settings = settings;
         end
         
         function add( obj, process_key, result )
@@ -28,8 +27,8 @@ classdef (Sealed) Results < handle
             if obj.exists( process_key )
                 result = obj.results( key );
             else
-                assert( ~isempty( obj.options ) );
-                result = process_key.create_instance( obj, obj.options );
+                assert( ~isempty( obj.settings ) );
+                result = process_key.create_instance( obj, obj.settings );
                 result.run();
                 obj.results( key ) = result;
             end
@@ -38,7 +37,6 @@ classdef (Sealed) Results < handle
         function results = get_all( obj )
             results = obj.results.values();
         end
-        
     end
     
     methods ( Access = private )

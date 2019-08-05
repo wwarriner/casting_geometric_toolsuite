@@ -1,6 +1,8 @@
 classdef (Sealed) GeometricProfile < Process
     % @GeometricProfile encapsulates the behavior and data of a geometric
     % approach to the solidification profile of castings.
+    % Settings:
+    % - None
     % Dependencies:
     % - @Mesh
     
@@ -26,7 +28,6 @@ classdef (Sealed) GeometricProfile < Process
         end
         
         function run( obj )
-            obj.obtain_inputs();
             obj.prepare_edt_profile_query();
             obj.prepare_filter_profile_query();
             obj.compute_statistics();
@@ -93,6 +94,19 @@ classdef (Sealed) GeometricProfile < Process
         end
     end
     
+    methods ( Access = protected )
+        function update_dependencies( obj )
+            mesh_key = ProcessKey( Mesh.NAME );
+            obj.mesh = obj.results.get( mesh_key );
+            
+            assert( ~isempty( obj.mesh ) );
+        end
+        
+        function check_settings( ~ )
+            % no settings require checking
+        end
+    end
+    
     properties ( Access = private )
         mesh Mesh
         edt_profile_query EdtProfileQuery
@@ -100,14 +114,6 @@ classdef (Sealed) GeometricProfile < Process
     end
     
     methods ( Access = private )
-        function obtain_inputs( obj )
-            if ~isempty( obj.results )
-                mesh_key = ProcessKey( Mesh.NAME );
-                obj.mesh = obj.results.get( mesh_key );
-            end
-            assert( ~isempty( obj.mesh ) );
-        end
-        
         function prepare_edt_profile_query( obj )
             obj.printf( 'Computing EDT profile...\n' );
             obj.edt_profile_query = EdtProfileQuery( ...
@@ -117,7 +123,7 @@ classdef (Sealed) GeometricProfile < Process
         end
         
         function prepare_filter_profile_query( obj )
-            obj.printf( 'Filtering profile...\n' );
+            obj.printf( '  Filtering profile...\n' );
             obj.filter_profile_query = FilteredProfileQuery( ...
                 obj.scaled, ...
                 obj.compute_filter_amount( obj.mesh.scale ) ...
@@ -125,7 +131,7 @@ classdef (Sealed) GeometricProfile < Process
         end
         
         function compute_statistics( obj )
-            obj.printf( 'Computing statistics...\n' );
+            obj.printf( '  Computing statistics...\n' );
             [ obj.minimum_thickness, obj.maximum_thickness ] = ...
                 obj.thickness_analysis( obj.scaled_interior );
             obj.thickness_ratio = ...

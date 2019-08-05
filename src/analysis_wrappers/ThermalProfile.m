@@ -1,20 +1,57 @@
 classdef ThermalProfile < Process
     % @GeometricProfile encapsulates the behavior and data of a geometric
     % approach to the solidification profile of castings.
+    % Settings:
+    % - @ambient_h_w_per_m_sq_k, REQUIRED FINITE, convection coefficient with
+    % ambient environment in units of W / m^2 * K.
+    % - @ambient_temperature_c, REQUIRED FINITE, temperature of ambient
+    % environment in units of C. Also used for mold temperature.
+    % - @latent_heat_quality_ratio, ratio of latent heat to use when determining
+    % quality of time steps. Lower values result in smaller time steps, which
+    % requires more computational effort, longer computation time, and greater
+    % accuracy.
+    % - @latent_heat_quality_target, target quality value. Lower values,
+    % including those below zero, result in smaller time steps, which requires
+    % more computational effort, longer computation time, and greater accuracy.
+    % - @melt_material_file, REQUIRED VALID MATERIAL DATA FILE, data file
+    % containing temperature-property information for melt material.
+    % - @melt_mold_h_file, REQUIRED VALID MATERIAL DATA FILE, data file
+    % containing temperature-property information for convection coefficient
+    % between melt and mold.
+    % - @melt_feeding_effectivity, determines liquid fraction at which melt flow
+    % ceases.
+    % - @melt_initial_temperature_c, REQUIRED FINITE, temperature of melt in
+    % units of C.
+    % - @mold_material_file, REQUIRED VALID MATERIAL DATA FILE, data file
+    % containing temperature-property information for mold material.
+    % - @mold_pad_type, method for padding the casting envelope to create the
+    % mold. Mesh is  otherwise unchanged. Options are "ratio", "length" and
+    % "count". Ratio uses a fraction of the cavity envelope lengths. Length uses
+    % a direct length value in casting length units. Count is an exact number of
+    % mesh elements. Note that ratio and length are approximate due to integer
+    % arithmetic.
+    % - @mold_pad_amounts, amount of padding to use based on @mold_pad_type.
+    % Must be scalar or vector of length 3. Must be double for "ratio" and
+    % "length", or uint32 for "count".
+    % - @time_step_mode, method for choosing time steps. Currently only
+    % "bisection" is supported, which uses a fraction of the latent heat to
+    % determine a quality value which informs a bisection algorithm in
+    % choosing a time step.
     % Dependencies:
     % - @Mesh
     properties
-        mold_material_file(1,1) string = "a356.txt"
-        melt_material_file(1,1) string = "silica_dry.txt"
-        mold_melt_h_file(1,1) string = "al_sand_htc.txt"
-        melt_initial_temperature(1,1) double {mustBeReal,mustBeFinite} = 700 % C
-        melt_feeding_effectivity(1,1) double {mustBeReal,mustBeFinite} = 0.3 % unitless
-        ambient_temperature(1,1) double {mustBeReal,mustBeFinite} = 25 % C
+        ambient_h_w_per_m_sq_k(1,1) double {mustBeReal,mustBePositive} = inf;
+        ambient_temperature_c(1,1) double {mustBeReal} = inf;
+        latent_heat_quality_ratio(1,1) double {mustBeReal,mustBeFinite,mustBePositive} = 0.1
+        latent_heat_quality_target(1,1) double {mustBeReal,mustBeFinite} = 0.2
+        melt_material_file(1,1) string = ""
+        melt_mold_h_file(1,1) string = ""
+        melt_feeding_effectivity(1,1) double {mustBeReal,mustBeFinite,mustBeBetween(melt_feeding_effectivity,0,1)} = 0.5
+        melt_initial_temperature_c(1,1) double {mustBeReal,mustBeFinite}
+        mold_material_file(1,1) string = ""
         mold_pad_type(1,1) string = "ratio" % { ratio, length, count }
         mold_pad_amounts(1,:) double {mustBeReal,mustBeFinite} = 0.125
-        ambient_h(1,1) double {mustBeReal,mustBeFinite} = 10 % W / m^2 * K
         time_step_mode(1,1) string = "bisection" % { bisection } TODO: add others
-        latent_heat_quality_ratio(1,1) double = 0.1 % ( 0, inf ] smaller more accurate, larger faster
         % TODO: when changing settings class, invert dependency for
         % iteratorbase. Instead of current setup, pass it to
         % thermal_profile_query after setting it up.
@@ -34,7 +71,6 @@ classdef ThermalProfile < Process
         end
         
         function run( obj )
-            obj.obtain_inputs();
             obj.prepare_thermal_profile_query()
         end
         
@@ -87,6 +123,26 @@ classdef ThermalProfile < Process
         end
     end
     
+    methods ( Access = protected )
+        function check_settings( obj )
+            assert( isfinite( obj.ambient_h_w_per_m_sq_k ) );
+            assert( isfinite( obj.ambient_temperature_c ) );
+            assert( obj.melt_material_file ~= "" );
+            assert( obj.melt_mold_h_file ~= "" );
+            assert( isfinite( obj.melt_initial_temperature_c ) );
+            assert( obj.mold_material_file ~= "" );
+            assert( ismember( obj.mold_pad_type, obj.MOLD_PAD_TYPE ) );
+            assert( ismember( obj.time_step_mode, obj.TIME_STEP_MODE ) ); 
+        end
+        
+        function update_dependencies( obj )
+            mesh_key = ProcessKey( Mesh.NAME );
+            obj.mesh = obj.results.get( mesh_key );
+            
+            assert( ~isempty( obj.mesh ) );
+        end
+    end
+    
     properties ( Access = private )
         mesh Mesh
         thermal_profile_query ThermalProfileQuery
@@ -94,81 +150,6 @@ classdef ThermalProfile < Process
     end
     
     methods ( Access = private )
-        function obtain_inputs( obj )
-            % TODO add full checks on values
-            if ~isempty( obj.results )
-                mesh_key = ProcessKey( Mesh.NAME );
-                obj.mesh = obj.results.get( mesh_key );
-            end
-            assert( ~isempty( obj.mesh ) );
-            
-            if ~isempty( obj.options )
-                loc = "processes.thermal_profile.mold_material";
-                obj.mold_material_file = obj.options.get( loc );
-            end
-            assert( ~isempty( obj.mold_material_file ) );
-            
-            if ~isempty( obj.options )
-                loc = "processes.thermal_profile.melt_material";
-                obj.melt_material_file = obj.options.get( loc );
-            end
-            assert( ~isempty( obj.melt_material_file ) );
-            
-            if ~isempty( obj.options )
-                loc = "processes.thermal_profile.mold_melt_h";
-                obj.mold_melt_h_file = obj.options.get( loc );
-            end
-            assert( ~isempty( obj.mold_melt_h_file ) );
-            
-            if ~isempty( obj.options )
-                loc = "processes.thermal_profile.melt_initial_temperature_c";
-                obj.melt_initial_temperature = obj.options.get( loc );
-            end
-            assert( ~isempty( obj.melt_initial_temperature ) );
-            
-            if ~isempty( obj.options )
-                loc = "processes.thermal_profile.melt_feeding_effectivity";
-                obj.melt_feeding_effectivity = obj.options.get( loc );
-            end
-            assert( ~isempty( obj.melt_feeding_effectivity ) );
-            
-            if ~isempty( obj.options )
-                loc = "processes.thermal_profile.ambient_temperature_c";
-                obj.ambient_temperature = obj.options.get( loc );
-            end
-            assert( ~isempty( obj.ambient_temperature ) );
-            
-            if ~isempty( obj.options )
-                loc = "processes.thermal_profile.mold_pad_type";
-                obj.mold_pad_type = obj.options.get( loc );
-            end
-            assert( ~isempty( obj.mold_pad_type ) );
-            
-            if ~isempty( obj.options )
-                loc = "processes.thermal_profile.mold_pad_amounts";
-                obj.mold_pad_amounts = obj.options.get( loc );
-            end
-            assert( ~isempty( obj.mold_pad_amounts ) );
-            
-            if ~isempty( obj.options )
-                loc = "processes.thermal_profile.ambient_h_w_per_m_k";
-                obj.ambient_h = obj.options.get( loc );
-            end
-            assert( ~isempty( obj.ambient_h ) );
-            
-            if ~isempty( obj.options )
-                loc = "processes.thermal_profile.time_step_mode";
-                obj.time_step_mode = obj.options.get( loc );
-            end
-            assert( ~isempty( obj.time_step_mode ) );
-            
-            if ~isempty( obj.options )
-                loc = "processes.thermal_profile.latent_heat_quality_ratio";
-                obj.latent_heat_quality_ratio = obj.options.get( loc );
-            end
-            assert( ~isempty( obj.latent_heat_quality_ratio ) );
-        end
-        
         function prepare_thermal_profile_query( obj )
             obj.printf( "Computing thermal profile...\n" );
             pde_mesh = obj.prepare_pde_mesh();
@@ -202,22 +183,22 @@ classdef ThermalProfile < Process
             pp = PhysicalProperties();
             
             ambient = AmbientMaterial( obj.AMBIENT_ID );
-            ambient.set_initial_temperature( obj.ambient_temperature );
+            ambient.set_initial_temperature( obj.ambient_temperature_c );
             pp.add_ambient_material( ambient );
             
             mold = MoldMaterial( obj.MOLD_ID, which( obj.mold_material_file ) );
-            mold.set_initial_temperature( obj.ambient_temperature );
+            mold.set_initial_temperature( obj.ambient_temperature_c );
             pp.add_material( mold );
             
             melt = MeltMaterial( obj.MELT_ID, which( obj.melt_material_file ) );
-            melt.set_initial_temperature( obj.melt_initial_temperature );
+            melt.set_initial_temperature( obj.melt_initial_temperature_c );
             melt.set_feeding_effectivity( obj.melt_feeding_effectivity );
             pp.add_melt_material( melt );
             
             conv = ConvectionProperties( obj.AMBIENT_ID );
-            conv.set_ambient( obj.MOLD_ID, HProperty( obj.ambient_h ) );
-            conv.set_ambient( obj.MELT_ID, HProperty( obj.ambient_h ) );
-            conv.read( obj.MOLD_ID, obj.MELT_ID, which( obj.mold_melt_h_file ) );
+            conv.set_ambient( obj.MOLD_ID, HProperty( obj.ambient_h_w_per_m_sq_k ) );
+            conv.set_ambient( obj.MELT_ID, HProperty( obj.ambient_h_w_per_m_sq_k ) );
+            conv.read( obj.MOLD_ID, obj.MELT_ID, which( obj.melt_mold_h_file ) );
             pp.set_convection( conv );
             
             pp.prepare_for_solver();
@@ -239,6 +220,8 @@ classdef ThermalProfile < Process
         AMBIENT_ID uint32 = 0;
         MELT_ID uint32 = 1;
         MOLD_ID uint32 = 2;
+        MOLD_PAD_TYPE = [ "ratio" "length" "count" ];
+        TIME_STEP_MODE = [ "bisection" ];
     end
     
     methods ( Access = private, Static )

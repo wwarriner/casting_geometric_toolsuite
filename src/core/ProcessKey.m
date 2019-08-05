@@ -9,8 +9,9 @@ classdef ProcessKey < handle
             obj.name = name;
         end
         
-        function instance = create_instance( obj, varargin )
-            instance = feval( obj.name, varargin{ : } );
+        function instance = create_instance( obj, results, settings, varargin )
+            settings = settings.processes.(obj.name());
+            instance = feval( obj.name, results, settings, varargin{ : } );
         end
     end
     

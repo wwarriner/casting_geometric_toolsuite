@@ -27,7 +27,6 @@ classdef (Sealed) Parting < Process
         end
         
         function run( obj )
-            obj.obtain_inputs();
             obj.prepare_parting_perimeter();
         end
         
@@ -92,20 +91,25 @@ classdef (Sealed) Parting < Process
         end
     end
     
+    methods ( Access = protected )
+        function update_dependencies( obj )
+            mesh_key = ProcessKey( Mesh.NAME );
+            obj.mesh = obj.results.get( mesh_key );
+            
+            assert( ~isempty( obj.mesh ) );
+        end
+        
+        function check_settings( ~ )
+            % no settings need checking
+        end
+    end
+    
     properties ( Access = private )
         mesh Mesh
         perimeter PartingPerimeterQuery
     end
     
     methods ( Access = private )
-        function obtain_inputs( obj )
-            if ~isempty( obj.results )
-                mesh_key = ProcessKey( Mesh.NAME );
-                obj.mesh = obj.results.get( mesh_key );
-            end
-            assert( ~isempty( obj.mesh ) );
-        end
-        
         function prepare_parting_perimeter( obj )
             obj.printf( "Locating parting perimeter...\n" );
             obj.perimeter = PartingPerimeterQuery( obj.mesh.interior );

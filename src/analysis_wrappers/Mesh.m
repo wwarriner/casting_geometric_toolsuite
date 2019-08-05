@@ -1,4 +1,19 @@
 classdef Mesh < Process
+    % @Mesh is a uniform voxel representation of the underlying @Casting, and 
+    % contains information useful for downstream analyses. It provides methods
+    % for unit conversions between mesh and casting units. It provides boolean 
+    % operations for the interior. It provides methods for converting to a
+    % mesh format suitable for use with a PDE solver.
+    % Settings:
+    % - @desired_element_count, REQUIRED FINITE, approximate number of uniform
+    % voxels to use when meshing. Exact amount may differ slightly due to 
+    % integer arithmetic.
+    % Dependencies:
+    % - @Casting
+    
+    properties
+        desired_element_count(1,1) double {mustBeReal,mustBePositive} = inf
+    end
     
     properties ( SetAccess = private, Dependent )
         count(1,1) uint32 {mustBePositive}
@@ -18,13 +33,11 @@ classdef Mesh < Process
         end
         
         function run( obj )
-            obj.obtain_inputs();
             obj.prepare_voxels();
         end
         
-        function legacy_run( obj, casting, desired_element_count )
+        function legacy_run( obj, casting )
             obj.casting = casting;
-            obj.desired_element_count = desired_element_count;
             obj.run();
         end
         
@@ -196,27 +209,25 @@ classdef Mesh < Process
         end
     end
     
+    methods ( Access = protected )
+        function update_dependencies( obj )
+            casting_key = ProcessKey( Casting.NAME );
+            obj.casting = obj.results.get( casting_key );
+            
+            assert( ~isempty( obj.casting ) );
+        end
+        
+        function check_settings( obj )
+            assert( isfinite( obj.desired_element_count ) );
+        end
+    end
+    
     properties ( Access = private )
         casting Casting
-        desired_element_count(1,1) double
         voxels Voxels
     end
     
     methods ( Access = private )
-        function obtain_inputs( obj )
-            if ~isempty( obj.results )
-                casting_key = ProcessKey( Casting.NAME );
-                obj.casting = obj.results.get( casting_key );
-            end
-            assert( ~isempty( obj.casting ) );
-            
-            if ~isempty( obj.options )
-                loc = 'processes.mesh.element_count';
-                obj.desired_element_count = obj.options.get( loc );
-            end
-            assert( ~isempty( obj.desired_element_count ) );
-        end
-        
         function prepare_voxels( obj )
             obj.printf( "Meshing...\n" );
             obj.voxels = Voxels( ...
