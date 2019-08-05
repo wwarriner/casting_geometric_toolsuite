@@ -8,7 +8,7 @@ assert( ~isfile( folder ) );
 if ~isfolder( folder )
     mkdir( folder );
 else
-    clean_folder( folder );
+    clear_folder( folder );
 end
 
 end

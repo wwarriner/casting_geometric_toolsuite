@@ -1,6 +1,5 @@
 function write_text_file( file, string )
 
-assert( ~isfile( file ) );
 assert( ~isfolder( file ) );
 
 fid = fopen( file, 'W' );
