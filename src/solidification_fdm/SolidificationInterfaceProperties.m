@@ -1,4 +1,4 @@
-classdef Convection < Interface
+classdef SolidificationInterfaceProperties < InterfaceProperties
     
     properties
         ambient_id(1,1) uint32 = 0
@@ -22,21 +22,15 @@ classdef Convection < Interface
         function add( obj, first_id, second_id, h )
             assert( isa( h, 'HProperty' ) );
             
-            add@Interface( obj, first_id, second_id, h );
+            add@InterfaceProperties( obj, first_id, second_id, h );
         end
         
-        % @expected_ids is a uint32 vector of ids that exist in the mesh
-        function complete = is_ready( obj, expected_ids )
-            complete = true;
-            count = numel( expected_ids );
-            for i = 1 : count
-                for j = i + 1 : count
-                    if ~obj.has( expected_ids( i ), expected_ids( j ) )
-                        complete = false;
-                        return;
-                    end
-                end
-            end
+        function v = lookup_ambient( obj, id, varargin )
+            v = obj.lookup( obj.ambient_id, id, varargin{ : } );
+        end
+        
+        function v = reduce_ambient( obj, id, fn )
+            v = obj.reduce( obj.ambient, id, fn );
         end
     end
     

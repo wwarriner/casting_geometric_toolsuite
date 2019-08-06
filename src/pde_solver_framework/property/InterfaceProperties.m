@@ -1,8 +1,8 @@
-classdef Interface < handle
+classdef InterfaceProperties < handle
     
     methods
-        function obj = Interface()
-            obj.interface_properties = containers.Map( ...
+        function obj = InterfaceProperties()
+            obj.props = containers.Map( ...
                 'keytype', 'uint32', ...
                 'valuetype', 'any' ...
                 );
@@ -18,9 +18,9 @@ classdef Interface < handle
             
             [ first_id, second_id ] = obj.prepare_ids( first_id, second_id );
             
-            has = obj.interface_properties.isKey( first_id );
+            has = obj.props.isKey( first_id );
             if has
-                m = obj.interface_properties( first_id );
+                m = obj.props( first_id );
                 has = m.isKey( second_id );
             end
         end
@@ -37,17 +37,31 @@ classdef Interface < handle
             
             [ first_id, second_id ] = obj.prepare_ids( first_id, second_id );
             
-            if obj.interface_properties.isKey( first_id )
-                m = obj.interface_properties( first_id );
+            if obj.props.isKey( first_id )
+                m = obj.props( first_id );
                 assert( ~m.isKey( second_id ) );
             else
                 m = containers.Map( ...
                     'keytype', 'uint32', ...
                     'valuetype', 'any' ...
                     );
-                obj.interface_properties( first_id ) = m;
+                obj.props( first_id ) = m;
             end
             m( second_id ) = property; %#ok<NASGU>
+        end
+        
+        % @expected_ids is a uint32 vector of ids that exist in the mesh
+        function complete = is_ready( obj, expected_ids )
+            complete = true;
+            count = numel( expected_ids );
+            for i = 1 : count
+                for j = i + 1 : count
+                    if ~obj.has( expected_ids( i ), expected_ids( j ) )
+                        complete = false;
+                        return;
+                    end
+                end
+            end
         end
         
         function v = lookup( obj, first_id, second_id, varargin )
@@ -76,7 +90,7 @@ classdef Interface < handle
     end
     
     properties ( Access = private )
-        interface_properties containers.Map
+        props containers.Map
     end
     
     methods ( Access = private )
@@ -85,7 +99,7 @@ classdef Interface < handle
             
             [ first_id, second_id ] = obj.prepare_ids( first_id, second_id );
             
-            m = obj.interface_properties( first_id );
+            m = obj.props( first_id );
             p = m( second_id );
         end
     end

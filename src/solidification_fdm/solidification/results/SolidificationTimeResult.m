@@ -9,14 +9,13 @@ classdef SolidificationTimeResult < ResultInterface
     end
     
     methods
-        function obj = SolidificationTimeResult( mesh, pp, problem, iterator )
+        function obj = SolidificationTimeResult( mesh, problem, iterator )
             assert( isa( mesh, 'MeshInterface' ) );
             
             assert( isa( iterator, 'IteratorBase' ) );
             
             obj.values = nan( mesh.count, 1 );
             obj.problem = problem;
-            obj.pp = pp;
             obj.mesh = mesh;
             obj.iterator = iterator;
         end
@@ -48,7 +47,6 @@ classdef SolidificationTimeResult < ResultInterface
     
     properties ( Access = private )
         problem SolidificationProblem
-        pp PhysicalProperties
         mesh
         iterator
     end

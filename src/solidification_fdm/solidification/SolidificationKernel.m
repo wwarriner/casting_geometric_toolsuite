@@ -1,21 +1,22 @@
 classdef SolidificationKernel < handle
     
     methods
-        function obj = SolidificationKernel( physical_properties, mesh, u )
-            obj.pp = physical_properties;
+        function obj = SolidificationKernel( smp, sip, mesh, u )
+            obj.smp = smp;
+            obj.sip = sip;
             obj.mesh = mesh;
             obj.u = u;
         end
         
         function [ A, b, x0 ] = create_system( obj )
             % material properties
-            rho_fn = @(id,locations)obj.pp.lookup( id, RhoProperty.name, obj.u( locations ) );
+            rho_fn = @(id,locations)obj.smp.lookup( id, RhoProperty.name, obj.u( locations ) );
             rho = obj.mesh.apply_material_property_fn( rho_fn );
             
-            cp_fn = @(id,locations)obj.pp.lookup( id, CpProperty.name, obj.u( locations ) );
+            cp_fn = @(id,locations)obj.smp.lookup( id, CpProperty.name, obj.u( locations ) );
             cp = obj.mesh.apply_material_property_fn( cp_fn );
             
-            k_fn = @(id,locations)obj.pp.lookup( id, KProperty.name, obj.u( locations ) );
+            k_fn = @(id,locations)obj.smp.lookup( id, KProperty.name, obj.u( locations ) );
             k = obj.mesh.apply_material_property_fn( k_fn );
             
             rho_cp_v = rho .* cp .* obj.mesh.volumes;
@@ -41,13 +42,14 @@ classdef SolidificationKernel < handle
             d = sum( lhs, 2 ) + ext_flow;
             A = @(dt) spdiags2( rho_cp_v + d .* dt, 0, -lhs .* dt );
             b = @(dt) rho_cp_v .* obj.u ...
-                + dt .* ext_flow .* obj.pp.ambient_temperature_c;
+                + dt .* ext_flow .* obj.smp.ambient_temperature_c;
             x0 = obj.u;
         end
     end
     
     properties ( Access = private )
-        pp PhysicalProperties
+        smp SolidificationMaterialProperties
+        sip SolidificationInterfaceProperties
         mesh
         u
     end
@@ -59,7 +61,7 @@ classdef SolidificationKernel < handle
         end
         
         function values = internal_bc_fn( obj, material_ids, element_ids, distances, areas, u )
-            values = 1 ./ obj.pp.lookup_convection( ...
+            values = 1 ./ obj.sip.lookup( ...
                 material_ids( 1 ), ...
                 material_ids( 2 ), ...
                 mean( u( element_ids ), 2 ) ...
@@ -68,7 +70,7 @@ classdef SolidificationKernel < handle
         
         function values = external_bc_fn( obj, material_id, element_ids, distances, areas, k, u )
             values = distances ./ k( element_ids );
-            values = values + 1 ./ obj.pp.lookup_convection_ambient( ...
+            values = values + 1 ./ obj.sip.lookup_ambient( ...
                 material_id, ...
                 u( element_ids ) ...
                 );
