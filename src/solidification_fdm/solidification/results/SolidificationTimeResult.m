@@ -23,7 +23,7 @@ classdef SolidificationTimeResult < ResultInterface
         
         function update( obj )
             % which
-            is_melt = obj.mesh.map( @(x)obj.pp.is_primary_melt(x) );
+            is_melt = obj.problem.primary_melt;
             past_threshold = obj.problem.u <= obj.problem.stop_temperature;
             unrecorded = isnan( obj.values );
             needs_update = is_melt & past_threshold & unrecorded;

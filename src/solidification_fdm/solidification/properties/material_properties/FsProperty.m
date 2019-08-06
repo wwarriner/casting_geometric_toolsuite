@@ -1,9 +1,36 @@
-classdef (Sealed) FsProperty < MaterialProperty
+classdef FsProperty < TemperatureDependentPropertyBase
     
-    methods ( Access = public )
-        % unitless ratio in range [ 0, 1 ]
+    properties ( Constant )
+        name = "fs"
+    end
+    
+    properties
+        feeding_effectivity(1,1) double {...
+            mustBeReal,...
+            mustBeFinite,...
+            mustBeGreaterThanOrEqual(feeding_effectivity,0),...
+            mustBeLessThanOrEqual(feeding_effectivity,1)...
+            } = 0.5
+    end
+    
+    properties ( SetAccess = private )
+        feeding_effectivity_temperature_c(1,1) double {mustBeReal,mustBeFinite}
+    end
+    
+    properties ( SetAccess = private, Dependent )
+        solidus_temperature_c(1,1) double {mustBeReal,mustBeFinite}
+        liquidus_temperature_c(1,1) double {mustBeReal,mustBeFinite}
+    end
+    
+    methods
         function obj = FsProperty( temperatures, fractions_solid )
-            obj = obj@MaterialProperty( temperatures, fractions_solid );
+            obj = obj@TemperatureDependentPropertyBase( temperatures, fractions_solid );
+            
+            assert( 2 <= numel( obj.temperatures ) );
+            
+            assert( all( 0.0 <= obj.values ) );
+            assert( all( obj.values <= 1.0 ) );
+            
             first_liquid = find( obj.values == 0, 1, 'first' );
             last_solid = find( obj.values == 1, 1, 'last' );
             obj.temperatures = obj.temperatures( last_solid : first_liquid );
@@ -11,30 +38,22 @@ classdef (Sealed) FsProperty < MaterialProperty
             
             assert( obj.values( end ) == 0.0 ); % fully liquid at >= max temp
             assert( obj.values( 1 ) == 1.0 ); % fully solid at <= min temp
+            
+            fet = interp1( ...
+                obj.values, ...
+                obj.temperatures, ...
+                obj.feeding_effectivity, ...
+                'linear' ...
+                );
+            obj.feeding_effectivity_temperature_c = fet;
         end
         
-        function temperature = lookup_temperatures( obj, value )
-            if numel( obj.temperatures ) == 1
-                assert( false );
-            else
-                temperature = interp1( ...
-                    obj.values, ...
-                    obj.temperatures, ...
-                    value, ...
-                    'linear', ...
-                    'extrap' ...
-                    );
-            end
+        function value = get.solidus_temperature_c( obj )
+            value = obj.temperatures( 1 );
         end
         
-        function temperature = get_liquidus( obj )
-            ind = find( obj.values == 0, 1, 'first' );
-            temperature = obj.temperatures( ind );
-        end
-        
-        function temperature = get_solidus( obj )
-            ind = find( obj.values == 1, 1, 'last' );
-            temperature = obj.temperatures( ind );
+        function value = get.liquidus_temperature_c( obj )
+            value = obj.temperatures( end );
         end
     end
     

@@ -10,11 +10,6 @@ classdef IteratorBase < Printer & handle
     % classes must assign a @ProblemInterface to @obj.problem before
     % iterating. The intended way to do this is via the derived class
     % constructor.
-    
-    properties
-        initial_time_step(1,1) double {mustBeReal,mustBeFinite,mustBePositive} = 1.0
-    end
-    
     properties ( SetAccess = private )
         simulation_times StepTracker
         computation_times StepTracker

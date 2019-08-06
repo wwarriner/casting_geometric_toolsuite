@@ -1,88 +1,90 @@
-classdef (Sealed) MeltMaterial < Material
+classdef MeltMaterial < SolidificationMaterial
     
-    methods ( Access = public )
-        function obj = MeltMaterial( varargin )
-            obj = obj@Material( varargin{ : } );
-            if isempty( obj.feeding_effectivity )
-                obj.feeding_effectivity_set = false;
-            end
+    properties ( Dependent )
+        feeding_effectivity(1,1) double {...
+            mustBeReal,...
+            mustBeFinite,...
+            mustBeGreaterThanOrEqual(feeding_effectivity,0),...
+            mustBeLessThanOrEqual(feeding_effectivity,1)...
+            }
+        solidus_temperature_c(1,1) double {mustBeReal,mustBeFinite}
+        feeding_effectivity_temperature_c(1,1) double {mustBeReal,mustBeFinite}
+        liquidus_temperature_c(1,1) double {mustBeReal,mustBeFinite}
+        latent_heat_j_per_kg(1,1) double {mustBeReal,mustBeFinite}
+        sensible_heat_j_per_kg(1,1) double {mustBeReal,mustBeFinite}
+    end
+    
+    methods
+        function obj = MeltMaterial( file )
+            obj.read( file );
         end
         
-        function read( obj, file )
-            data = obj.read@Material( file );
-            [ fs_t, fs ] = remove_nans( data.fs_t, data.fs );
-            obj.set( FsProperty( fs_t, fs ) );
-            obj.set_feeding_effectivity( 0.5 );
-            obj.set_default_initial_temperature();
-        end
-        
-        function set_feeding_effectivity( obj, feeding_effectivity )
-            assert( isscalar( feeding_effectivity ) );
-            assert( isa( feeding_effectivity, 'double' ) );
-            assert( 0 <= feeding_effectivity );
-            assert( feeding_effectivity <= 1 );
-            
-            obj.feeding_effectivity = feeding_effectivity;
-            obj.feeding_effectivity_set = true;
+        function data = read( obj, file )
+            data = obj.read@SolidificationMaterial( file );
+            [ fs_t, fs_v ] = remove_nans( data.fs_t, data.fs );
+            fs_in = FsProperty( fs_t, fs_v );
+            obj.add( fs_in );
+            obj.initial_temperature_c = obj.compute_default_initial_temperature();
+            obj.fs = fs_in;
         end
         
         function ready = is_ready( obj )
             ready = obj.is_ready@Material();
-            ready = ready & obj.feeding_effectivity_set;
-            ready = ready & obj.properties_set.isKey( obj.FS );
+            ready = ready & obj.has( FsProperty.name );
         end
         
-        function feeding_effectivity = get_feeding_effectivity( obj )
-            feeding_effectivity = obj.feeding_effectivity;
+        function value = get.feeding_effectivity( obj )
+            value = obj.fs.feeding_effectivity;
         end
         
-        function temperature = get_liquidus_temperature( obj )
-            temperature = obj.get( obj.FS ).get_liquidus();
+        function set.feeding_effectivity( obj, value )
+            obj.fs.feeding_effectivity = value;
         end
         
-        function temperature = get_feeding_effectivity_temperature( obj )
-            temperature = obj.get_fraction_solid_temperature( obj.feeding_effectivity );
+        function value = get.solidus_temperature_c( obj )
+            value = obj.get( FsProperty.name ).solidus_temperature_c;
         end
         
-        function temperature = get_solidus_temperature( obj )
-            temperature = obj.get( obj.FS ).get_solidus();
+        function value = get.feeding_effectivity_temperature_c( obj )
+            value = obj.get( FsProperty.name ).feeding_effectivity_temperature_c;
         end
         
-        function temperature = get_fraction_solid_temperature( obj, fraction_solid )
-            temperature = obj.get( obj.FS ).lookup_temperatures( fraction_solid );
+        function value = get.liquidus_temperature_c( obj )
+            value = obj.get( FsProperty.name ).liquidus_temperature_c;
         end
         
-        function latent_heat = get_latent_heat( obj )
-            liquidus = obj.material_properties( obj.FS ).get_liquidus();
-            solidus = obj.material_properties( obj.FS ).get_solidus();
-            latent_heat = ...
-                obj.material_properties( obj.Q ).get_latent_heat( liquidus, solidus );
+        function value = get.latent_heat_j_per_kg( obj )
+            q_solidus = obj.lookup( QProperty.name, obj.solidus_temperature_c );
+            q_liquidus = obj.lookup( QProperty.name, obj.liquidus_temperature_c );
+            total_heat = q_liquidus - q_solidus;
+            value = total_heat - obj.sensible_heat_j_per_kg;
         end
         
-        function sensible_heat = get_sensible_heat( obj )
-            liquidus = obj.material_properties( obj.FS ).get_liquidus();
-            solidus = obj.material_properties( obj.FS ).get_solidus();
-            sensible_heat = ...
-                obj.material_properties( obj.Q ).get_sensible_heat( liquidus, solidus );
+        function value = get.sensible_heat_j_per_kg( obj )
+            value = obj.compute_sensible_heat( ...
+                obj.solidus_temperature_c, ...
+                obj.liquidus_temperature_c ...
+                );
         end
     end
     
-    properties ( Access = protected )
-        feeding_effectivity
-        feeding_effectivity_set
+    properties ( Access = private )
+        fs FsProperty
     end
     
-    methods ( Access = protected )
-        function index = get_type_index( obj, material_property )
-            index = obj.get_type_index@Material( material_property );
-            if isa( material_property, 'FsProperty' )
-                index = obj.FS;
-            end
+    methods ( Access = private )
+        function t = compute_default_initial_temperature( obj )
+            t_k = obj.liquidus_temperature_c + 273.15;
+            t = ( 1.05 .* t_k ) - 273.15;
         end
         
-        function set_default_initial_temperature( obj )
-            t = obj.get_liquidus_temperature();
-            obj.set_initial_temperature( t * 1.05 );
+        function value = compute_sensible_heat( obj, lower_t, upper_t )
+            assert( upper_t > lower_t );
+            
+            d_t = upper_t - lower_t;
+            lower_cp = obj.lookup( CpProperty.name, lower_t );
+            upper_cp = obj.lookup( CpProperty.name, upper_t );
+            value = ( lower_cp + upper_cp ) .* d_t ./ 2;
         end
     end
     

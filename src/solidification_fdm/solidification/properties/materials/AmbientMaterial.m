@@ -1,12 +1,10 @@
-classdef (Sealed) AmbientMaterial < Material
+classdef AmbientMaterial < SolidificationMaterial
     
     methods ( Access = public )
-        function obj = AmbientMaterial( varargin )
-            obj@Material( varargin{ : } );
-            obj.set( RhoProperty( 1.225 ) ); % kg / m ^ 3
-            obj.set( CpProperty( 1006 ) ); % J / kg * K
-            obj.set( KProperty( 0.024 ) ); % W / m * K
-            obj.set_initial_temperature( 25 ); % C
+        function obj = AmbientMaterial()
+            obj.add( RhoProperty( 1.225 ) ); % kg / m ^ 3
+            obj.add( CpProperty( 1006 ) ); % J / kg * K
+            obj.add( KProperty( 0.024 ) ); % W / m * K
         end
     end
     

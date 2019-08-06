@@ -16,7 +16,9 @@ classdef SolidificationProblem < ProblemInterface
     end
     
     properties ( SetAccess = private, Dependent )
+        initial_time_step(1,1) double {mustBeReal,mustBeFinite,mustBePositive}
         stop_temperature(1,1) double {mustBeReal,mustBeFinite}
+        primary_melt(:,1) logical
     end
     
     methods
@@ -40,6 +42,7 @@ classdef SolidificationProblem < ProblemInterface
             sk = SolidificationKernel( obj.pp, obj.mesh, obj.u );
             [ obj.A, obj.b, obj.u0 ] = sk.create_system();
             obj.u_prev = obj.u;
+            obj.max_q_prev = max( obj.pp.lookup( obj.primary_melt_id, QProperty.name, obj.u_prev ) );
         end
         
         function solve( obj, dt )
@@ -48,12 +51,49 @@ classdef SolidificationProblem < ProblemInterface
         end
         
         function finished = is_finished( obj )
-            stop_temperature = obj.stop_temperature();
-            finished = all( double( obj.u <= stop_temperature ), 'all' );
+            t = obj.stop_temperature();
+            finished = all( double( obj.u <= t ), 'all' );
+        end
+        
+        function value = get.initial_time_step( obj )
+            % based on p421 of Ozisik _Heat Conduction_ 2e, originally from
+            % Gupta and Kumar ref 79
+            % Int J Heat Mass Transfer, 24, 251-259, 1981
+            % see if there are improvements since?
+            dx = max( obj.mesh.distances, [], 'all' );
+            
+            melt_id = obj.primary_melt_id;
+            rho = obj.pp.reduce( melt_id, RhoProperty.name, @max );
+            Tm = obj.pp.get_feeding_effectivity_temperature_c( melt_id );
+            Tinf = obj.pp.ambient_temperature_c;
+            
+            L = obj.pp.get_latent_heat_j_per_kg( melt_id );
+            S = obj.pp.get_sensible_heat_j_per_kg( melt_id );
+            L = max( L, S ); % if latent heat very small, use sensible heat over freezing range instead
+            
+            h = -inf;
+            ids = obj.pp.material_ids;
+            for i = 1 : obj.pp.material_id_count
+                id = ids( i );
+                if id == melt_id; continue; end
+                h = max( h, obj.pp.reduce_convection( melt_id, id, @max ) );
+            end
+            k = obj.pp.reduce( melt_id, KProperty.name, @min );
+            H = h / k;
+            
+            numerator = rho * L * dx ^ 2 * ( 1 + H );
+            denominator = h * ( Tm - Tinf );
+            value = numerator / denominator;
+            
+            assert( value > 0 );
         end
         
         function value = get.stop_temperature( obj )
-            value = obj.pp.get_liquidus_temperature( obj.primary_melt_id );
+            value = obj.pp.get_liquidus_temperature_c( obj.primary_melt_id );
+        end
+        
+        function value = get.primary_melt( obj )
+            value = obj.mesh.map( @(x)x==obj.primary_melt_id );
         end
     end
     
@@ -64,16 +104,16 @@ classdef SolidificationProblem < ProblemInterface
         mesh % MeshInterface
         solver LinearSystemSolver
         pp PhysicalProperties
-        primary_melt_id(1,1) uint32 {mustBeNonnegative}
+        primary_melt_id(1,1) uint32
+        max_q_prev(1,1) double {mustBeReal,mustBeFinite}
     end
     
     methods ( Access = private )
         function quality = compute_quality( obj, u )
-            max_q_curr = max( obj.pp.lookup_values( obj.primary_melt_id, 'q', u ) );
-            max_q_prev = max( obj.pp.lookup_values( obj.primary_melt_id, 'q', obj.u_prev ) );
-            q_diff = max_q_prev - max_q_curr;
-            latent_heat_fraction = obj.pp.get_min_latent_heat();
-            quality = q_diff ./ latent_heat_fraction;
+            max_q_curr = max( obj.pp.lookup( obj.primary_melt_id, QProperty.name, u ) );
+            q_diff = obj.max_q_prev - max_q_curr;
+            latent_heat = obj.pp.get_latent_heat_j_per_kg( obj.primary_melt_id );
+            quality = q_diff ./ latent_heat;
         end
     end
     

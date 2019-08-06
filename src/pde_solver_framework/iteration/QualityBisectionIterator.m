@@ -129,7 +129,7 @@ classdef QualityBisectionIterator < IteratorBase
         
         function step = get_starting_bisection_time_step( obj )
             if obj.simulation_times.count == 0
-                step = obj.initial_time_step;
+                step = obj.problem.initial_time_step;
             else
                 step = obj.dt;
             end
