@@ -2,10 +2,9 @@ classdef ThermalProfileQuery < handle
     
     properties
         maximum_iterations(1,1) uint32 {mustBePositive} = 100;
-        quality_target(1,1) double {mustBeReal,mustBeFinite,mustBePositive} = 0.2;
-        quality_tolerance(1,1) double {mustBeReal,mustBeFinite,mustBePositive} = 0.01;
+        quality_target(1,1) double {mustBeReal,mustBeFinite,mustBePositive} =  1/100;
+        quality_tolerance(1,1) double {mustBeReal,mustBeFinite,mustBePositive} = 1e-2;
         stagnation_tolerance(1,1) double {mustBeReal,mustBeFinite,mustBePositive} = 1e-2;
-        latent_heat_quality_ratio(1,1) double {mustBeReal,mustBeFinite,mustBePositive} = 0.1;
     end
     
     methods
@@ -23,7 +22,6 @@ classdef ThermalProfileQuery < handle
             u = mesh.apply_material_property_fn( u_fn );
             
             problem_in = SolidificationProblem( mesh, pp, cavity_id, u );
-            problem_in.quality_ratio = obj.latent_heat_quality_ratio;
             
             max_dx = max( mesh.distances, [], 'all' );
             

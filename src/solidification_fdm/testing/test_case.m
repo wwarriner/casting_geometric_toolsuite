@@ -1,9 +1,9 @@
 %cavity = geometry.Component( which( 'bearing_block.stl' ) );
-cavity = create_cube( [ -0.015 -0.015 -0.015 ], [ 0.03 0.03 0.03 ], 'cavity' );
+cavity = create_cube( [ -15 -15 -15 ], [ 30 30 30 ], 'cavity' );
 cavity_id = 1;
 cavity.id = cavity_id;
 
-mold_thickness = 0.010; % stl units
+mold_thickness = 10; % casting units
 mold = create_cube( ...
     cavity.envelope.min_point - mold_thickness, ...
     cavity.envelope.lengths + 2 * mold_thickness, ...
@@ -20,11 +20,11 @@ uvc.add_body( cavity );
 uvc.paint();
 
 uvm = UniformVoxelMesh( uvc.voxels, uvc.material_ids );
+max_dx = max( uvm.distances, [], 'all' );
 
 %% TEST PROPERTY GENERATION
 ambient_id = 0;
-space_step_in_m = 0.005; % m
-pp = PhysicalProperties( space_step_in_m );
+pp = PhysicalProperties();
 pp.add_ambient_material( AmbientMaterial( ambient_id ) );
 pp.add_material( MoldMaterial( mold_id, which( 'silica_dry.txt' ) ) );
 melt = MeltMaterial( cavity_id, which( 'a356.txt' ) );
@@ -49,15 +49,16 @@ u = uvm.apply_material_property_fn( u_fn );
 Printer.turn_print_on();
 Printer.set_printer( @fprintf );
 
-smk = SolidificationProblem( uvm, pp, cavity_id, u );
+sp = SolidificationProblem( uvm, pp, cavity_id, u );
 
-qbi = QualityBisectionIterator( smk );
+qbi = QualityBisectionIterator( sp );
 qbi.maximum_iterations = 100;
-qbi.quality_tolerance = 0.2;
+qbi.quality_target = 1/100;
+qbi.quality_tolerance = 0.1;
 qbi.stagnation_tolerance = 1e-2;
-qbi.initial_time_step = pp.compute_initial_time_step();
+qbi.initial_time_step = pp.compute_initial_time_step( max_dx );
 
-lp = Looper( qbi, @smk.is_finished );
-lp.add_result( SolidificationTimeResult( uvm, pp, smk, qbi ) );
+lp = Looper( qbi, @sp.is_finished );
+lp.add_result( SolidificationTimeResult( uvm, pp, sp, qbi ) );
 lp.run();
 

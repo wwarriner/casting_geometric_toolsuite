@@ -48,6 +48,9 @@ classdef (Abstract) MeshInterface < handle
         % - @values are the values of the applied function
         values = apply_material_property_fn( obj, fn );
         
+        values = map( obj, fn );
+        value = reduce( obj, fn );
+        
     end
     
 end

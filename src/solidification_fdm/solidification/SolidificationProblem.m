@@ -1,12 +1,17 @@
 classdef SolidificationProblem < ProblemInterface
-    
-    properties
-        quality_ratio(1,1) double {mustBeReal,mustBeFinite,mustBeNonnegative} = 1.0
-    end
+    % @SolidificationProblem encapsulates the mathematical functions and
+    % behavior relevant specifically to the PDE problem of solidification.
+    %
+    % Inputs:
+    % - @mesh, a @MeshInterface representing the problem geometry.
+    % - @pp, a @PhysicalProperties suitable for solidification problems.
+    % - @primary_melt_id, the id associated with the primary melt in the @mesh.
+    % - @u_init, a real, finite double vector with length equal to the number of
+    % mesh elements. Represents the initial temperature field.
     
     properties ( SetAccess = private )
-        u
-        u_prev
+        u(:,1) double {mustBeReal,mustBeFinite}
+        u_prev(:,1) double {mustBeReal,mustBeFinite}
         quality(1,1) double {mustBeReal,mustBeFinite}
     end
     
@@ -15,12 +20,20 @@ classdef SolidificationProblem < ProblemInterface
     end
     
     methods
-        function obj = SolidificationProblem( mesh, pp, cavity_id, u_init )
+        function obj = SolidificationProblem( mesh, pp, primary_melt_id, u_init )
+            assert( isa( mesh, 'MeshInterface' ) );
+            
+            assert( isa( u_init, 'double' ) );
+            assert( isvector( u_init ) );
+            assert( isreal( u_init ) );
+            assert( all( isfinite( u_init ), 'all' ) );
+            assert( numel( u_init ) == mesh.count );
+            
             obj.u = u_init;
             obj.mesh = mesh;
             obj.solver = LinearSystemSolver();
             obj.pp = pp;
-            obj.cavity_id = cavity_id;
+            obj.primary_melt_id = primary_melt_id;
         end
         
         function prepare_system( obj )
@@ -40,26 +53,26 @@ classdef SolidificationProblem < ProblemInterface
         end
         
         function value = get.stop_temperature( obj )
-            value = obj.pp.get_liquidus_temperature( obj.cavity_id );
+            value = obj.pp.get_liquidus_temperature( obj.primary_melt_id );
         end
     end
     
     properties ( Access = private )
         A function_handle
         b function_handle
-        u0
-        mesh
+        u0(:,1) double {mustBeReal,mustBeFinite}
+        mesh % MeshInterface
         solver LinearSystemSolver
         pp PhysicalProperties
-        cavity_id(1,1) uint32 {mustBeNonnegative}
+        primary_melt_id(1,1) uint32 {mustBeNonnegative}
     end
     
     methods ( Access = private )
         function quality = compute_quality( obj, u )
-            max_q_curr = max( obj.pp.lookup_values( obj.cavity_id, 'q', u ) );
-            max_q_prev = max( obj.pp.lookup_values( obj.cavity_id, 'q', obj.u_prev ) );
+            max_q_curr = max( obj.pp.lookup_values( obj.primary_melt_id, 'q', u ) );
+            max_q_prev = max( obj.pp.lookup_values( obj.primary_melt_id, 'q', obj.u_prev ) );
             q_diff = max_q_prev - max_q_curr;
-            latent_heat_fraction = obj.quality_ratio .* obj.pp.get_min_latent_heat();
+            latent_heat_fraction = obj.pp.get_min_latent_heat();
             quality = q_diff ./ latent_heat_fraction;
         end
     end

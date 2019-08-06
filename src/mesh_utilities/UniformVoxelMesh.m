@@ -157,6 +157,10 @@ classdef UniformVoxelMesh < MeshInterface
             values = fn( obj.elements.material_ids );
         end
         
+        function value = reduce( obj, fn )
+            value = fn( obj.elements.material_ids );
+        end
+        
         function field = reshape( obj, values )
             field = reshape( values, obj.shape );
         end

@@ -76,7 +76,7 @@ classdef (Sealed) BisectionTracker < handle
         end
         
         function within = is_within_tolerance( obj, y )
-            within = abs( y - obj.y_target ) <= obj.tol;
+            within = abs( y - obj.y_target ) / obj.y_target <= obj.tol;
         end
         
         function xv = bisect_x( obj )
