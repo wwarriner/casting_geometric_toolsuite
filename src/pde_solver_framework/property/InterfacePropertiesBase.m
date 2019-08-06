@@ -1,13 +1,6 @@
-classdef InterfaceProperties < handle
+classdef InterfacePropertiesBase < handle
     
     methods
-        function obj = InterfaceProperties()
-            obj.props = containers.Map( ...
-                'keytype', 'uint32', ...
-                'valuetype', 'any' ...
-                );
-        end
-        
         function has = has( obj, first_id, second_id )
             assert( isa( first_id, 'uint32' ) );
             assert( isscalar( first_id ) );
@@ -86,6 +79,15 @@ classdef InterfaceProperties < handle
             
             p = obj.get( first_id, second_id );
             v = p.reduce( fn );
+        end
+    end
+    
+    methods ( Access = protected )
+        function obj = InterfacePropertiesBase()
+            obj.props = containers.Map( ...
+                'keytype', 'uint32', ...
+                'valuetype', 'any' ...
+                );
         end
     end
     

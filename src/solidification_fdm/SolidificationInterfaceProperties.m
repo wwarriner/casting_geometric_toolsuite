@@ -1,4 +1,4 @@
-classdef SolidificationInterfaceProperties < InterfaceProperties
+classdef SolidificationInterfaceProperties < InterfacePropertiesBase
     
     properties
         ambient_id(1,1) uint32 = 0
@@ -22,7 +22,7 @@ classdef SolidificationInterfaceProperties < InterfaceProperties
         function add( obj, first_id, second_id, h )
             assert( isa( h, 'HProperty' ) );
             
-            add@InterfaceProperties( obj, first_id, second_id, h );
+            add@InterfacePropertiesBase( obj, first_id, second_id, h );
         end
         
         function v = lookup_ambient( obj, id, varargin )

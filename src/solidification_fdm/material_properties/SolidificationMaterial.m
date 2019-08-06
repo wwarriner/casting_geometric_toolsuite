@@ -1,4 +1,4 @@
-classdef SolidificationMaterial < Material
+classdef SolidificationMaterial < MaterialBase
     
     properties
         initial_temperature_c(1,1) double {mustBeReal,mustBeFinite} = 25

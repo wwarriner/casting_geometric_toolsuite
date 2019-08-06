@@ -1,4 +1,4 @@
-classdef Material < handle
+classdef MaterialBase < handle
     
     properties
         id(1,1) uint32
@@ -9,13 +9,6 @@ classdef Material < handle
     end
     
     methods
-        function obj = Material()
-            obj.material_properties = containers.Map( ...
-                'keytype', 'char', ...
-                'valuetype', 'any' ...
-                );
-        end
-        
         function has = has( obj, key )
             assert( isstring( key ) );
             assert( isscalar( key ) );
@@ -49,6 +42,13 @@ classdef Material < handle
     end
     
     methods ( Access = protected )
+        function obj = MaterialBase()
+            obj.material_properties = containers.Map( ...
+                'keytype', 'char', ...
+                'valuetype', 'any' ...
+                );
+        end
+        
         function p = get( obj, key )
             assert( isstring( key ) );
             assert( isscalar( key ) );

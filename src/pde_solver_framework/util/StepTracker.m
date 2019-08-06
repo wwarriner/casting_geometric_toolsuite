@@ -1,4 +1,4 @@
-classdef (Sealed) StepTracker < handle
+classdef StepTracker < handle
     
     properties ( SetAccess = private )
         values(:,1) {mustBeNumeric,mustBeReal,mustBeFinite} = []

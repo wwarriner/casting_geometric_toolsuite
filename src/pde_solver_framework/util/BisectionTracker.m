@@ -1,4 +1,4 @@
-classdef (Sealed) BisectionTracker < handle
+classdef BisectionTracker < handle
     
     properties ( SetAccess = private )
         x_values StepTracker
