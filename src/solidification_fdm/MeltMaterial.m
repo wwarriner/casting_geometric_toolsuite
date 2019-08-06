@@ -29,7 +29,7 @@ classdef MeltMaterial < SolidificationMaterial
         end
         
         function ready = is_ready( obj )
-            ready = obj.is_ready@Material();
+            ready = obj.is_ready@SolidificationMaterial();
             ready = ready & obj.has( FsProperty.name );
         end
         

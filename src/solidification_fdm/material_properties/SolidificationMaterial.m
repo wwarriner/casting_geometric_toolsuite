@@ -16,9 +16,9 @@ classdef SolidificationMaterial < MaterialBase
         end
         
         function add( obj, property )
-            add@Material( obj, property );
+            add@MaterialBase( obj, property );
             if property.name == CpProperty.name
-                add@Material( obj, QProperty( property ) );
+                add@MaterialBase( obj, QProperty( property ) );
             end
         end
         

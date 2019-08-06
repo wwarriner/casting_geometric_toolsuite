@@ -8,31 +8,29 @@ classdef ThermalProfileQuery < handle
     end
     
     methods
-        function build( obj, mesh, pp, cavity_id )
-            assert( isa( mesh, 'UniformVoxelMesh' ) );
+        function build( obj, mesh, smp, sip, melt_id )
+            assert( isa( mesh, 'MeshInterface' ) );
             
-            assert( isa( pp, 'PhysicalProperties' ) );
+            assert( isa( smp, 'SolidificationMaterialProperties' ) );
+            assert( isa( sip, 'SolidificationInterfaceProperties' ) );
             
-            assert( isa( cavity_id, 'uint32' ) );
-            assert( isscalar( cavity_id ) );
-            assert( 0 < cavity_id );
+            assert( isa( melt_id, 'uint32' ) );
+            assert( isscalar( melt_id ) );
+            assert( 0 < melt_id );
             
-            u_fn = @(id,locations)pp.lookup_initial_temperatures( id ) ...
+            u_fn = @(id,locations)smp.lookup_initial_temperatures( id ) ...
                 * ones( sum( locations ), 1 );
             u = mesh.apply_material_property_fn( u_fn );
             
-            problem_in = SolidificationProblem( mesh, pp, cavity_id, u );
-            
-            max_dx = max( mesh.distances, [], 'all' );
+            problem_in = SolidificationProblem( mesh, smp, sip, melt_id, u );
             
             iterator_in = QualityBisectionIterator( problem_in );
             iterator_in.maximum_iterations = obj.maximum_iterations;
             iterator_in.quality_target = obj.quality_target;
             iterator_in.quality_tolerance = obj.quality_tolerance;
             iterator_in.stagnation_tolerance = obj.stagnation_tolerance;
-            iterator_in.initial_time_step = pp.compute_initial_time_step( max_dx );
             
-            times_in = SolidificationTimeResult( mesh, pp, problem_in, iterator_in );
+            times_in = SolidificationTimeResult( mesh, problem_in, iterator_in );
             
             obj.mesh = mesh;
             obj.problem = problem_in;

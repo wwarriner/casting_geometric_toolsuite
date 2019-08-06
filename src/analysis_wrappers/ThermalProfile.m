@@ -6,10 +6,6 @@ classdef ThermalProfile < Process
     % ambient environment in units of W / m^2 * K.
     % - @ambient_temperature_c, REQUIRED FINITE, temperature of ambient
     % environment in units of C. Also used for mold temperature.
-    % - @latent_heat_quality_ratio, ratio of latent heat to use when determining
-    % quality of time steps. Lower values result in smaller time steps, which
-    % requires more computational effort, longer computation time, and greater
-    % accuracy.
     % - @latent_heat_quality_target, target quality value. Lower values,
     % including those below zero, result in smaller time steps, which requires
     % more computational effort, longer computation time, and greater accuracy.
@@ -42,7 +38,6 @@ classdef ThermalProfile < Process
     properties
         ambient_h_w_per_m_sq_k(1,1) double {mustBeReal,mustBePositive} = inf;
         ambient_temperature_c(1,1) double {mustBeReal} = inf;
-        latent_heat_quality_ratio(1,1) double {mustBeReal,mustBeFinite,mustBePositive} = 0.1
         latent_heat_quality_target(1,1) double {mustBeReal,mustBeFinite} = 0.2
         melt_material_file(1,1) string = ""
         melt_mold_h_file(1,1) string = ""
@@ -150,6 +145,9 @@ classdef ThermalProfile < Process
     
     properties ( Access = private )
         mesh Mesh
+        pde_mesh % MeshInterface
+        smp SolidificationMaterialProperties
+        sip SolidificationInterfaceProperties
         thermal_profile_query ThermalProfileQuery
         pad_count(1,:) uint32
     end
@@ -157,12 +155,15 @@ classdef ThermalProfile < Process
     methods ( Access = private )
         function prepare_thermal_profile_query( obj )
             obj.printf( "Computing thermal profile...\n" );
-            pde_mesh = obj.prepare_pde_mesh();
-            pp = obj.prepare_physical_properties();
+            
+            obj.prepare_pde_mesh();
+            obj.prepare_properties();
+            
             tpq = ThermalProfileQuery();
-            tpq.latent_heat_quality_ratio = obj.latent_heat_quality_ratio;
-            tpq.build( pde_mesh, pp, obj.MELT_ID );
+            tpq.quality_target = obj.latent_heat_quality_target;
+            tpq.build( obj.pde_mesh, obj.smp, obj.sip, obj.MELT_ID );
             tpq.run();
+            
             obj.thermal_profile_query = tpq;
         end
         
@@ -180,33 +181,37 @@ classdef ThermalProfile < Process
                     assert( false )
             end
             obj.pad_count = pad_count_out;
+            obj.pde_mesh = pde_mesh;
         end
         
-        function pp = prepare_physical_properties( obj )
+        function prepare_properties( obj )
             obj.printf( "  Collecting physical properties...\n" );
             
-            pp = PhysicalProperties();
+            ambient = AmbientMaterial();
+            ambient.id = obj.AMBIENT_ID;
+            ambient.initial_temperature_c = obj.ambient_temperature_c;
             
-            ambient = AmbientMaterial( obj.AMBIENT_ID );
-            ambient.set_initial_temperature( obj.ambient_temperature_c );
-            pp.add_ambient_material( ambient );
+            melt = MeltMaterial( which( obj.melt_material_file ) );
+            melt.id = obj.MELT_ID;
+            melt.initial_temperature_c = obj.melt_initial_temperature_c;
+            melt.feeding_effectivity = obj.melt_feeding_effectivity;
             
-            mold = MoldMaterial( obj.MOLD_ID, which( obj.mold_material_file ) );
-            mold.set_initial_temperature( obj.ambient_temperature_c );
-            pp.add_material( mold );
+            mold = MoldMaterial( which( obj.mold_material_file ) );
+            mold.id = obj.MOLD_ID;
+            mold.initial_temperature_c = obj.ambient_temperature_c;
             
-            melt = MeltMaterial( obj.MELT_ID, which( obj.melt_material_file ) );
-            melt.set_initial_temperature( obj.melt_initial_temperature_c );
-            melt.set_feeding_effectivity( obj.melt_feeding_effectivity );
-            pp.add_melt_material( melt );
+            smp_in = SolidificationMaterialProperties();
+            smp_in.add_ambient( ambient );
+            smp_in.add_melt( melt );
+            smp_in.add( mold );
+
+            sip_in = SolidificationInterfaceProperties();
+            sip_in.add_ambient( melt.id, HProperty( obj.ambient_h_w_per_m_sq_k ) );
+            sip_in.add_ambient( mold.id, HProperty( obj.ambient_h_w_per_m_sq_k ) );
+            sip_in.read( melt.id, mold.id, which( obj.melt_mold_h_file ) );
             
-            conv = ConvectionProperties( obj.AMBIENT_ID );
-            conv.set_ambient( obj.MOLD_ID, HProperty( obj.ambient_h_w_per_m_sq_k ) );
-            conv.set_ambient( obj.MELT_ID, HProperty( obj.ambient_h_w_per_m_sq_k ) );
-            conv.read( obj.MOLD_ID, obj.MELT_ID, which( obj.melt_mold_h_file ) );
-            pp.set_convection( conv );
-            
-            pp.prepare_for_solver();
+            obj.smp = smp_in;
+            obj.sip = sip_in;
         end
         
         function value = unpad_get( obj, varargin )
