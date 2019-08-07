@@ -1,4 +1,5 @@
 classdef Feeders < Process
+    
     properties ( SetAccess = private )
         intersection_volume(:,1) double {mustBeReal,mustBeFinite,mustBeNonnegative}
         interface_area(:,1) double {mustBeReal,mustBeFinite,mustBeNonnegative}

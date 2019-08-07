@@ -1,7 +1,7 @@
 {
 "manager":{
 	"output_folder":"",
-	"user_needs":["Casting"]
+	"user_needs":["Feeders"]
 	},
 "processes":{
 	"Casting":{
@@ -14,6 +14,7 @@
 	"Cores":{
 		"expansion_casting_length":5.0
 		},
+	"Feeders":{},
 	"GeometricProfile":{},
 	"IsolatedSections":{
 		"use_thermal_profile":false
@@ -29,7 +30,7 @@
 	"ThermalProfile":{
 		"ambient_h_w_per_m_sq_k":10,
 		"ambient_temperature_c":25,
-		"latent_heat_quality_ratio":0.1,
+		"filter_thermal_modulus_range_ratio":0.05,
 		"latent_heat_quality_target":0.2,
 		"melt_feeding_effectivity":0.5,
 		"melt_initial_temperature_c":1600,

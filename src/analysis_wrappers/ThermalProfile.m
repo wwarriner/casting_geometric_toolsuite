@@ -38,6 +38,12 @@ classdef ThermalProfile < Process
     properties
         ambient_h_w_per_m_sq_k(1,1) double {mustBeReal,mustBePositive} = inf;
         ambient_temperature_c(1,1) double {mustBeReal} = inf;
+        filter_thermal_modulus_range_ratio(1,1) double {...
+            mustBeReal,...
+            mustBeFinite,...
+            mustBeGreaterThanOrEqual(filter_thermal_modulus_range_ratio,0),...
+            mustBeLessThanOrEqual(filter_thermal_modulus_range_ratio,1)...
+            } = 0.05
         latent_heat_quality_target(1,1) double {mustBeReal,mustBeFinite} = 0.2
         melt_material_file(1,1) string = ""
         melt_mold_h_file(1,1) string = ""
@@ -264,7 +270,7 @@ classdef ThermalProfile < Process
             min_m = min( modulus( modulus > 0 ), [], 'all' );
             max_m = max( modulus, [], 'all' );
             range = max_m - min_m;
-            threshold = 0.05 .* range;
+            threshold = obj.filter_thermal_modulus_range_ratio .* range;
         end
     end
     
