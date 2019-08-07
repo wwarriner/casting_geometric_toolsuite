@@ -15,10 +15,6 @@ classdef (Sealed) Undercuts < Process
             obj = obj@Process( varargin{ : } );
         end
         
-        function run( obj )
-            obj.prepare_undercuts();
-        end
-        
         function legacy_run( obj, mesh )
             obj.mesh = mesh;
             obj.run();
@@ -70,6 +66,10 @@ classdef (Sealed) Undercuts < Process
         
         function check_settings( ~ )
             % no settings require checking
+        end
+        
+        function run_impl( obj )
+            obj.prepare_undercuts();
         end
     end
     

@@ -26,10 +26,6 @@ classdef (Sealed) Parting < Process
             obj = obj@Process( varargin{ : } );
         end
         
-        function run( obj )
-            obj.prepare_parting_perimeter();
-        end
-        
         function legacy_run( obj, mesh )
             obj.mesh = mesh;
             obj.run();
@@ -101,6 +97,10 @@ classdef (Sealed) Parting < Process
         
         function check_settings( ~ )
             % no settings need checking
+        end
+        
+        function run_impl( obj )
+            obj.prepare_parting_perimeter();
         end
     end
     

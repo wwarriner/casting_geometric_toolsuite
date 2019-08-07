@@ -32,12 +32,6 @@ classdef Casting < Process
             obj = obj@Process( varargin{ : } );
         end
         
-        function run( obj )
-            obj.read_data();
-            obj.prepare_shape_descriptors();
-            %obj.prepare_draft();
-        end
-        
         function legacy_run( obj )
             obj.run();
         end
@@ -124,6 +118,12 @@ classdef Casting < Process
         
         function check_settings( obj )
             assert( obj.input_file ~= "" );
+        end
+        
+        function run_impl( obj )
+            obj.read_data();
+            obj.prepare_shape_descriptors();
+            %obj.prepare_draft();
         end
     end
     

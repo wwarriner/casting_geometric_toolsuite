@@ -7,30 +7,24 @@ classdef (Sealed) GeometricProfile < Process
     % - @Mesh
     
     properties ( SetAccess = private )
-        scaled(:,:,:) double
-        minimum_thickness(1,1) double
-        maximum_thickness(1,1) double
-        thickness_ratio(1,1) double
+        minimum_thickness(1,1) double {mustBeReal,mustBeFinite}
+        maximum_thickness(1,1) double {mustBeReal,mustBeFinite}
+        thickness_ratio(1,1) double {mustBeReal,mustBeFinite}
     end
     
     properties ( SetAccess = private, Dependent )
-        unscaled(:,:,:) double
-        unscaled_interior(:,:,:) double
-        scaled_interior(:,:,:) double
-        filtered(:,:,:) double
-        filtered_interior(:,:,:) double
-        filter_amount(1,1) double
+        unscaled(:,:,:) double {mustBeReal,mustBeFinite}
+        unscaled_interior(:,:,:) double {mustBeReal,mustBeFinite}
+        scaled(:,:,:) double {mustBeReal,mustBeFinite}
+        scaled_interior(:,:,:) double {mustBeReal,mustBeFinite}
+        filtered(:,:,:) double {mustBeReal,mustBeFinite}
+        filtered_interior(:,:,:) double {mustBeReal,mustBeFinite}
+        filter_amount(1,1) double {mustBeReal,mustBeFinite}
     end
     
     methods
         function obj = GeometricProfile( varargin )
             obj = obj@Process( varargin{ : } );
-        end
-        
-        function run( obj )
-            obj.prepare_edt_profile_query();
-            obj.prepare_filter_profile_query();
-            obj.compute_statistics();
         end
         
         function legacy_run( obj, mesh )
@@ -76,15 +70,15 @@ classdef (Sealed) GeometricProfile < Process
         end
         
         function value = get.filtered( obj )
-            value = obj.filter_profile_query.get();
+            value = obj.filtered_profile_query.get();
         end
         
         function value = get.filtered_interior( obj )
-            value = obj.filter_profile_query.get( obj.mesh.interior );
+            value = obj.filtered_profile_query.get( obj.mesh.interior );
         end
         
         function value = get.filter_amount( obj )
-            value = obj.compute_filter_profile_query_amount( obj.mesh.scale );
+            value = obj.compute_filter_amount( obj.mesh.scale );
         end
     end
     
@@ -105,12 +99,18 @@ classdef (Sealed) GeometricProfile < Process
         function check_settings( ~ )
             % no settings require checking
         end
+        
+        function run_impl( obj )
+            obj.prepare_edt_profile_query();
+            obj.prepare_filtered_profile_query();
+            obj.compute_statistics();
+        end
     end
     
     properties ( Access = private )
         mesh Mesh
         edt_profile_query EdtProfileQuery
-        filter_profile_query FilteredProfileQuery
+        filtered_profile_query FilteredProfileQuery
     end
     
     methods ( Access = private )
@@ -122,9 +122,9 @@ classdef (Sealed) GeometricProfile < Process
                 );
         end
         
-        function prepare_filter_profile_query( obj )
+        function prepare_filtered_profile_query( obj )
             obj.printf( '  Filtering profile...\n' );
-            obj.filter_profile_query = FilteredProfileQuery( ...
+            obj.filtered_profile_query = FilteredProfileQuery( ...
                 obj.scaled, ...
                 obj.compute_filter_amount( obj.mesh.scale ) ...
                 );
@@ -141,10 +141,9 @@ classdef (Sealed) GeometricProfile < Process
     
     methods ( Access = private, Static )
         function [ minimum, maximum ] = thickness_analysis( scaled_interior )
-            regional_maxima = imregionalmax( scaled_interior );
-            scaled_regional_maxima = scaled_interior( regional_maxima );
-            minimum = min( scaled_regional_maxima );
-            maximum = max( scaled_regional_maxima );
+            peaks = gray_peaks( scaled_interior );
+            minimum = min( peaks );
+            maximum = max( peaks );
         end
         
         function threshold = compute_filter_amount( mesh_scale )

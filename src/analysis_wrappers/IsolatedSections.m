@@ -24,23 +24,20 @@ classdef IsolatedSections < Process
             obj = obj@Process( varargin{ : } );
         end
         
-        function run( obj )
-            obj.prepare_segment_query();
-            obj.prepare_hotspot_query();
-        end
-        
         function legacy_run( obj, geometric_profile, mesh, thermal_profile )
             obj.mesh = mesh;
-            obj.geometric_profile = geometric_profile;
+            obj.profile = geometric_profile;
             if 3 < nargin
                 obj.use_thermal_profile = true;
-                obj.thermal_profile = thermal_profile;
+                obj.profile = thermal_profile;
             end
             obj.run();
         end
         
         function write( obj, common_writer )
             common_writer.write_array( obj.NAME, obj.to_array(), obj.mesh.spacing, obj.mesh.origin );
+            hotspot_name = strjoin( [ "hotspots" obj.NAME ], "_" );
+            common_writer.write_array( hotspot_name, obj.to_array(), obj.mesh.spacing, obj.mesh.origin );
             common_writer.write_table( obj.NAME, obj.to_table() );
         end
         
@@ -97,6 +94,11 @@ classdef IsolatedSections < Process
                 geometric_key = ProcessKey( GeometricProfile.NAME );
                 obj.profile = obj.results.get( geometric_key );
             end  
+        end
+        
+        function run_impl( obj )
+            obj.prepare_segment_query();
+            obj.prepare_hotspot_query();
         end
     end
     

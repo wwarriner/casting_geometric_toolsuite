@@ -31,6 +31,10 @@ classdef (Sealed) ProcessManager < Cancelable & Notifier & handle
         function summary = generate_summary( obj )
             % TODO
         end
+        
+        function v = get( obj, process_key )
+            v = obj.retrieve_process( process_key );
+        end
     end
     
     properties ( Access = private )
@@ -49,13 +53,7 @@ classdef (Sealed) ProcessManager < Cancelable & Notifier & handle
         
         function do_next_iteration( obj )
             process_key = obj.process_keys( obj.iteration );
-            if ~obj.results.exists( process_key )
-                process = obj.build_process( process_key );
-                process.run();
-                obj.results.add( process_key, process );
-            else
-                % already run as a dependency
-            end
+            obj.retrieve_process( process_key );
             obj.iteration = obj.iteration + 1;
         end
     end
@@ -70,9 +68,19 @@ classdef (Sealed) ProcessManager < Cancelable & Notifier & handle
             end
         end
         
-        function instance = build_process( obj, process_key )
-            instance = process_key.create_instance( obj.results, obj.settings );
-            instance.attach_observer( obj.get_observer() );
+        function process = retrieve_process( obj, process_key )
+            if ~obj.results.exists( process_key )
+                process = obj.build_process( process_key );
+                process.run();
+                obj.results.add( process_key, process );
+            else
+                process = obj.results.get( process_key );
+            end
+        end
+        
+        function process = build_process( obj, process_key )
+            process = process_key.create_instance( obj.results, obj.settings );
+            process.attach_observer( obj.get_observer() );
         end
         
         function write_process_keys( obj, process_keys )

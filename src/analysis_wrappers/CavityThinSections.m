@@ -26,10 +26,6 @@ classdef (Sealed) CavityThinSections < Process
             obj = obj@Process( varargin{ : } );
         end
         
-        function run( obj )
-            obj.prepare_thin_section_query();
-        end
-        
         function legacy_run( obj, mesh, geometric_profile )
             obj.mesh = mesh;
             obj.geometric_profile = geometric_profile;
@@ -86,6 +82,10 @@ classdef (Sealed) CavityThinSections < Process
         
         function check_settings( obj )
             assert( isfinite( obj.threshold_casting_length ) );
+        end
+        
+        function run_impl( obj )
+            obj.prepare_thin_section_query();
         end
     end
     

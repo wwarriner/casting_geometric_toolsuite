@@ -1,11 +1,10 @@
 classdef (Sealed) Results < handle
     
-    properties ( Access = private )
-        settings
-        results
+    properties ( SetAccess = private, Dependent )
+        count(1,1) uint32
     end
     
-    methods ( Access = public )
+    methods
         function obj = Results( settings )
             obj.results = containers.Map( ...
                 'keytype', 'char', ...
@@ -15,46 +14,33 @@ classdef (Sealed) Results < handle
         end
         
         function add( obj, process_key, result )
+            assert( ~obj.exists( process_key ) );
+            
             obj.results( process_key.name ) = result;
         end
         
         function exist = exists( obj, process_key )
-            exist = isKey( obj.results, process_key.name );
+            exist = obj.results.isKey( process_key.name );
         end
         
         function result = get( obj, process_key )
-            key = process_key.name;
             if obj.exists( process_key )
-                result = obj.results( key );
+                result = obj.results( process_key.name );
             else
-                assert( ~isempty( obj.settings ) );
                 result = process_key.create_instance( obj, obj.settings );
                 result.run();
-                obj.results( key ) = result;
+                obj.results( process_key.name ) = result;
             end
         end
         
-        function results = get_all( obj )
-            results = obj.results.values();
+        function value = get.count( obj )
+            value = uint32( obj.results.Count );
         end
     end
     
-    methods ( Access = private )
-        function exist = exists_raw_key( obj, raw_key )
-            exist = isKey( obj.results, raw_key );
-        end
-        
-        function result = get_by_raw_key( obj, raw_key )
-            result = obj.results( raw_key );
-        end
-        
-        function keyset = get_raw_keys( obj )
-            keyset = keys( obj.results );
-        end
-        
-        function count = get_count( obj )
-            count = obj.results.Count;
-        end
+    properties ( Access = private )
+        settings Settings
+        results containers.Map
     end
     
 end

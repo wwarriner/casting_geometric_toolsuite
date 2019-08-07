@@ -24,11 +24,12 @@ classdef FilteredProfileQuery < handle
             assert( isfinite( amount ) );
             assert( 0.0 < amount );
             
-            mask = profile >= 0;
+            mask = 0 < profile;
             positive = filter_masked( profile, mask, amount );
             positive( ~mask ) = 0;
-            negative = filter_masked( -profile, ~mask, amount );
-            negative( mask ) = 0;
+            mask = profile < 0;
+            negative = filter_masked( -profile, mask, amount );
+            negative( ~mask ) = 0;
             obj.values = positive - negative;
         end
         

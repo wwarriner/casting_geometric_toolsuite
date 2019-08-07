@@ -23,12 +23,11 @@ classdef FeederQuery < handle
             position( :, [ 1 2 ] ) = position( :, [ 2 1 ] ); % image x-y coordinates flipped
             [ radius, magnitude ] = ...
                 obj.feeder_sfsa( segments, hotspots, edt );
-            height_offset = obj.compute_height_offset( segments, edt );
             
             obj.position = position;
             obj.radius = radius;
             obj.magnitude = magnitude;
-            obj.height_offset = height_offset;
+            obj.height_offset = magnitude;
         end
         
         function value = get.count( obj )
@@ -78,7 +77,7 @@ classdef FeederQuery < handle
                 gdt = obj.geodesic_distance_transform( segments == i, hotspots == i );
                 L = max( gdt );
                 W = median( gdt );
-                T = max( edt( cc.PixelIdxList{ i } ) );
+                T = max( edt( cc.PixelIdxList{ i } ) ) + 0.5; % offset
                 sf = ( L + W ) ./ T;
                 v_s = numel( cc.PixelIdxList{ i } );
                 v_f = VOLUME_COEFFICIENT .* v_s .* ( sf .^ VOLUME_POWER );
@@ -89,14 +88,6 @@ classdef FeederQuery < handle
     end
     
     methods ( Access = private, Static )
-        function height_offset = compute_height_offset( segments, edt )
-            cc = label2cc( segments );
-            height_offset = zeros( cc.NumObjects, 1 );
-            for i = 1 : cc.NumObjects
-                height_offset( i ) = max( edt( cc.PixelIdxList{ i } ) );
-            end
-        end
-        
         function values = geodesic_distance_transform( bw, idx )
             p = bwperim( bw );
             g = double( bwdistgeodesic( bw, idx, 'quasi-euclidean' ) );

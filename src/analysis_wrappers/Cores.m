@@ -26,10 +26,6 @@ classdef (Sealed) Cores < Process
             obj = obj@Process( varargin{ : } );
         end
         
-        function run( obj )
-            obj.prepare_cores();
-        end
-        
         function legacy_run( obj, mesh, undercuts )
             obj.mesh = mesh;
             obj.undercuts = undercuts;
@@ -86,6 +82,10 @@ classdef (Sealed) Cores < Process
             
             assert( ~isempty( obj.mesh ) );
             assert( ~isempty( obj.undercuts ) );
+        end
+        
+        function run_impl( obj )
+            obj.prepare_cores();
         end
     end
     

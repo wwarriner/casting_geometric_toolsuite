@@ -1,7 +1,6 @@
 classdef (Abstract) Process < UserInterface & handle
     
-    methods ( Abstract, Access = public )
-        run( obj );
+    methods ( Abstract )
         value = write( obj, files );
     end
     
@@ -10,11 +9,17 @@ classdef (Abstract) Process < UserInterface & handle
             if nargin == 0; return; end
             obj.results = results;
             obj.settings = settings;
+        end
+        
+        function run( obj )
             if ~isempty( obj.settings )
                 obj.settings.apply( obj );
             end
             obj.check_settings();
-            obj.update_dependencies();
+            if ~isempty( obj.results )
+                obj.update_dependencies();
+            end
+            obj.run_impl();
         end
     end
     
@@ -35,6 +40,7 @@ classdef (Abstract) Process < UserInterface & handle
     methods ( Abstract, Access = protected )
         check_settings( obj )
         update_dependencies( obj )
+        run_impl( obj )
     end
     
 end

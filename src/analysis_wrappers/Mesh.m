@@ -32,10 +32,6 @@ classdef Mesh < Process
             obj = obj@Process( varargin{ : } );
         end
         
-        function run( obj )
-            obj.prepare_voxels();
-        end
-        
         function legacy_run( obj, casting )
             obj.casting = casting;
             obj.run();
@@ -108,7 +104,7 @@ classdef Mesh < Process
         end
         
         function v = voxelize( obj, body )
-            v = obj.voxels.copy_blank( false );
+            v = obj.voxels.copy_blank();
             v.paint( body.fv, true );
         end
         
@@ -219,6 +215,10 @@ classdef Mesh < Process
         
         function check_settings( obj )
             assert( isfinite( obj.desired_element_count ) );
+        end
+        
+        function run_impl( obj )
+            obj.prepare_voxels();
         end
     end
     

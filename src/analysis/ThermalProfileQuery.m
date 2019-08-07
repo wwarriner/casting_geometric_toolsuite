@@ -50,15 +50,17 @@ classdef ThermalProfileQuery < handle
         % - @mask_optional is a logical array of size @get_size() where false 
         % elements are set to 0 in @values. Default is all true.
         function values = get( obj, mask_optional )
+            values = obj.times.modulus;
+            values = obj.mesh.reshape( values );
+            shape = size( values );
+            
             if nargin < 2
-                mask_optional = true( size( obj.times.values ) );
+                mask_optional = true( shape );
             end
             assert( islogical( mask_optional ) );
-            assert( all( size( obj.times.values ) == size( mask_optional ) ) );
+            assert( all( shape == size( mask_optional ) ) );
             
-            values = obj.times.modulus;
             values( isnan( values ) ) = 0;
-            values = obj.mesh.reshape( values );
             values( ~mask_optional ) = 0;
         end
     end

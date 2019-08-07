@@ -57,21 +57,23 @@ classdef ThermalProfile < Process
         % thermal_profile_query after setting it up.
     end
     
+    properties ( SetAccess = private )
+        minimum_modulus(1,1) double {mustBeReal,mustBeFinite}
+        maximum_modulus(1,1) double {mustBeReal,mustBeFinite}
+        modulus_ratio(1,1) double {mustBeReal,mustBeFinite}
+    end
+    
     properties ( SetAccess = private, Dependent )
-        values(:,:,:) double
-        values_interior(:,:,:) double
-        filtered(:,:,:) double
-        filtered_interior(:,:,:) double
-        filter_amount(1,1) double
+        values(:,:,:) double {mustBeReal,mustBeFinite}
+        values_interior(:,:,:) double {mustBeReal,mustBeFinite}
+        filtered(:,:,:) double {mustBeReal,mustBeFinite}
+        filtered_interior(:,:,:) double {mustBeReal,mustBeFinite}
+        filter_amount(1,1) double {mustBeReal,mustBeFinite}
     end
     
     methods
         function obj = ThermalProfile( varargin )
             obj = obj@Process( varargin{ : } );
-        end
-        
-        function run( obj )
-            obj.prepare_thermal_profile_query()
         end
         
         function legacy_run( obj, mesh )
@@ -81,8 +83,8 @@ classdef ThermalProfile < Process
         
         function write( obj, common_writer )
             common_writer.write_array( obj.NAME, obj.values, obj.mesh.spacing, obj.mesh.origin );
-            %filter_title = strjoin( [ "filtered" obj.NAME ], "_" );
-            %common_writer.write_array( filter_title, obj.filtered, obj.mesh.spacing, obj.mesh.origin );
+            filter_title = strjoin( [ "filtered" obj.NAME ], "_" );
+            common_writer.write_array( filter_title, obj.filtered, obj.mesh.spacing, obj.mesh.origin );
         end
         
         function a = to_array( obj )
@@ -105,15 +107,15 @@ classdef ThermalProfile < Process
         end
         
         function value = get.filtered( obj )
-            value = obj.filter_profile_query.get();
+            value = obj.filtered_profile_query.get();
         end
         
         function value = get.filtered_interior( obj )
-            value = obj.filter_profile_query.get( obj.mesh.interior );
+            value = obj.filtered_profile_query.get( obj.mesh.interior );
         end
         
         function value = get.filter_amount( obj )
-            value = obj.compute_filter_profile_query_amount( obj.mesh.scale );
+            value = obj.compute_filter_amount( obj.values );
         end
     end
     
@@ -141,6 +143,12 @@ classdef ThermalProfile < Process
             
             assert( ~isempty( obj.mesh ) );
         end
+        
+        function run_impl( obj )
+            obj.prepare_thermal_profile_query();
+            obj.compute_statistics();
+            obj.prepare_filtered_profile_query();
+        end
     end
     
     properties ( Access = private )
@@ -149,6 +157,7 @@ classdef ThermalProfile < Process
         smp SolidificationMaterialProperties
         sip SolidificationInterfaceProperties
         thermal_profile_query ThermalProfileQuery
+        filtered_profile_query FilteredProfileQuery
         pad_count(1,:) uint32
     end
     
@@ -159,12 +168,29 @@ classdef ThermalProfile < Process
             obj.prepare_pde_mesh();
             obj.prepare_properties();
             
+            obj.printf( "  Solving...\n" );
             tpq = ThermalProfileQuery();
             tpq.quality_target = obj.latent_heat_quality_target;
             tpq.build( obj.pde_mesh, obj.smp, obj.sip, obj.MELT_ID );
             tpq.run();
             
             obj.thermal_profile_query = tpq;
+        end
+        
+        function compute_statistics( obj )
+            obj.printf( "  Computing statistics...\n" );
+            [ obj.minimum_modulus, obj.maximum_modulus ] = ...
+                obj.modulus_analysis( obj.values_interior );
+            obj.modulus_ratio = ...
+                1 - ( obj.minimum_modulus / obj.maximum_modulus );
+        end
+        
+        function prepare_filtered_profile_query( obj )
+            obj.printf( "  Filtering profile...\n" );
+            obj.filtered_profile_query = FilteredProfileQuery( ...
+                obj.values, ...
+                obj.compute_filter_amount( obj.values ) ...
+                );
         end
         
         function pde_mesh = prepare_pde_mesh( obj )
@@ -214,8 +240,17 @@ classdef ThermalProfile < Process
             obj.sip = sip_in;
         end
         
-        function value = unpad_get( obj, varargin )
-            value = obj.thermal_profile_query.get( varargin{ : } );
+        function value = unpad_get( obj, mask_optional )
+            if nargin < 2
+                mask_optional = true( size( obj.mesh.interior ) );
+            end
+            mask_optional = padarray( ...
+                mask_optional, ...
+                double( obj.pad_count ), ...
+                true, ...
+                'both' ...
+                );
+            value = obj.thermal_profile_query.get( mask_optional );
             start = obj.pad_count + 1;
             finish = uint32( size( value ) ) - start + 1;
             value = value( ...
@@ -223,6 +258,13 @@ classdef ThermalProfile < Process
                 start( 2 ) : finish( 2 ), ...
                 start( 3 ) : finish( 3 ) ...
                 );
+        end
+        
+        function threshold = compute_filter_amount( obj, modulus )
+            min_m = min( modulus( modulus > 0 ), [], 'all' );
+            max_m = max( modulus, [], 'all' );
+            range = max_m - min_m;
+            threshold = 0.05 .* range;
         end
     end
     
@@ -235,9 +277,10 @@ classdef ThermalProfile < Process
     end
     
     methods ( Access = private, Static )
-        function threshold = compute_filter_amount( mesh_scale )
-            TOLERANCE = 1e-4;
-            threshold = mesh_scale * ( 1 + TOLERANCE );
+        function [ minimum, maximum ] = modulus_analysis( value_interior )
+            peaks = gray_peaks( value_interior );
+            minimum = min( peaks );
+            maximum = max( peaks );
         end
     end
     

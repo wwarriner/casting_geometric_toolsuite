@@ -21,15 +21,9 @@ classdef Feeders < Process
             obj = obj@Process( varargin{ : } );
         end
         
-        function run( obj )
-            obj.obtain_inputs();
-            obj.prepare_bodies();
-            obj.prepare_boolean_values();
-        end
-        
-        function legacy_run( obj, mesh, sections, geometric_profile )
+        function legacy_run( obj, mesh, isolated_sections, geometric_profile )
             obj.mesh = mesh;
-            obj.sections = sections;
+            obj.isolated_sections = isolated_sections;
             obj.geometric_profile = geometric_profile;
             obj.run();
         end
@@ -95,36 +89,47 @@ classdef Feeders < Process
         end
     end
     
+    methods ( Access = protected )
+        function update_dependencies( obj )
+            if ~isempty( obj.results )
+                mesh_key = ProcessKey( Mesh.NAME );
+                obj.mesh = obj.results.get( mesh_key );
+                
+                isolated_sections_key = ProcessKey( IsolatedSections.NAME );
+                obj.isolated_sections = obj.results.get( isolated_sections_key );
+                
+                geometric_profile_key = ProcessKey( GeometricProfile.NAME );
+                obj.geometric_profile = obj.results.get( geometric_profile_key );
+            end
+            assert( ~isempty( obj.mesh ) );
+            assert( ~isempty( obj.isolated_sections ) );
+            assert( ~isempty( obj.geometric_profile ) );
+        end
+        
+        function check_settings( obj )
+            % no settings need checking
+        end
+        
+        function run_impl( obj )
+            obj.prepare_bodies();
+            obj.prepare_boolean_values();
+        end
+    end
+    
     properties ( Access = private )
         mesh Mesh
-        sections Sections
+        isolated_sections IsolatedSections
         geometric_profile GeometricProfile
         feeder_query FeederQuery
         bodies(:,1) Body
     end
     
     methods ( Access = private )
-        function obtain_inputs( obj )
-            if ~isempty( obj.results )
-                mesh_key = ProcessKey( Mesh.NAME );
-                obj.mesh = obj.results.get( mesh_key );
-                
-                sections_key = ProcessKey( Sections.NAME );
-                obj.sections = obj.results.get( sections_key );
-                
-                geometric_profile_key = ProcessKey( GeometricProfile.NAME );
-                obj.geometric_profile = obj.results.get( geometric_profile_key );
-            end
-            assert( ~isempty( obj.mesh ) );
-            assert( ~isempty( obj.sections ) );
-            assert( ~isempty( obj.geometric_profile ) );
-        end
-        
         function prepare_bodies( obj )
             obj.printf( "Generating feeder geometry...\n" );
             fq = FeederQuery( ...
-                obj.sections.segments, ...
-                obj.sections.hotspots, ...
+                obj.isolated_sections.segments, ...
+                obj.isolated_sections.hotspots, ...
                 obj.geometric_profile.unscaled ...
                 );
             bodies_in = Body.empty( fq.count, 0 );
