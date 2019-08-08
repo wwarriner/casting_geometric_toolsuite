@@ -31,7 +31,7 @@ classdef FeederQuery < handle
         end
         
         function value = get.count( obj )
-            value = numel( obj.magnitude );
+            value = uint32( numel( obj.magnitude ) );
         end
         
         function value = get.fv( obj )
