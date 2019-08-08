@@ -1,12 +1,11 @@
 classdef Settings < DynamicPropertyTree
     
     methods
-        function obj = Settings( varargin )
+        function obj = Settings( file )
             if nargin == 0
                 return;
             end
             
-            file = varargin{ 1 };
             assert( isstring( file ) );
             
             obj.read_from_file( file );

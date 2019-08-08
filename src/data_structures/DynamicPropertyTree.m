@@ -35,15 +35,22 @@ classdef DynamicPropertyTree < dynamicprops & matlab.mixin.CustomDisplay
                         [ varargout{ 1 : nargout } ] = builtin( 'subsref', obj, s );
                     else
                         % property access
-                        key = s( 1 ).subs;
+                        full_key = char( s( 1 ).subs );
+                        [ key, tail ] = strtok( full_key, '.' );
+                        tail = tail( 2 : end );
                         if ~isprop( obj, key )
-                            error( obj.missing_msg( key ) );
+                            error( obj.missing_msg( full_key ) );
                         end
                         v = obj.(key);
-                        if length( s ) == 1
-                            [ varargout{ 1 : nargout } ] = v;
+                        if isempty( tail )
+                            if length( s ) == 1
+                                [ varargout{ 1 : nargout } ] = v;
+                            else
+                                [ varargout{ 1 : nargout } ] = subsref( v, s( 2 : end ) );
+                            end
                         else
-                            [ varargout{ 1 : nargout } ] = subsref( v, s( 2 : end ) );
+                            s( 1 ).subs = tail;
+                            [ varargout{ 1 : nargout } ] = subsref( obj.(key), s );
                         end
                     end
                 case '()'
@@ -59,14 +66,21 @@ classdef DynamicPropertyTree < dynamicprops & matlab.mixin.CustomDisplay
             switch s(1).type
                 case '.'
                     % property access
-                    key = s( 1 ).subs;
+                    full_key = char( s( 1 ).subs );
+                    [ key, tail ] = strtok( full_key, '.' );
+                    tail = tail( 2 : end );
                     if ~isprop( obj, key )
-                        error( obj.missing_msg( key ) );
+                        error( obj.missing_msg( full_key ) );
                     end
-                    if length( s ) == 1
-                        v = varargin{ : };
+                    if isempty( tail )
+                        if length( s ) == 1
+                            v = varargin{ : };
+                        else
+                            v = subsasgn( obj.(key), s( 2 : end ), varargin{ : } );
+                        end
                     else
-                        v = subsasgn( obj.(key), s( 2 : end ), varargin{ : } );
+                        s( 1 ).subs = tail;
+                        v = subsasgn( obj.(key), s, varargin{ : } );
                     end
                     obj.(key) = v;
                 case '()'
