@@ -6,7 +6,7 @@ classdef (Sealed) Parting < Process
     % - @Mesh
     
     properties ( SetAccess = private, Dependent )
-        count(1,1) uint32
+        count(1,1) double
         area(1,1) double
         length(1,1) double
         draw(1,1) double
@@ -43,13 +43,6 @@ classdef (Sealed) Parting < Process
             value( jf > 0 ) = obj.JOG_FREE;
             pl = obj.line_labels;
             value( pl > 0 ) = obj.LINE;
-        end
-        
-        function value = to_table( obj )
-            value = list2table( ...
-                { 'count' 'area' 'length' 'draw' }, ...
-                { obj.count obj.area obj.length obj.draw } ...
-                );
         end
         
         function value = get.count( obj )
@@ -101,6 +94,13 @@ classdef (Sealed) Parting < Process
         
         function run_impl( obj )
             obj.prepare_parting_perimeter();
+        end
+        
+        function value = to_table_impl( obj )
+            value = list2table( ...
+                { 'count' 'area' 'length' 'draw' }, ...
+                { obj.count obj.area obj.length obj.draw } ...
+                );
         end
     end
     

@@ -5,7 +5,7 @@ classdef (Sealed) Undercuts < Process
     % - @Mesh
     
     properties ( SetAccess = private, Dependent )
-        count(1,1) uint32
+        count(1,1) double
         label_array(:,:,:) uint32
         volume(1,1) uint32 % stl units
     end
@@ -27,13 +27,6 @@ classdef (Sealed) Undercuts < Process
         
         function a = to_array( obj )
             a = obj.undercuts.label_array;
-        end
-        
-        function value = to_table( obj )
-            value = list2table( ...
-                { 'count' 'volume' }, ...
-                { obj.count, obj.volume } ...
-                );
         end
         
         function value = get.count( obj )
@@ -70,6 +63,13 @@ classdef (Sealed) Undercuts < Process
         
         function run_impl( obj )
             obj.prepare_undercuts();
+        end
+        
+        function value = to_table_impl( obj )
+            value = list2table( ...
+                { 'count' 'volume' }, ...
+                { obj.count, obj.volume } ...
+                );
         end
     end
     

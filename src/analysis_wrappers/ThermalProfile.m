@@ -97,13 +97,6 @@ classdef ThermalProfile < Process
             a = obj.scaled;
         end
         
-        function value = to_table( obj )
-            value = list2table( ...
-                { 'thickness_ratio' }, ...
-                { obj.thickness_ratio } ...
-                );
-        end
-        
         function value = get.values( obj )
             value = obj.unpad_get();
         end
@@ -154,6 +147,13 @@ classdef ThermalProfile < Process
             obj.prepare_thermal_profile_query();
             obj.compute_statistics();
             obj.prepare_filtered_profile_query();
+        end
+        
+        function value = to_table_impl( obj )
+            value = list2table( ...
+                { 'modulus_ratio' }, ...
+                { obj.modulus_ratio } ...
+                );
         end
     end
     

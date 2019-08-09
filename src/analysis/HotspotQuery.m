@@ -1,7 +1,7 @@
 classdef HotspotQuery < handle
     
     properties ( SetAccess = private, Dependent )
-        count(1,1) uint32
+        count(1,1) double
         label_array(:,:,:) uint32
     end
     
@@ -25,7 +25,7 @@ classdef HotspotQuery < handle
         end
         
         function value = get.count( obj )
-            value = uint32( obj.cc.NumObjects );
+            value = obj.cc.NumObjects;
         end
         
         function value = get.label_array( obj )

@@ -186,13 +186,6 @@ classdef Mesh < Process
             value = obj.interior;
         end
         
-        function value = to_table( obj )
-            value = list2table( ...
-                { 'count' }, ...
-                { obj.count } ...
-                );
-        end
-        
         function write( obj, output_files )
             output_files.write_array( obj.NAME, obj.to_array() );
             output_files.write_table( obj.NAME, obj.to_table() );
@@ -219,6 +212,13 @@ classdef Mesh < Process
         
         function run_impl( obj )
             obj.prepare_voxels();
+        end
+        
+        function value = to_table_impl( obj )
+            value = list2table( ...
+                { 'count' }, ...
+                { obj.count } ...
+                );
         end
     end
     

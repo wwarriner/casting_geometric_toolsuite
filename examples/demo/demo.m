@@ -16,6 +16,6 @@ settings.manager.user_needs = user_needs;
 %% ANALYSIS
 pm = ProcessManager( settings );
 pm.run();
-pm.write(); % needs output_path defined
+pm.write_all(); % needs output_path defined
 %summary_data = pm.generate_summary();
 
