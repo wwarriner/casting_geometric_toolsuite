@@ -6,8 +6,8 @@ function expanded = expand_masked( image, mask, threshold )
 % - @image is a logical array representing the image to be expanded.
 % - @mask is a logical array of the same size as @image, representing the
 % boundaries.
-% - @threshold is a real, finite, positive, scalar double and has mesh length units, representing
-% the cutoff for expansion distance.
+% - @threshold is a real, finite, positive, scalar double and has mesh length
+% units, representing the cutoff for expansion distance.
 
 assert( islogical( image ) );
 

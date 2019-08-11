@@ -14,7 +14,7 @@ classdef IsolatedSections < Process
     end
     
     properties ( SetAccess = private )
-        count(1,1) uint32
+        count(1,1) double
         segments(:,:,:) uint32
         hotspots(:,:,:) uint32
     end
@@ -45,15 +45,8 @@ classdef IsolatedSections < Process
             a = obj.segments;
         end
         
-        function value = to_table( obj )
-            value = list2table( ...
-                { 'count' }, ...
-                { obj.count } ...
-                );
-        end
-        
         function value = get.count( obj )
-            value = uint32( obj.segment_query.count );
+            value = obj.segment_query.count;
         end
         
         function value = get.segments( obj )
@@ -99,6 +92,13 @@ classdef IsolatedSections < Process
         function run_impl( obj )
             obj.prepare_segment_query();
             obj.prepare_hotspot_query();
+        end
+        
+        function value = to_table_impl( obj )
+            value = list2table( ...
+                { 'count' }, ...
+                { obj.count } ...
+                );
         end
     end
     

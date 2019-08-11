@@ -16,7 +16,7 @@ classdef (Sealed) CavityThinSections < Process
     end
     
     properties ( SetAccess = private, Dependent )
-        count(1,1) uint32
+        count(1,1) double
         label_array(:,:,:) uint32
         volume(1,1) double
     end
@@ -39,13 +39,6 @@ classdef (Sealed) CavityThinSections < Process
         
         function value = to_array( obj )
             value = obj.label_array;
-        end
-        
-        function value = to_table( obj )
-            value = list2table( ...
-                { 'count' 'volume' }, ...
-                { obj.count, obj.volume } ...
-                );
         end
         
         function value = get.count( obj )
@@ -86,6 +79,13 @@ classdef (Sealed) CavityThinSections < Process
         
         function run_impl( obj )
             obj.prepare_thin_section_query();
+        end
+        
+        function value = to_table_impl( obj )
+            value = list2table( ...
+                { 'count' 'volume' }, ...
+                { obj.count, obj.volume } ...
+                );
         end
     end
     

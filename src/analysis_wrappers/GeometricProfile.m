@@ -43,13 +43,6 @@ classdef (Sealed) GeometricProfile < Process
             a = obj.scaled;
         end
         
-        function value = to_table( obj )
-            value = list2table( ...
-                { 'thickness_ratio' }, ...
-                { obj.thickness_ratio } ...
-                );
-        end
-        
         function value = get.unscaled( obj )
             value = obj.edt_profile_query.get();
         end
@@ -104,6 +97,13 @@ classdef (Sealed) GeometricProfile < Process
             obj.prepare_edt_profile_query();
             obj.prepare_filtered_profile_query();
             obj.compute_statistics();
+        end
+        
+        function value = to_table_impl( obj )
+            value = list2table( ...
+                { 'thickness_ratio' }, ...
+                { obj.thickness_ratio } ...
+                );
         end
     end
     

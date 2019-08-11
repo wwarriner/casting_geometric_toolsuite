@@ -6,7 +6,7 @@ classdef Feeders < Process
     end
     
     properties ( SetAccess = private, Dependent )
-        count(1,1) uint32
+        count(1,1) double
         fv(:,1) struct
         radius(:,1) double {mustBeReal,mustBeFinite,mustBePositive}
         magnitude(:,1) double {mustBeReal,mustBeFinite,mustBePositive}
@@ -71,13 +71,6 @@ classdef Feeders < Process
             value = min( max( value, 0 ), 1 );
         end
         
-        function value = to_table( obj )
-            value = list2table( ...
-                { 'count' }, ...
-                { obj.count } ...
-                );
-        end
-        
         function write( obj, output_files )
             output_files.write_fv_sequence( obj.NAME, obj.fv );
             output_files.write_table( obj.NAME, obj.to_table() );
@@ -114,6 +107,13 @@ classdef Feeders < Process
         function run_impl( obj )
             obj.prepare_bodies();
             obj.prepare_boolean_values();
+        end
+        
+        function value = to_table_impl( obj )
+            value = list2table( ...
+                { 'count' }, ...
+                { obj.count } ...
+                );
         end
     end
     

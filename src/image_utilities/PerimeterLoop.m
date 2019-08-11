@@ -74,7 +74,9 @@ classdef PerimeterLoop < handle
             a = imfill( image, 'holes' );
             b = bwperim( a );
             c = bwmorph( b, 'thin', inf );
-            d = bwmorph( c, 'spur', inf );
+            % padding required for despurring at image border
+            d = bwmorph( padarray( c, [ 1 1 ], false ), 'spur', inf );
+            d = d( 2 : end - 1, 2 : end - 1 );
             perimeter = bwmorph( d, 'thin', inf );
             
             assert( any( perimeter, 'all' ) );

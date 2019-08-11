@@ -1,4 +1,4 @@
-classdef (Sealed) ProcessManager < Cancelable & Notifier & handle
+classdef (Sealed) ProcessManager < Cancelable & Notifier & Printer & handle
     
     properties
         user_needs(:,1) string = []
@@ -18,18 +18,44 @@ classdef (Sealed) ProcessManager < Cancelable & Notifier & handle
         end
         
         function run( obj )
-            obj.process_keys = obj.construct_keys();
-            obj.iteration_limit = numel( obj.process_keys );
+            obj.user_need_keys = obj.construct_user_need_keys();
+            obj.iteration_limit = numel( obj.user_need_keys );
             obj.iteration = 1;
             obj.run_cancelable_loop();
         end
         
-        function write( obj )
-            obj.write_process_keys( obj.process_keys );
+        function write_all( obj )
+            if isempty( obj.output_files )
+                obj.output_files = obj.prepare_output_files();
+            end
+            obj.write_data();
+            obj.write_summary();
         end
         
-        function summary = generate_summary( obj )
-            % TODO
+        function write_data( obj )
+            if isempty( obj.output_files )
+                obj.output_files = obj.prepare_output_files();
+            end
+            obj.write_process_keys( obj.user_need_keys );
+        end
+        
+        function write_summary( obj )
+            if isempty( obj.output_files )
+                obj.output_files = obj.prepare_output_files();
+            end
+            obj.printf( 'Writing summary...\n' );
+            summary = obj.compose_summary();
+            obj.output_files.write_table( "summary", summary );
+        end
+        
+        function summary = compose_summary( obj )
+            summary = table.empty();
+            for i = 1 : numel( obj.user_need_keys )
+                key = obj.user_need_keys( i );
+                p = obj.results.get( key );
+                t = p.to_table();
+                summary = [ summary t ]; %#ok<AGROW>
+            end
         end
         
         function v = get( obj, process_key )
@@ -40,7 +66,8 @@ classdef (Sealed) ProcessManager < Cancelable & Notifier & handle
     properties ( Access = private )
         settings Settings
         results Results
-        process_keys(:,1) ProcessKey
+        user_need_keys(:,1) ProcessKey
+        output_files OutputFiles
         iteration_limit(1,1) uint32 {mustBePositive} = 1
         iteration(1,1) uint32
         process_names(:,1) string
@@ -52,14 +79,14 @@ classdef (Sealed) ProcessManager < Cancelable & Notifier & handle
         end
         
         function do_next_iteration( obj )
-            process_key = obj.process_keys( obj.iteration );
+            process_key = obj.user_need_keys( obj.iteration );
             obj.retrieve_process( process_key );
             obj.iteration = obj.iteration + 1;
         end
     end
     
     methods ( Access = private )
-        function keys = construct_keys( obj )
+        function keys = construct_user_need_keys( obj )
             count = numel( obj.user_needs );
             keys = ProcessKey.empty( count, 0 );
             for i = 1 : count
@@ -84,18 +111,17 @@ classdef (Sealed) ProcessManager < Cancelable & Notifier & handle
         end
         
         function write_process_keys( obj, process_keys )
-            output_files = obj.prepare_output_files();
             for i = 1 : numel( process_keys )
-                obj.write_result( process_keys( i ), output_files );
+                obj.write_result( process_keys( i ) );
             end
         end
         
-        function write_result( obj, process_key, output_files )
-            if obj.has_observer()
-                obj.notify_observer( 'Writing :%s', process_key );
-            end
+        function write_result( obj, process_key )
+            assert( ~isempty( obj.output_files ) );
+            
+            obj.printf( 'Writing %s...\n', process_key.name );
             result = obj.results.get( process_key );
-            result.write( output_files );
+            result.write( obj.output_files );
         end
         
         function output_files = prepare_output_files( obj )

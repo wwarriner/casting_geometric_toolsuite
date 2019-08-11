@@ -5,7 +5,7 @@ classdef ThinSectionQuery < handle
     % regions of castings based on some thin wall threshold.
     
     properties ( SetAccess = private )
-        count(1,1) uint32
+        count(1,1) double
         label_array(:,:,:) uint32
     end
     
@@ -57,7 +57,7 @@ classdef ThinSectionQuery < handle
         end
         
         function count = get.count( obj )
-            count = uint32( obj.cc.NumObjects );
+            count = obj.cc.NumObjects;
         end
         
         function value = get.label_array( obj )

@@ -8,7 +8,7 @@ classdef FeederQuery < handle
     end
     
     properties ( SetAccess = private, Dependent )
-        count(1,1) uint32
+        count(1,1) double
         fv(:,1) struct
         diameter(:,1) double {mustBeReal,mustBeFinite,mustBePositive}
         height(:,1) double {mustBeReal,mustBeFinite,mustBePositive}
@@ -31,7 +31,7 @@ classdef FeederQuery < handle
         end
         
         function value = get.count( obj )
-            value = uint32( numel( obj.magnitude ) );
+            value = numel( obj.magnitude );
         end
         
         function value = get.fv( obj )

@@ -5,18 +5,18 @@ classdef (Sealed) Cores < Process
     % Judicious choice of @expansion_casting_length can result in far fewer with
     % realistic-looking core bodies.
     % Settings:
-    % - @expansion_casting_length, determines cutoff distance for undercut
-    % expansion in casting units.
+    % - @expansion_ratio, determines cutoff distance for undercut expansion
+    % based on fraction of largest casting bounding box dimension.
     % Dependencies:
     % - @Mesh
     % - @Undercuts
     
     properties
-        expansion_casting_length(1,1) double {mustBeReal,mustBePositive} = inf;
+        expansion_ratio(1,1) double {mustBeReal,mustBeFinite,mustBePositive} = 0.05
     end
     
     properties ( SetAccess = private, Dependent )
-        count(1,1) uint32
+        count(1,1) double
         label_array(:,:,:) uint32
         volume(1,1) double
     end
@@ -41,19 +41,12 @@ classdef (Sealed) Cores < Process
             a = obj.label_array;
         end
         
-        function value = to_table( obj )
-            value = list2table( ...
-                { 'count' 'volume' }, ...
-                { obj.count, obj.volume } ...
-                );
-        end
-        
         function value = get.count( obj )
-            value = obj.cores.count;
+            value = obj.core_query.count;
         end
         
         function value = get.label_array( obj )
-            value = obj.cores.label_array;
+            value = obj.core_query.label_array;
         end
         
         function value = get.volume( obj )
@@ -69,8 +62,8 @@ classdef (Sealed) Cores < Process
     end
     
     methods ( Access = protected )
-        function check_settings( obj )
-            assert( isfinite( obj.expansion_casting_length ) );
+        function check_settings( ~ )
+            % no settings need checking
         end
         
         function update_dependencies( obj )
@@ -85,17 +78,26 @@ classdef (Sealed) Cores < Process
         end
         
         function run_impl( obj )
-            obj.prepare_cores();
+            obj.prepare_core_query();
+        end
+        
+        function value = to_table_impl( obj )
+            value = list2table( ...
+                { 'count' 'volume' }, ...
+                { obj.count, obj.volume } ...
+                );
         end
     end
     
     methods ( Access = private )
-        function prepare_cores( obj )
+        function prepare_core_query( obj )
             obj.printf( 'Evaluating cores by expansion...\n' );
-            obj.cores = CoreQuery( ...
+            expansion_length = obj.expansion_ratio ...
+                .* max( obj.mesh.envelope.lengths );
+            obj.core_query = CoreQuery( ...
                 obj.undercuts.label_array > 0, ...
                 obj.mesh.exterior, ...
-                obj.mesh.to_mesh_length( obj.expansion_casting_length ) ...
+                obj.mesh.to_mesh_length( expansion_length ) ...
                 );
         end
     end
@@ -103,7 +105,7 @@ classdef (Sealed) Cores < Process
     properties ( Access = private )
         mesh Mesh
         undercuts Undercuts
-        cores CoreQuery
+        core_query CoreQuery
     end
     
 end

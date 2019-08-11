@@ -21,6 +21,11 @@ classdef (Abstract) Process < UserInterface & handle
             end
             obj.run_impl();
         end
+        
+        function value = to_table( obj )
+            opts.pre = obj.NAME;
+            value = append_to_variable_names( obj.to_table_impl(), opts );
+        end
     end
     
     methods ( Abstract, Static )
@@ -41,6 +46,7 @@ classdef (Abstract) Process < UserInterface & handle
         check_settings( obj )
         update_dependencies( obj )
         run_impl( obj )
+        to_table_impl( obj )
     end
     
 end

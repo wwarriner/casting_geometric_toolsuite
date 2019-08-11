@@ -1,10 +1,12 @@
 %% SETUP
-% reset_default_options();
 settings_file = string( which( "demo_options.json" ) );
 input_file = string( which( "steering_column_mount.stl" ) );
 output_folder = fullfile( "C:\Users\wwarr\Desktop\a" );
 user_needs = { ...
-    ThermalProfile.NAME ...
+    Casting.NAME ...
+    Parting.NAME ...
+    Feeders.NAME ...
+    Cores.NAME ...
     };
 
 %% OPTIONS
@@ -16,6 +18,6 @@ settings.manager.user_needs = user_needs;
 %% ANALYSIS
 pm = ProcessManager( settings );
 pm.run();
-pm.write(); % needs output_path defined
+pm.write_all(); % needs output_path defined
 %summary_data = pm.generate_summary();
 

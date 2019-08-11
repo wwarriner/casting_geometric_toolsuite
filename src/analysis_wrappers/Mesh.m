@@ -21,7 +21,7 @@ classdef Mesh < Process
         scale(1,1) double {mustBeReal,mustBeFinite,mustBePositive} % casting units
         spacing(1,3) double {mustBeReal,mustBeFinite,mustBePositive}
         origin(1,3) double {mustBeReal,mustBeFinite}
-        envelope Envelope
+        envelope Envelope % casting units
         interior(:,:,:) logical
         exterior(:,:,:) logical
         surface(:,:,:) logical
@@ -55,6 +55,10 @@ classdef Mesh < Process
         
         function value = get.origin( obj )
             value = obj.voxels.origin;
+        end
+        
+        function envelope = get.envelope( obj )
+            envelope = obj.casting.envelope;
         end
         
         function value = get.interior( obj )
@@ -186,13 +190,6 @@ classdef Mesh < Process
             value = obj.interior;
         end
         
-        function value = to_table( obj )
-            value = list2table( ...
-                { 'count' }, ...
-                { obj.count } ...
-                );
-        end
-        
         function write( obj, output_files )
             output_files.write_array( obj.NAME, obj.to_array() );
             output_files.write_table( obj.NAME, obj.to_table() );
@@ -219,6 +216,13 @@ classdef Mesh < Process
         
         function run_impl( obj )
             obj.prepare_voxels();
+        end
+        
+        function value = to_table_impl( obj )
+            value = list2table( ...
+                { 'count' }, ...
+                { obj.count } ...
+                );
         end
     end
     

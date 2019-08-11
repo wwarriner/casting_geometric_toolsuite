@@ -1,7 +1,7 @@
 classdef (Sealed) Results < handle
     
     properties ( SetAccess = private, Dependent )
-        count(1,1) uint32
+        count(1,1) double
     end
     
     methods
@@ -34,7 +34,7 @@ classdef (Sealed) Results < handle
         end
         
         function value = get.count( obj )
-            value = uint32( obj.results.Count );
+            value = obj.results.Count;
         end
     end
     
