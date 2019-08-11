@@ -12,7 +12,7 @@
 		"threshold_casting_length":2.35
 		},
 	"Cores":{
-		"expansion_casting_length":5.0
+		"expansion_ratio":0.05
 		},
 	"Feeders":{},
 	"GeometricProfile":{},

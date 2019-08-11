@@ -5,14 +5,14 @@ classdef (Sealed) Cores < Process
     % Judicious choice of @expansion_casting_length can result in far fewer with
     % realistic-looking core bodies.
     % Settings:
-    % - @expansion_casting_length, determines cutoff distance for undercut
-    % expansion in casting units.
+    % - @expansion_ratio, determines cutoff distance for undercut expansion
+    % based on fraction of largest casting bounding box dimension.
     % Dependencies:
     % - @Mesh
     % - @Undercuts
     
     properties
-        expansion_casting_length(1,1) double {mustBeReal,mustBePositive} = inf;
+        expansion_ratio(1,1) double {mustBeReal,mustBeFinite,mustBePositive} = 0.05
     end
     
     properties ( SetAccess = private, Dependent )
@@ -62,8 +62,8 @@ classdef (Sealed) Cores < Process
     end
     
     methods ( Access = protected )
-        function check_settings( obj )
-            assert( isfinite( obj.expansion_casting_length ) );
+        function check_settings( ~ )
+            % no settings need checking
         end
         
         function update_dependencies( obj )
@@ -92,10 +92,12 @@ classdef (Sealed) Cores < Process
     methods ( Access = private )
         function prepare_core_query( obj )
             obj.printf( 'Evaluating cores by expansion...\n' );
+            expansion_length = obj.expansion_ratio ...
+                .* max( obj.mesh.envelope.lengths );
             obj.core_query = CoreQuery( ...
                 obj.undercuts.label_array > 0, ...
                 obj.mesh.exterior, ...
-                obj.mesh.to_mesh_length( obj.expansion_casting_length ) ...
+                obj.mesh.to_mesh_length( expansion_length ) ...
                 );
         end
     end
