@@ -22,7 +22,6 @@ classdef ProjectedPerimeterQuery < handle
             perimeter = bwperim( projected );
             length = sum( perimeter, 'all' );
             cc = bwconncomp( perimeter );
-            cc.NumObjects = uint32( cc.NumObjects );
             obj.cc = cc;
             obj.area = area;
             obj.length = length;
