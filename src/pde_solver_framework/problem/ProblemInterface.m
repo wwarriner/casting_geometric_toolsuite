@@ -32,6 +32,13 @@ classdef (Abstract) ProblemInterface < handle
         % equations using stored kernels.
         prepare_system( obj );
         
+        % @set_prepare_callback provides a hook for gathering data about the
+        % problem from external methods each time @prepare_system is called.
+        % Inputs:
+        % - @fn must be a scalar callback function whose signature is @(x). The
+        % problem object will be passed to the callback.
+        set_prepare_callback( obj, fn );
+        
         % @solve provides a hook for computing the relevant fields from any
         % stored kernels using relevant solvers.
         solve( obj, dt );

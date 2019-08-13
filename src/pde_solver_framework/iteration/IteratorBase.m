@@ -34,7 +34,17 @@ classdef IteratorBase < Printer & handle
             obj.simulation_times.append( obj.get_simulation_time() );
             obj.computation_times.append( obj.get_computation_time() );
             obj.solver_iterations.append( obj.get_solver_iteration_count() );
+            obj.iteration_callback( obj );
             obj.printf( obj.assemble_iteration_message() );
+        end
+        
+        % @set_iteration_callback provides a hook for gathering data on the
+        % iterator at each iteration.
+        % Inputs:
+        % - @fn must be a scalar function handle whose signature is @(x). The
+        % iterator object is passed to the callback.
+        function set_iteration_callback( obj, fn )
+            obj.iteration_callback = fn;
         end
         
         function value = get.count( obj )
@@ -117,6 +127,10 @@ classdef IteratorBase < Printer & handle
             messages = [ step comp sim misc ];
             message = strjoin( [ strjoin( messages, ", " ) newline ] );
         end
+    end
+    
+    properties ( Access = private )
+        iteration_callback(1,1) function_handle = @(x)[]
     end
     
 end

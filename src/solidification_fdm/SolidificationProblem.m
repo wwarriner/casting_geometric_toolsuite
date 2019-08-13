@@ -44,6 +44,11 @@ classdef SolidificationProblem < ProblemInterface
             [ obj.A, obj.b, obj.u0 ] = sk.create_system();
             obj.u_prev = obj.u;
             obj.max_q_prev = max( obj.smp.lookup( obj.primary_melt_id, QProperty.name, obj.u_prev ) );
+            obj.prepare_callback( obj );
+        end
+        
+        function set_prepare_callback( obj, fn )
+            obj.prepare_callback = fn;
         end
         
         function solve( obj, dt )
@@ -108,6 +113,7 @@ classdef SolidificationProblem < ProblemInterface
         sip SolidificationInterfaceProperties
         primary_melt_id(1,1) uint32
         max_q_prev(1,1) double {mustBeReal,mustBeFinite}
+        prepare_callback(1,1) function_handle = @(x)[];
     end
     
     methods ( Access = private )
