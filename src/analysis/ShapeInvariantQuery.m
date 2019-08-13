@@ -8,6 +8,8 @@ classdef ShapeInvariantQuery < handle
         flatness(1,1) double {mustBeReal,mustBeFinite}
         ranginess(1,1) double {mustBeReal,mustBeFinite}
         solidity(1,1) double {mustBeReal,mustBeFinite}
+        bounding_sphere_diameter(1,1) double {mustBeReal,mustBeFinite}
+        convex_volume(1,1) double {mustBeReal,mustBeFinite}
     end
     
     methods
@@ -18,7 +20,8 @@ classdef ShapeInvariantQuery < handle
             hole_count = count_holes( body.fv );
             cfv = body.convex_hull_fv;
             cfv_volume = compute_fv_volume( cfv );
-            flatness = obj.compute_flatness( cfv, cfv_volume );
+            radius = obj.compute_bounding_sphere_radius( cfv );
+            flatness = obj.compute_flatness( radius, cfv_volume );
             ranginess = obj.compute_ranginess( body.surface_area, body.volume );
             solidity = obj.compute_solidity( body.volume, cfv_volume );
             
@@ -26,19 +29,25 @@ classdef ShapeInvariantQuery < handle
             obj.flatness = flatness;
             obj.ranginess = ranginess;
             obj.solidity = solidity;
+            obj.bounding_sphere_diameter = 2 .* radius;
+            obj.convex_volume = cfv_volume;
         end
     end
     
     methods ( Access = private, Static )
-        function flatness = compute_flatness( ...
-                convex_hull_fv, ...
-                convex_hull_volume ...
-                )
-            [ ~, r ] = minboundsphere( ...
+        function radius = compute_bounding_sphere_radius( convex_hull_fv )
+            [ ~, radius ] = minboundsphere( ...
                 convex_hull_fv.vertices, ...
                 convex_hull_fv.faces ...
                 );
-            bounding_sphere_volume = ( 4 * pi / 3 ) * ( r ^ 3 );
+        end
+        
+        function flatness = compute_flatness( ...
+                bounding_sphere_radius, ...
+                convex_hull_volume ...
+                )
+            
+            bounding_sphere_volume = ( 4 * pi / 3 ) * ( bounding_sphere_radius ^ 3 );
             flatness = 1 - ( convex_hull_volume ./ bounding_sphere_volume );
         end
         

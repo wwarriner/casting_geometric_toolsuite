@@ -17,12 +17,14 @@ classdef Casting < Process
         fv(1,1) struct
         surface_area(1,1) double {mustBeReal,mustBeFinite}
         volume(1,1) double {mustBeReal,mustBeFinite}
+        convex_volume(1,1) double {mustBeReal,mustBeFinite}
         centroid(1,3) double {mustBeReal,mustBeFinite}
         envelope(1,1) Envelope
         hole_count(1,1) double {mustBeReal,mustBeFinite}
         flatness(1,1) double {mustBeReal,mustBeFinite}
         ranginess(1,1) double {mustBeReal,mustBeFinite}
         solidity(1,1) double {mustBeReal,mustBeFinite}
+        bounding_sphere_diameter(1,1) double {mustBeReal,mustBeFinite}
         %draft_angles(:,1) double {mustBeReal,mustBeFinite} % TODO move into own wrapper
         %draft_fv(1,1) struct
     end
@@ -62,6 +64,10 @@ classdef Casting < Process
             value = obj.body.volume;
         end
         
+        function value = get.convex_volume( obj )
+            value = obj.shape_invariant_query.convex_volume;
+        end
+        
         function value = get.centroid( obj )
             value = obj.body.centroid;
         end
@@ -84,6 +90,10 @@ classdef Casting < Process
         
         function value = get.solidity( obj )
             value = obj.shape_invariant_query.solidity;
+        end
+        
+        function value = get.bounding_sphere_diameter( obj )
+            value = obj.shape_invariant_query.bounding_sphere_diameter;
         end
         
 %         function value = get.draft_angles( obj )
@@ -119,10 +129,12 @@ classdef Casting < Process
         
         function value = to_table_impl( obj )
             value = list2table( ...
-                { 'surface_area' 'volume' 'hole_count' ...
-                'flatness' 'ranginess' 'solidity' }, ...
-                { obj.surface_area obj.volume obj.hole_count ...
-                obj.flatness obj.ranginess obj.solidity } ...
+                { 'surface_area' 'volume' 'convex_volume' ...
+                'hole_count' 'flatness' 'ranginess' ...
+                'solidity' 'bounding_sphere_diameter' }, ...
+                { obj.surface_area obj.volume obj....
+                obj.hole_count obj.flatness obj.ranginess ...
+                obj.solidity obj.bounding_sphere_diameter } ...
                 );
         end
     end
