@@ -9,6 +9,13 @@ classdef IsolatedSections < Process
     % - @Mesh
     % - @GeometricProfile
     
+    % TODO: consider allowing merger using sections from arbitrary label
+    % matrices. For example, thick section regions could be used to merge
+    % sections. Would need an option to allow selecting a specific analysis
+    % wrapper, then grab the label_array property from it. Compute isolated
+    % sections using profile, get bw image. Get bw image from label_array from
+    % merge property. Logical-or the images, then bwconncomp the result.
+    
     properties
         use_thermal_profile(1,1) logical = false
     end
@@ -79,14 +86,14 @@ classdef IsolatedSections < Process
         function update_dependencies( obj )
             mesh_key = ProcessKey( Mesh.NAME );
             obj.mesh = obj.results.get( mesh_key );
-
+            
             if obj.use_thermal_profile
                 thermal_key = ProcessKey( ThermalProfile.NAME );
                 obj.profile = obj.results.get( thermal_key );
             else
                 geometric_key = ProcessKey( GeometricProfile.NAME );
                 obj.profile = obj.results.get( geometric_key );
-            end  
+            end
         end
         
         function run_impl( obj )
