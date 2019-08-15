@@ -26,8 +26,9 @@ sip.read( melt_m.id, mold_m.id, which( 'al_sand_htc.txt' ) );
 
 %% GEOMETRY
 
-%cavity = geometry.Component( which( 'bearing_block.stl' ) );
-cavity = create_cube( [ -15 -15 -15 ], [ 30 30 30 ], 'cavity' );
+stl = StlFile( which( 'bearing_block.stl' ) );
+cavity = Body( stl.fv );
+%cavity = create_cube( [ -15 -15 -15 ], [ 30 30 30 ], 'cavity' );
 cavity.id = melt_m.id;
 
 mold_thickness = 10; % casting units
@@ -39,7 +40,7 @@ mold = create_cube( ...
 mold.id = mold_m.id;
 
 %% MESHING
-element_count = 1e5;
+element_count = 1e3;
 uvc = UniformVoxelCanvas( element_count );
 uvc.default_body_id = mold.id;
 uvc.add_body( mold );
@@ -61,11 +62,12 @@ sp = SolidificationProblem( uvm, smp, sip, melt_m.id, u );
 
 qbi = QualityBisectionIterator( sp );
 qbi.maximum_iterations = 100;
-qbi.quality_target = 1/100;
+qbi.quality_target = 1/1000;
 qbi.quality_tolerance = 0.1;
 qbi.stagnation_tolerance = 1e-2;
+
+ct = CompressedTemperature( qbi, sp );
 
 lp = Looper( qbi, @sp.is_finished );
 lp.add_result( SolidificationTimeResult( uvm, sp, qbi ) );
 lp.run();
-
