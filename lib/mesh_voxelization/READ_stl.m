@@ -89,7 +89,7 @@ end
 assert( isstring( format ) );
 format = lower( format );
 assert( isscalar( format ) );
-assert( ismember( format, { "ascii" "auto" "binary" } ) );
+assert( ismember( format, [ "ascii" "auto" "binary" ] ) );
 
 if format == "auto"
     format = identify_format( file );
