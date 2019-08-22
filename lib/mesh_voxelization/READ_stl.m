@@ -1,59 +1,28 @@
-function [coordVERTICES,varargout] = READ_stl(stlFILENAME,varargin)
-% READ_stlascii  Read mesh data in the form of an <*.stl> file
-%==========================================================================
-% FILENAME:          READ_stl.m
-% AUTHOR:            Adam H. Aitkenhead
-% INSTITUTION:       The Christie NHS Foundation Trust
-% CONTACT:           adam.aitkenhead@physics.cr.man.ac.uk
-% DATE:              29th March 2010
-% PURPOSE:           Read mesh data in the form of an <*.stl> file.
-%
-% USAGE:
-%
-%     [coordVERTICES,coordNORMALS,stlNAME] = READ_stl(stlFILENAME,stlFORMAT)
-%
-% INPUT PARAMETERS:
-%
-%     stlFILENAME   - String - Mandatory - The filename of the STL file.
-%
-%     stlFORMAT     - String - Optional  - The format of the STL file:
-%                                        'ascii' or 'binary'
-%
-% OUTPUT PARAMETERS:
-%
-%     coordVERTICES - Nx3x3 array - Mandatory
-%                                 - An array defining the vertex positions
-%                                   for each of the N facets, with: 
-%                                   1 row for each facet
-%                                   3 cols for the x,y,z coordinates
-%                                   3 pages for the three vertices
-%
-%     coordNORMALS  - Nx3 array   - Optional
-%                                 - An array defining the normal vector for
-%                                   each of the N facets, with: 
-%                                   1 row for each facet
-%                                   3 cols for the x,y,z components of the vector
-%
-%     stlNAME       - String      - Optional  - The name of the STL object.
-%
-%==========================================================================
+function [ fv, normals, name ] = read_stl( file, format )
+% Modified by William Warriner 22 Aug 2019
+% from READ_stl by Adam H. Aitkenhead
 
-%==========================================================================
-% VERSION  USER  CHANGES
-% -------  ----  -------
-% 100329   AHA   Original version
-% 100513   AHA   Totally reworked the code.  Now use textscan to read the
-%                file all at once, rather than one line at a time with
-%                fgetl.  Major speed improvment.
-% 100623   AHA   Combined code which reads ascii STLS and code which reads
-%                binary STLs into a single function.
-% 101126   AHA   Small change to binary read code:  Now use fread instead
-%                of fseek.  Gives large speed increase.
-%==========================================================================
+% Inputs:
+%  - @file, a string containing the path to the desired STL file.
+%  - @format, optional, default "auto", a string containing one of "ascii",
+% "auto", or "binary". The string "auto" is preferred and allows selection
+% of either "ascii" or "binary" from the input @file. If "ascii" or
+% "binary" are supplied, that method of reading the STL file is forced,
+% which may fail if the supplied value is incorrect.
 
-%==========================================================================
-% STL ascii file format
-%======================
+% Outputs:
+%  - @fv, a MATLAB FV-struct representing the data held in @file.
+%  - @normals, the normals of the faces represented in @fv as a real,
+% finite, 2D double array. Each row represents one normal (and one face of
+% @fv, and each column one axis. Not recommended, use compute_normals()
+% instead, and fix_vertex_ordering() as needed.
+%  - @name, the name stored in the ASCII representation of @file, if
+% applicable. Not recommended, though the file name itself may be more
+% useful and relevant.
+
+%{
+% STL ASCII FILE FORMAT
+%
 % ASCII STL files have the following structure.  Technically each facet
 % could be any 2D shape, but in practice only triangular facets tend to be
 % used.  The present code ONLY works for meshes composed of triangular
@@ -71,11 +40,11 @@ function [coordVERTICES,varargout] = READ_stl(stlFILENAME,varargin)
 % <Repeat for all facets...>
 %
 % endsolid object_name
-%==========================================================================
+%}
 
-%==========================================================================
-% STL binary file format
-%=======================
+%{
+% STL BINARY FILE FORMAT
+%
 % Binary STL files have an 84 byte header followed by 50-byte records, each
 % describing a single facet of the mesh.  Technically each facet could be
 % any 2D shape, but that would screw up the 50-byte-per-facet structure, so
@@ -100,175 +69,158 @@ function [coordVERTICES,varargout] = READ_stl(stlFILENAME,varargin)
 % 4 bytes:  (float) vertex3 y
 % 4 bytes:  (float) vertex3 z
 % 2 bytes:  Padding to make the data for each facet 50-bytes in length
-%   ...and repeat for next facet... 
-%==========================================================================
+%   ...and repeat for next facet...
+%}
 
-if nargin==2
-  stlFORMAT = lower(varargin{1});
+if nargin == 1
+    format = "auto";
+end
+
+if ischar( file )
+    file = string( file );
+end
+assert( isstring( file ) );
+assert( isscalar( file ) );
+assert( isfile( file ) );
+
+if ischar( format )
+    format = string( format );
+end
+assert( isstring( format ) );
+format = lower( format );
+assert( isscalar( format ) );
+assert( ismember( format, { "ascii" "auto" "binary" } ) );
+
+if format == "auto"
+    format = identify_format( file );
+end
+
+if strcmpi( format, "ascii" )
+    [ mesh, normals, name ] = read_ascii( file );
+elseif strcmpi( format, "binary" )
+    [ mesh, normals ] = read_binary( file );
+    name = "unknown";
 else
-  stlFORMAT = 'auto';
+    assert( false );
 end
 
-%If necessary, identify whether the STL is ascii or binary:
-if strcmp(stlFORMAT,'ascii')==0 && strcmp(stlFORMAT,'binary')==0
-  stlFORMAT = IDENTIFY_stl_format(stlFILENAME);
+fv = convert_triangle_geometry_format( mesh );
+
 end
 
-%Load the STL file:
-if strcmp(stlFORMAT,'ascii')
-  [coordVERTICES,coordNORMALS,stlNAME] = READ_stlascii(stlFILENAME);
-elseif strcmp(stlFORMAT,'binary')
-  [coordVERTICES,coordNORMALS] = READ_stlbinary(stlFILENAME);
-  stlNAME = 'unnamed_object';
-end %if
 
-%Prepare the output arguments
-if nargout == 2
-  varargout(1) = {coordNORMALS};
-elseif nargout == 3
-  varargout(1) = {coordNORMALS};
-  varargout(2) = {stlNAME};
+function format = identify_format( file )
+% Test whether an stl file is ascii or binary
+fid = fopen( file, "r" );
+cleaner = onCleanup( @()fclose( fid ) );
+
+% Binary files have size 84 + ( 50 * n )
+fseek( fid, 0, "eof" );
+file_size = ftell( fid );
+if mod( file_size - 84, 50 ) ~= 0
+    format = "ascii";
+    return;
 end
 
-end %function
+% Ascii files start with "solid", end with "endsolid <name>"
+fseek( fid, 0, "bof" );
+head = fread( fid, 80, "uchar" );
+head = char( head.' );
+head = strtrim( head );
 
+fseek( fid, -80, "eof" );
+tail = fread( fid, 80, "uchar" );
+tail = char( tail.' );
 
-
-%==========================================================================
-function [stlFORMAT] = IDENTIFY_stl_format(stlFILENAME)
-% IDENTIFY_stl_format  Test whether an stl file is ascii or binary
-
-% Open the file:
-fidIN = fopen(stlFILENAME);
-
-% Check the file size first, since binary files MUST have a size of 84+(50*n)
-fseek(fidIN,0,1);         % Go to the end of the file
-fidSIZE = ftell(fidIN);   % Check the size of the file
-
-if rem(fidSIZE-84,50) > 0
-    
-  stlFORMAT = 'ascii';
-
+HEAD_PATTERN = "solid";
+TAIL_PATTERN = "endsolid";
+if startsWith( head, HEAD_PATTERN ) && contains( tail, TAIL_PATTERN )
+    format = "ascii";
+    return;
 else
-
-  % Files with a size of 84+(50*n), might be either ascii or binary...
-    
-  % Read first 80 characters of the file.
-  % For an ASCII file, the data should begin immediately (give or take a few
-  % blank lines or spaces) and the first word must be 'solid'.
-  % For a binary file, the first 80 characters contains the header.
-  % It is bad practice to begin the header of a binary file with the word
-  % 'solid', so it can be used to identify whether the file is ASCII or
-  % binary.
-  fseek(fidIN,0,-1);        % Go to the start of the file
-  firsteighty = char(fread(fidIN,80,'uchar')');
-
-  % Trim leading and trailing spaces:
-  firsteighty = strtrim(firsteighty);
-
-  % Take the first five remaining characters, and check if these are 'solid':
-  firstfive = firsteighty(1:min(5,length(firsteighty)));
-
-  % Double check by reading the last 80 characters of the file.
-  % For an ASCII file, the data should end (give or take a few
-  % blank lines or spaces) with 'endsolid <object_name>'.
-  % If the last 80 characters contains the word 'endsolid' then this
-  % confirms that the file is indeed ASCII.
-  if strcmp(firstfive,'solid')
-  
-    fseek(fidIN,-80,1);     % Go to the end of the file minus 80 characters
-    lasteighty = char(fread(fidIN,80,'uchar')');
-  
-    if findstr(lasteighty,'endsolid')
-      stlFORMAT = 'ascii';
-    else
-      stlFORMAT = 'binary';
-    end
-  
-  else
-    stlFORMAT = 'binary';
-  end
-  
+    format = "binary";
+    return;
 end
 
-% Close the file
-fclose(fidIN);
-
-end %function
-%==========================================================================
+end
 
 
+function [ mesh, normals, name ] = read_ascii( file )
 
-%==========================================================================
-function [coordVERTICES,coordNORMALS,stlNAME] = READ_stlascii(stlFILENAME)
-% READ_stlascii  Read mesh data in the form of an ascii <*.stl> file
-
-% Read the ascii STL file
-fidIN = fopen(stlFILENAME);
-fidCONTENTcell = textscan(fidIN,'%s','delimiter','\n');                  %Read all the file
-fidCONTENT = fidCONTENTcell{:}(logical(~strcmp(fidCONTENTcell{:},'')));  %Remove all blank lines
-fclose(fidIN);
+lines = read_contents( file );
 
 % Read the STL name
-if nargout == 3
-  line1 = char(fidCONTENT(1));
-  if (size(line1,2) >= 7)
-    stlNAME = line1(7:end);
-  else
-    stlNAME = 'unnamed_object'; 
-  end
+% first line starts with "solid "
+PREFIX = "solid";
+name = lines( startsWith( lines, PREFIX ) );
+if isempty( name )
+    name = "unknown";
+else
+    name = strtrim( replace( name, PREFIX, "" ) );
 end
 
 % Read the vector normals
-if nargout >= 2
-  stringNORMALS = char(fidCONTENT(logical(strncmp(fidCONTENT,'facet normal',12))));
-  coordNORMALS  = str2num(stringNORMALS(:,13:end));
-end
+PREFIX = "facet normal";
+normals = lines( startsWith( lines, PREFIX ) );
+normals = replace( normals, PREFIX, "" );
+normals = str2num( char( normals ) ); %#ok<ST2NM>
 
 % Read the vertex coordinates
-facetTOTAL       = sum(strcmp(fidCONTENT,'endfacet'));
-stringVERTICES   = char(fidCONTENT(logical(strncmp(fidCONTENT,'vertex',6))));
-coordVERTICESall = str2num(stringVERTICES(:,7:end));
-cotemp           = zeros(3,facetTOTAL,3);
-cotemp(:)        = coordVERTICESall;
-coordVERTICES    = shiftdim(cotemp,1);
+PREFIX = "vertex";
+mesh = lines( startsWith( lines, PREFIX ) );
+mesh = replace( mesh, PREFIX, "" );
+mesh = str2num( char( mesh ) ); %#ok<ST2NM>
+PREFIX = "endfacet";
+face_count = numel( lines( startsWith( lines, PREFIX ) ) );
+mesh = reshape( mesh, 3, face_count, 3 );
+mesh = shiftdim( mesh, 1 );
 
-end %function
-%==========================================================================
+end
 
 
+function lines = read_contents( file )
 
-%==========================================================================
-function [coordVERTICES,coordNORMALS] = READ_stlbinary(stlFILENAME)
-% READ_stlbinary  Read mesh data in the form of an binary <*.stl> file
+fid = fopen( file, "r" );
+cleaner = onCleanup( @()fclose( fid ) );
+lines = textscan( fid, "%s", "delimiter", "\n" );
+lines = string( lines{ 1 } );
+lines = strtrim( lines );
+lines = lines( lines ~= "" );
 
-% Open the binary STL file
-fidIN = fopen(stlFILENAME);
+end
 
-% Read the header
-fseek(fidIN,80,-1);                   % Move to the last 4 bytes of the header
-facetcount = fread(fidIN,1,'int32');  % Read the number of facets in the stl file
 
-% Initialise arrays into which the STL data will be loaded:
-coordNORMALS  = zeros(facetcount,3);
-coordVERTICES = zeros(facetcount,3,3);
+function [ mesh, normals ] = read_binary( file )
 
-% Read the data for each facet:
-for loopF = 1:facetcount
-  
-  tempIN = fread(fidIN,3*4,'float');
-  
-  coordNORMALS(loopF,1:3)    = tempIN(1:3);    % x,y,z components of the facet's normal vector
-  coordVERTICES(loopF,1:3,1) = tempIN(4:6);    % x,y,z coordinates of vertex 1
-  coordVERTICES(loopF,1:3,2) = tempIN(7:9);    % x,y,z coordinates of vertex 2
-  coordVERTICES(loopF,1:3,3) = tempIN(10:12);  % x,y,z coordinates of vertex 3
-  
-  fread(fidIN,1,'int16');   % Move to the start of the next facet.  Using fread is much quicker than using fseek(fidIN,2,0); 
+fid = fopen( file );
+cleaner = onCleanup( @()fclose( fid ) );
 
-end %for
+fseek( fid, 80, 'bof' );
+face_count = fread( fid, 1, "int32" );
 
-% Close the binary STL file
-fclose(fidIN);
+values_per_face = 12;
+value_count = face_count * values_per_face;
+precision = sprintf( "%i*single=>single", values_per_face );
+pad_byte_count = 2;
+values = fread( fid, value_count, precision, pad_byte_count );
+values = reshape( values, [ values_per_face face_count ] );
+values = values.';
 
-end %function
-%==========================================================================
+NORMAL = 1 : 3;
+normals = values( :, NORMAL );
+if any( 1 < abs( normals ), 'all' )
+    warning( 'File may be corrupted: unexpected normal values.' );
+end
+
+VERTEX_1 = 4 : 6;
+VERTEX_2 = 7 : 9;
+VERTEX_3 = 10 : 12;
+mesh = cat( ...
+    3, ...
+    values( :, VERTEX_1 ), ...
+    values( :, VERTEX_2 ), ...
+    values( :, VERTEX_3 ) ...
+    );
+
+end
+
