@@ -9,31 +9,69 @@ classdef FillPatternQuery < handle
         % - @gates is a connected-components struct (i.e. from bwconncomp)
         % indicating the indices which represent ingates in the mesh.
         % INITIAL VELOCITY?
-        function obj = FillPatternQuery( interior, gates )
-            % Find surface of interior inside gates.
-            % Insert gate voxels into priority queue.
-            % Set step = 0
-            % while ??
-            %  Increment step
-            %  Pop current from queue
-            %  For each current
-            %   Current voxel = step
-            %   Find next
-            %   If next is cavity and not patterned
-            %    Push on queue
-            %   If next is cavity and in queue
-            %    Calculate resultant vector
-            %    Calculate new filling step
-            %    Push on queue
-            %   If next is mold or already filled
-            %    Determine local mold orientation
-            %    Calculate step delay of empty voxels based on position in
-            %    neighborhood
-            %    Calculate resultant vector of neighbor voxels
-            %    If neighbor in queue
-            %     SAME AS CAVITY IN QUEUE
-            %    Else
-            %     Increment current
+        function obj = FillPatternQuery( interior, normals, gates )
+            obj.current_step = 0;
+            obj.initialize_gates( normals, find( gates & interior ) ); %#ok<FNDSB>
+            while ~obj.done()
+                current = obj.pop();
+                obj.reset( current );
+                next = obj.get_next_flow( current );
+                filled = obj.is_filled( next );
+                obstructed = obj.is_obstructed( next );
+                obj.next_empty( ...
+                    current( ~filled & ~obstructed ), ...
+                    next( ~filled & ~obstructed ) ...
+                    );
+                obj.next_filled( ...
+                    current( filled & ~obstructed ), ...
+                    next( filled & ~obstructed ) ...
+                    );
+                if any( obstructed )
+                    current = current( obstructed );
+                    next = next( obstructed );
+                    current_subs = obj.ind2sub( current );
+                    neighbors = obj.get_neighbors_not_next( current, next );
+                    neighbor_subs = obj.ind2sub( neighbors );
+                    obj.next_obstructed_empty( ...
+                        current( ~filled ), ...
+                        current_subs( ~filled, : ), ...
+                        neighbors( ~filled ), ...
+                        neighbor_subs( ~filled, : ) ...
+                        );
+                    obj.next_obstructed_filled( ...
+                        current( filled ), ...
+                        current_subs( filled, : ), ...
+                        neighbors( filled ), ...
+                        neighbor_subs( filled, : ) ...
+                        );
+                end
+                
+            end
+            
+            % initialize gates
+            % while not done
+            %  pop current from queue
+            %  find next from current flow direction
+            %  if next is NOT OBSTRUCTED
+            %   if next is NOT IN QUEUE
+            %    calculate next info
+            %    push on queue
+            %   else (IN QUEUE)
+            %    recalculate next info
+            %    update on queue
+            %  else (OBSTRUCTED)
+            %   get unobstructed neighbors
+            %   compute neighbor splash pattern
+            %   for each unobstructed neighbor
+            %    if neighbor is NOT IN QUEUE
+            %     calculate neighbor info
+            %     push on queue
+            %    else (IN QUEUE)
+            %     recalculate neighbor info
+            %     update on queue
+            %    end
+            %   end
+            %  end
         end
     end
     
@@ -48,28 +86,29 @@ classdef FillPatternQuery < handle
     end
     
     methods ( Access = private )
-        function initialize_gates( obj, gates, gate_neighbors )
+        function initialize_gates( obj, normals, gates )
             obj.volume_fraction( gates ) = 1;
             obj.step( gates ) = 1;
-            obj.flow( 3*gates - (0:2) ) = 
-            % handle gate flow here
+            p = permute( normals, [ 4 1 2 3 ] );
+            obj.flow( 3*gates - (0:2) ) = -p( 3*gates - (0:2) );
             obj.dstep( gates ) = 1;
-            
+            obj.enqueue( gates );
         end
         
         % when popped, reset nfilling
         function next_empty( obj, current, next )
-            obj.volume_fraction( next ) = obj.volume_fraction( current );
+            obj.volume_fraction( next ) = obj.volume_fraction( next ) + obj.volume_fraction( current );
             obj.step( next ) = obj.step( current ) + obj.dstep( current );
             obj.flow( 3*next - (0:2) ) = obj.flow( 3*current - (0:2) );
             obj.dstep( next ) = obj.dstep( current );
             obj.n_filling( next ) = obj.n_filling( next ) + 1;
+            obj.enqueue( next );
         end
         
         % needs queue adjustment
         % when popped, reset nfilling
         function next_filled( obj, current, next )
-            obj.volume_fraction( next ) = obj.volume_fraction( current );
+            obj.volume_fraction( next ) = obj.volume_fraction( next ) + obj.volume_fraction( current );
             obj.step( next ) = obj.calculate_multistep( ...
                 obj.step_counter, ...
                 obj.step( current ) + obj.dstep( current ), ...
@@ -84,6 +123,7 @@ classdef FillPatternQuery < handle
                 );
             obj.dstep( next ) = obj.step( next ) - obj.step_counter;
             obj.n_filling( next ) = obj.n_filling( next ) + 1;
+            obj.update( next );
         end
         
         % when popped, reset nfilling
@@ -96,7 +136,8 @@ classdef FillPatternQuery < handle
             obj.step( empty_neighbors ) = obj.step( current ) + obj.dstep( current ) .* obj.volume_fraction( empty_neighbors );
             obj.flow( 3*empty_neighbors - (0:2) ) = dp;
             obj.dstep( empty_neighbors ) = obj.step( empty_neighbors ) - obj.step( current );
-            obj.n_filling( next ) = obj.n_filling( next ) + 1;
+            obj.n_filling( empty_neighbors ) = obj.n_filling( empty_neighbors ) + 1;
+            obj.enqueue( empty_neighbors );
         end
         
         % needs queue adjustment
@@ -114,14 +155,15 @@ classdef FillPatternQuery < handle
                 obj.step( filled_neighbors ), ...
                 obj.n_filling( next ) ...
                 );
-            obj.flow( 3*next - (0:2) ) = obj.calculate_multiflow( ...
+            obj.flow( 3*filled_neighbors - (0:2) ) = obj.calculate_multiflow( ...
                 dp, ...
                 obj.dstep( current ), ...
-                obj.flow( 3*next - (0:2) ), ...
-                obj.dstep( next ) ...
+                obj.flow( 3*filled_neighbors - (0:2) ), ...
+                obj.dstep( filled_neighbors ) ...
                 );
-            obj.dstep( next ) = obj.step( next ) - obj.step_counter;
-            obj.n_filling( next ) = obj.n_filling( next ) + 1;
+            obj.dstep( filled_neighbors ) = obj.step( filled_neighbors ) - obj.step_counter;
+            obj.n_filling( filled_neighbors ) = obj.n_filling( filled_neighbors ) + 1;
+            obj.update( filled_neighbors );
         end
     end
     
