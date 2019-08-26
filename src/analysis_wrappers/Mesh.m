@@ -194,11 +194,24 @@ classdef Mesh < Process
             output_files.write_array( obj.NAME, obj.to_array() );
             output_files.write_table( obj.NAME, obj.to_table() );
         end
+        
+        function s = saveobj( obj )
+            s.desired_element_count = obj.desired_element_count;
+            s.voxels = obj.voxels;
+            s.values = obj.voxels.values;
+        end
     end
     
     methods ( Access = public, Static )
         function name = NAME()
             name = string( mfilename( 'class' ) );
+        end
+        
+        function obj = loadobj( s )
+            obj = Mesh();
+            obj.desired_element_count = s.desired_element_count;
+            obj.voxels = s.voxels;
+            obj.voxels.values = s.values;
         end
     end
     
