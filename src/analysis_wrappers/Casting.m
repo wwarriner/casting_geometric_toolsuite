@@ -1,4 +1,4 @@
-classdef Casting < Process
+classdef Casting < Process & matlab.mixin.Copyable
     % @Casting contains information on the geometric abstraction of the shape
     % to be cast during the casting process. It is the starting point for all 
     % downstream operations.
@@ -38,8 +38,10 @@ classdef Casting < Process
             obj.run();
         end
         
-        function rotate( obj, rotation )
-            obj.body = obj.body.rotate( rotation );
+        function clone = rotate( obj, rotation )
+            clone = obj.copy();
+            clone.body = obj.body.rotate( rotation );
+            % update draft
         end
         
         function write( obj, writer )
@@ -143,7 +145,7 @@ classdef Casting < Process
         stl_file StlFile
         body Body
         shape_invariant_query ShapeInvariantQuery
-        draft_query DraftQuery
+        %draft_query DraftQuery
     end
     
     methods ( Access = private )
