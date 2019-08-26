@@ -20,7 +20,6 @@ classdef UndercutQuery < handle
             uc = obj.paint( interior );
             uc = remove_small_connected_regions( uc );
             cc = bwconncomp( uc );
-            cc.NumObjects = uint32( cc.NumObjects );
             obj.cc = cc;
         end
         

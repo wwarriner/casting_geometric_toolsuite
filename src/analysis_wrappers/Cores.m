@@ -51,7 +51,7 @@ classdef (Sealed) Cores < Process
         
         function value = get.volume( obj )
             voxel_count = sum( obj.label_array > 0, 'all' );
-            value = obj.mesh.to_mesh_volume( voxel_count );
+            value = obj.mesh.to_casting_volume( voxel_count );
         end
     end
     
