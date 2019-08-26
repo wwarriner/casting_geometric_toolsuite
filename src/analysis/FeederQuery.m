@@ -75,9 +75,9 @@ classdef FeederQuery < handle
             magnitude = zeros( cc.NumObjects, 1 );
             for i = 1 : cc.NumObjects
                 gdt = obj.geodesic_distance_transform( segments == i, hotspots == i );
-                L = max( gdt );
-                W = median( gdt );
-                T = max( edt( cc.PixelIdxList{ i } ) ) + 0.5; % offset
+                L = max( gdt, [], 'all' );
+                W = median( gdt, 'all' );
+                T = max( edt( cc.PixelIdxList{ i } ), [], 'all' ) + 0.5; % offset
                 sf = ( L + W ) ./ T;
                 v_s = numel( cc.PixelIdxList{ i } );
                 v_f = VOLUME_COEFFICIENT .* v_s .* ( sf .^ VOLUME_POWER );
@@ -93,6 +93,7 @@ classdef FeederQuery < handle
             g = double( bwdistgeodesic( bw, idx, 'quasi-euclidean' ) );
             g( isnan( g ) ) = inf;
             g( ~p ) = inf;
+            g = g( : );
             values = g( g < inf );
         end
         
