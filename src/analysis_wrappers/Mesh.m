@@ -253,6 +253,11 @@ classdef Mesh < Process
                 0 ...
                 );
             obj.voxels.paint( obj.casting.fv, 1 );
+            cc = bwconncomp( obj.voxels.values );
+            r = regionprops3( cc, "volume" );
+            [ ~, i ] = max( r.Volume );
+            obj.voxels.values = zeros( obj.voxels.shape );
+            obj.voxels.values( cc.PixelIdxList{ i } ) = 1;
         end
     end
     
