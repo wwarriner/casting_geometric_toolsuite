@@ -1,6 +1,6 @@
 %% SETUP
-settings_file = string( which( "demo_options.json" ) );
-input_file = string( which( "steering_column_mount.stl" ) );
+settings_file = string( which( "demo_settings.json" ) );
+input_file = string( which( "bearing_block.stl" ) );
 output_folder = fullfile( "C:\Users\wwarr\Desktop\a" );
 user_needs = { ...
     Casting.NAME ...
