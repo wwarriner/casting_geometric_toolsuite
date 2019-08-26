@@ -10,6 +10,7 @@ classdef (Sealed) Parting < Process
         area(1,1) double
         length(1,1) double
         draw(1,1) double
+        flatness(:,1) double
         perimeter_labels(:,:,:) uint32
         jog_free_labels(:,:,:) uint32
         line_labels(:,:,:) uint32
@@ -61,6 +62,10 @@ classdef (Sealed) Parting < Process
             value = obj.mesh.to_casting_length( obj.perimeter.line.draw );
         end
         
+        function value = get.flatness( obj )
+            value = obj.perimeter.line.flatness;
+        end
+        
         function value = get.perimeter_labels( obj )
             value = obj.perimeter.label_array;
         end
@@ -98,8 +103,8 @@ classdef (Sealed) Parting < Process
         
         function value = to_table_impl( obj )
             value = list2table( ...
-                { 'count' 'area' 'length' 'draw' }, ...
-                { obj.count obj.area obj.length obj.draw } ...
+                { 'count' 'area' 'length' 'draw' 'flatness' }, ...
+                { obj.count obj.area obj.length obj.draw obj.flatness( 1 ) } ...
                 );
         end
     end
