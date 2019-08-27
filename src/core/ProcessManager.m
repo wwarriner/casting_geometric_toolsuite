@@ -49,13 +49,7 @@ classdef (Sealed) ProcessManager < Cancelable & Notifier & Printer & handle
         end
         
         function summary = compose_summary( obj )
-            summary = table.empty();
-            for i = 1 : numel( obj.user_need_keys )
-                key = obj.user_need_keys( i );
-                p = obj.results.get( key );
-                t = p.to_table();
-                summary = [ summary t ]; %#ok<AGROW>
-            end
+            summary = obj.results.compose_summary( obj.user_need_keys );
         end
         
         function v = get( obj, process_key )
