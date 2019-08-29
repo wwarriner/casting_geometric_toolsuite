@@ -1,8 +1,4 @@
-classdef ThinSectionQuery < handle
-    % @ThinSectionQuery is intended to identify regions in a voxel
-    % representation of a solid body which are below some threshold local wall
-    % thickness. The intent is to identify thin wall regions of castings based 
-    % on some thin wall threshold.
+classdef ThickSectionQuery < handle
     
     properties ( SetAccess = private, Dependent )
         count(1,1) double
@@ -17,17 +13,20 @@ classdef ThinSectionQuery < handle
         % be in voxel units.
         % - @mask is a logical array where only true values are considered
         % for computation.
+        % - @strategy_fn is a scalar function handle with signature out = @(in)
+        % where @in is a real, finite, double vector from @edt, and @out is a
+        % real, finite, scalar double representing the thick wall threshold.
         % - @threshold is a real, finite, positive scalar double representing
         % the thickness threshold in voxel units.
         % - @sweep_coefficient (optional) is a real, finite, positive
         % scalar double which determines how aggressively to sweep. Lower
         % values tend to undersegment, and higher values oversegment.
-        function obj = ThinSectionQuery( edt, mask, threshold, sweep_coefficient )
+        function obj = ThickSectionQuery( edt, mask, strategy_fn, threshold, sweep_coefficient )
             if nargin == 0
                 return;
             end
             
-            if nargin < 4
+            if nargin < 5
                 sweep_coefficient = 2; % seems to work well
             end
             
@@ -40,21 +39,31 @@ classdef ThinSectionQuery < handle
             assert( ndims( mask ) == 3 );
             assert( all( size( edt ) == size( mask ) ) );
             
-            assert( isscalar( threshold ) );
+            assert( isa( strategy_fn, 'function_handle' ) );
+            assert( isscalar( strategy_fn ) );
+            
             assert( isa( threshold, 'double' ) );
+            assert( isscalar( threshold ) );
             assert( isreal( threshold ) );
             assert( isfinite( threshold ) );
             
-            assert( isscalar( sweep_coefficient ) );
             assert( isa( sweep_coefficient, 'double' ) );
+            assert( isscalar( sweep_coefficient ) );
             assert( isreal( sweep_coefficient ) );
             assert( isfinite( sweep_coefficient ) );
             
-            sweep_distance = sweep_coefficient .* threshold;
+            skeleton = bwskel( mask );
+            % possible adjustment of data to remove those less than thin
+            % threshold
+            data = edt( skeleton );
+            data = data( data > threshold );
+            thick_threshold = strategy_fn( data );
+            thin_query = ThinSectionQuery( edt, mask, thick_threshold, sweep_coefficient );
+            thick_wall = ( thin_query.label_array <= 0 ) & mask;
+            sweep_distance = sweep_coefficient .* thick_threshold;
             sweep_distance = max( sweep_distance, 1 );
-            sweep = distance_sweep( mask, edt > threshold, sweep_distance );
-            sweep = distance_sweep( mask, ~sweep & mask, sweep_distance );
-            obj.cc = bwconncomp( sweep & mask );
+            thick_wall = distance_sweep( mask, thick_wall, sweep_distance );
+            obj.cc = bwconncomp( thick_wall );
         end
         
         function count = get.count( obj )

@@ -7,6 +7,12 @@
 	"Casting":{
 		"input_file":""
 		},
+	"CavityThickSections":{
+		"strategy":"lognormal",
+		"quantile":0.25,
+		"sweep_coefficient":2.0,
+		"threshold_casting_length":2.35
+		},
 	"CavityThinSections":{
 		"sweep_coefficient":2.0,
 		"threshold_casting_length":2.35
