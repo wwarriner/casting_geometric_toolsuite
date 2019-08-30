@@ -3,7 +3,6 @@ function demo_fn( settings_file, input_file, output_folder )
 settings = Settings( settings_file );
 settings.processes.Casting.input_file = input_file;
 settings.manager.output_folder = output_folder;
-settings.manager.user_needs = user_needs;
 
 %% ANALYSIS
 pm = ProcessManager( settings );
