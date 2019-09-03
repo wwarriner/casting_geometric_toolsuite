@@ -33,6 +33,12 @@ classdef (Sealed) Parting < Process
         end
         
         function write( obj, common_writer )
+            perimeter_title = strjoin( [ "perimeter" obj.NAME ], "_" );
+            common_writer.write_array( perimeter_title, obj.perimeter_labels, obj.mesh.spacing, obj.mesh.origin );
+            jog_free_title = strjoin( [ "jog_free" obj.NAME ], "_" );
+            common_writer.write_array( jog_free_title, obj.jog_free_labels, obj.mesh.spacing, obj.mesh.origin );
+            line_title = strjoin( [ "line" obj.NAME ], "_" );
+            common_writer.write_array( line_title, obj.line_labels, obj.mesh.spacing, obj.mesh.origin );
             common_writer.write_array( obj.NAME, obj.to_array(), obj.mesh.spacing, obj.mesh.origin );
             common_writer.write_table( obj.NAME, obj.to_table() );
         end
