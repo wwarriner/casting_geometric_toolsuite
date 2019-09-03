@@ -37,7 +37,7 @@ classdef IsolatedSections < Process
         function write( obj, common_writer )
             common_writer.write_array( obj.NAME, obj.to_array(), obj.mesh.spacing, obj.mesh.origin );
             hotspot_name = strjoin( [ "hotspots" obj.NAME ], "_" );
-            common_writer.write_array( hotspot_name, obj.to_array(), obj.mesh.spacing, obj.mesh.origin );
+            common_writer.write_array( hotspot_name, obj.hotspots, obj.mesh.spacing, obj.mesh.origin );
             common_writer.write_table( obj.NAME, obj.to_table() );
         end
         
