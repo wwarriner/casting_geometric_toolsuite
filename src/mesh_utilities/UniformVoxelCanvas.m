@@ -2,14 +2,22 @@ classdef UniformVoxelCanvas < handle
     
     properties
         default_body_id(1,1) uint32 {mustBeNonnegative} = 1
+        mode(1,1) string = UniformVoxelCanvas.OVERWRITE
     end
     
     properties ( SetAccess = private )
+        envelope Envelope
         voxels Voxels
     end
     
     properties ( SetAccess = private, Dependent )
         material_ids(:,1) uint32 {mustBeNonnegative}
+        modes(:,1) string
+    end
+    
+    properties ( Constant )
+        OVERWRITE = "overwrite";
+        ACCUMULATE = "accumulate";
     end
     
     methods
@@ -22,11 +30,28 @@ classdef UniformVoxelCanvas < handle
         end
         
         function paint( obj )
-            obj.voxels = obj.paint_voxels(); 
+            envelope_in = obj.unify_envelopes();
+            voxels_in = obj.paint_voxels( envelope_in );
+            
+            obj.envelope = envelope_in;
+            obj.voxels = voxels_in;
         end
         
         function value = get.material_ids( obj )
-            value = obj.get_material_ids();
+            id_list = [ obj.body_list.id ];
+            value = nan( max( id_list ), 1 );
+            value( id_list ) = id_list;
+        end
+        
+        function value = get.modes( obj )
+            value = [ obj.ACCUMULATE obj.OVERWRITE ];
+        end
+        
+        function set.mode( obj, value )
+            assert( isstring( value ) );
+            assert( ismember( value, obj.modes ) ); %#ok<MCSUP>
+            
+            obj.mode = value;
         end
     end
     
@@ -37,14 +62,7 @@ classdef UniformVoxelCanvas < handle
     end
     
     methods ( Access = private )
-        function ids = get_material_ids( obj )
-            id_list = [ obj.body_list.id ];
-            ids = nan( max( id_list ), 1 );
-            ids( id_list ) = id_list;
-        end
-        
-        function voxels = paint_voxels( obj )
-            envelope = obj.unify_envelopes();
+        function voxels = paint_voxels( obj, envelope )
             voxels = Voxels( ...
                 obj.desired_element_count, ...
                 envelope, ...
@@ -52,9 +70,8 @@ classdef UniformVoxelCanvas < handle
                 );
             for i = 1 : numel( obj.body_list )
                 b = obj.body_list( i );
-                voxels.paint( b.fv, b.id );
+                voxels = obj.paint_body( b, voxels );
             end
-            assert( ~any( voxels.values == 0, 'all' ) );
         end
         
         function envelope = unify_envelopes( obj )
@@ -62,6 +79,17 @@ classdef UniformVoxelCanvas < handle
             for i = 2 : numel( obj.body_list )
                 body = obj.body_list( 1 );
                 envelope = envelope.union( body.envelope );
+            end
+        end
+        
+        function voxels = paint_body( obj, body, voxels )
+            switch obj.mode
+                case obj.OVERWRITE
+                    voxels.paint( body.fv, body.id );
+                case obj.ACCUMULATE
+                    voxels.add( body.fv, body.id );
+                otherwise
+                    assert( false );
             end
         end
     end
