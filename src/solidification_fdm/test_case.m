@@ -47,7 +47,10 @@ uvc.add_body( mold );
 uvc.add_body( cavity );
 uvc.paint();
 
-uvm = UniformVoxelMesh( uvc.voxels, uvc.material_ids );
+%v = uvc.voxels; % 3D
+%v = uvc.voxels.subset_plane( 5, 2 ); % 2D
+v = uvc.voxels.subset_line( [ 5 5 ], 2 ); % 1D
+%uvm = UniformVoxelMesh( v, uvc.material_ids );
 
 %% INITIAL FIELD
 u_fn = @(id,locations)smp.lookup_initial_temperatures( id ) * ones( sum( locations ), 1 );

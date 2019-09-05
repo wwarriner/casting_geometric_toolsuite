@@ -17,7 +17,7 @@ classdef Mesh < Process
     
     properties ( SetAccess = private, Dependent )
         count(1,1) uint32 {mustBePositive}
-        shape(1,3) uint32 {mustBePositive}
+        shape(1,3) uint32 {mustBePositive} % mesh units
         scale(1,1) double {mustBeReal,mustBeFinite,mustBePositive} % casting units
         spacing(1,3) double {mustBeReal,mustBeFinite,mustBePositive}
         origin(1,3) double {mustBeReal,mustBeFinite}
@@ -25,6 +25,7 @@ classdef Mesh < Process
         interior(:,:,:) logical
         exterior(:,:,:) logical
         surface(:,:,:) logical
+        normals(:,:,:,3) double
     end
     
     methods
@@ -71,6 +72,10 @@ classdef Mesh < Process
         
         function value = get.surface( obj )
             value = bwperim( obj.interior );
+        end
+        
+        function value = get.normals( obj )
+            value = obj.voxels.get_surface_normal_map();
         end
         
         function mesh_lengths = to_mesh_length( obj, casting_lengths )

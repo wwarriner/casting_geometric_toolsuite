@@ -23,9 +23,7 @@ classdef StlFile < handle
         
         function value = get.fv( obj )
             assert( isfile( obj.file ) );
-            
-            coordinates = READ_stl( obj.file );
-            [ value.faces, value.vertices ] = CONVERT_meshformat( coordinates );
+            value = read_stl( obj.file );
         end
     end
     
