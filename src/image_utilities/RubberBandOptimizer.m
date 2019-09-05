@@ -38,7 +38,7 @@ classdef RubberBandOptimizer < handle
                 obj.path = obj.prepare_output_path( path );
             end
             
-            assert( all( min( obj.lower ) - 0.5 <= obj.path & obj.path <= max( obj.upper ) + 0.5 ) );
+            assert( all( min( obj.lower ) <= obj.path & obj.path <= max( obj.upper ) ) );
         end
     end
     

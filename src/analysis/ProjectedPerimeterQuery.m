@@ -17,7 +17,7 @@ classdef ProjectedPerimeterQuery < handle
                 return;
             end
             
-            projected = project( interior );
+            projected = obj.project_area( interior );
             area = sum( projected, 'all' );
             perimeter = bwperim( projected );
             length = sum( perimeter, 'all' );
@@ -42,6 +42,17 @@ classdef ProjectedPerimeterQuery < handle
     
     properties ( Access = private )
         cc(1,1) struct
+    end
+    
+    methods ( Access = private )
+        function projected = project_area( obj, interior )
+            projected = project( interior );
+            projected = ~bwareaopen( ~projected, obj.PIXEL_COUNT_TO_REMOVE + 1 );
+        end
+    end
+    
+    properties ( Access = private, Constant )
+        PIXEL_COUNT_TO_REMOVE = 4
     end
     
 end

@@ -1,4 +1,4 @@
-classdef Feeders < Process
+classdef Feeders < Process & matlab.mixin.Copyable
     
     properties ( SetAccess = private )
         intersection_volume(:,1) double {mustBeReal,mustBeFinite,mustBeNonnegative}
@@ -29,9 +29,12 @@ classdef Feeders < Process
             obj.run();
         end
         
-        function rotate( obj, rotation )
-            obj.bodies.rotate( rotation );
-            obj.prepare_boolean_values();
+        function clone = rotate( obj, rotation )
+            clone = obj.copy();
+            for i = 1 : obj.count
+                clone.bodies( i ) = obj.bodies( i ).rotate( rotation );
+            end
+            clone.prepare_boolean_values();
         end
         
         function value = get.count( obj )
@@ -100,7 +103,7 @@ classdef Feeders < Process
             assert( ~isempty( obj.geometric_profile ) );
         end
         
-        function check_settings( obj )
+        function check_settings( ~ )
             % no settings need checking
         end
         

@@ -103,7 +103,8 @@ classdef (Sealed) MoldThinSections < Process
             amount = [ 1 1 1 ];
             value = 1;
             mask = padarray( obj.mesh.exterior, amount, value, 'both' );
-            wall = padarray( -obj.geometric_profile.unscaled, amount, inf, 'both' );
+            wall_pad_value = max( -obj.geometric_profile.unscaled, [], 'all' );
+            wall = padarray( -obj.geometric_profile.unscaled, amount, wall_pad_value, 'both' );
             ts = ThinSectionQuery( ...
                 wall, ...
                 mask, ...

@@ -45,12 +45,33 @@ classdef ThermalProfileQuery < handle
             looper.run();
         end
         
-        % @get returns the distance field masked in by @mask_optional.
+        % @get_profile returns the distance field masked in by
+        % @mask_optional.
         % - @values is an ND array of the thermal modulus.
-        % - @mask_optional is a logical array of size @get_size() where false 
-        % elements are set to 0 in @values. Default is all true.
-        function values = get( obj, mask_optional )
+        % - @mask_optional is a logical array of size @get_size() where
+        % false elements are set to 0 in @values. Default is all true.
+        function values = get_profile( obj, mask_optional )
             values = obj.times.modulus;
+            values = obj.mesh.reshape( values );
+            shape = size( values );
+            
+            if nargin < 2
+                mask_optional = true( shape );
+            end
+            assert( islogical( mask_optional ) );
+            assert( all( shape == size( mask_optional ) ) );
+            
+            values( isnan( values ) ) = 0;
+            values( ~mask_optional ) = 0;
+        end
+        
+        % @get_final_temperature returns the distance field masked in by
+        % @mask_optional.
+        % - @values is an ND array of the thermal modulus.
+        % - @mask_optional is a logical array of size @get_size() where
+        % false elements are set to 0 in @values. Default is all true.
+        function values = get_final_temperature( obj, mask_optional )
+            values = obj.problem.u;
             values = obj.mesh.reshape( values );
             shape = size( values );
             

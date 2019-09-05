@@ -33,6 +33,20 @@ classdef (Sealed) Results < handle
             end
         end
         
+        function summary = compose_summary( obj, process_keys )
+            if nargin < 2
+                keys = string( obj.results.keys() );
+            else
+                keys = [ process_keys.name ];
+            end
+            summary = table();
+            for i = 1 : numel( keys )
+                p = obj.results( keys( i ) );
+                t = p.to_table();
+                summary = [ summary t ]; %#ok<AGROW>
+            end
+        end
+        
         function value = get.count( obj )
             value = obj.results.Count;
         end

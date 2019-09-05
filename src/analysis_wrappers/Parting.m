@@ -10,6 +10,7 @@ classdef (Sealed) Parting < Process
         area(1,1) double
         length(1,1) double
         draw(1,1) double
+        flatness(:,1) double
         perimeter_labels(:,:,:) uint32
         jog_free_labels(:,:,:) uint32
         line_labels(:,:,:) uint32
@@ -32,6 +33,12 @@ classdef (Sealed) Parting < Process
         end
         
         function write( obj, common_writer )
+            perimeter_title = strjoin( [ "perimeter" obj.NAME ], "_" );
+            common_writer.write_array( perimeter_title, obj.perimeter_labels, obj.mesh.spacing, obj.mesh.origin );
+            jog_free_title = strjoin( [ "jog_free" obj.NAME ], "_" );
+            common_writer.write_array( jog_free_title, obj.jog_free_labels, obj.mesh.spacing, obj.mesh.origin );
+            line_title = strjoin( [ "line" obj.NAME ], "_" );
+            common_writer.write_array( line_title, obj.line_labels, obj.mesh.spacing, obj.mesh.origin );
             common_writer.write_array( obj.NAME, obj.to_array(), obj.mesh.spacing, obj.mesh.origin );
             common_writer.write_table( obj.NAME, obj.to_table() );
         end
@@ -59,6 +66,10 @@ classdef (Sealed) Parting < Process
         
         function value = get.draw( obj )
             value = obj.mesh.to_casting_length( obj.perimeter.line.draw );
+        end
+        
+        function value = get.flatness( obj )
+            value = obj.perimeter.line.flatness;
         end
         
         function value = get.perimeter_labels( obj )
@@ -98,8 +109,8 @@ classdef (Sealed) Parting < Process
         
         function value = to_table_impl( obj )
             value = list2table( ...
-                { 'count' 'area' 'length' 'draw' }, ...
-                { obj.count obj.area obj.length obj.draw } ...
+                { 'count' 'area' 'length' 'draw' 'flatness' }, ...
+                { obj.count obj.area obj.length obj.draw obj.flatness( 1 ) } ...
                 );
         end
     end

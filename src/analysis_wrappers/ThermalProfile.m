@@ -75,6 +75,8 @@ classdef ThermalProfile < Process
         filtered(:,:,:) double {mustBeReal,mustBeFinite}
         filtered_interior(:,:,:) double {mustBeReal,mustBeFinite}
         filter_amount(1,1) double {mustBeReal,mustBeFinite}
+        temperature(:,:,:) double {mustBeReal,mustBeFinite}
+        temperature_interior(:,:,:) double {mustBeReal,mustBeFinite}
     end
     
     methods
@@ -91,6 +93,8 @@ classdef ThermalProfile < Process
             common_writer.write_array( obj.NAME, obj.values, obj.mesh.spacing, obj.mesh.origin );
             filter_title = strjoin( [ "filtered" obj.NAME ], "_" );
             common_writer.write_array( filter_title, obj.filtered, obj.mesh.spacing, obj.mesh.origin );
+            temperature_title = strjoin( [ "temperature" obj.NAME ], "_" );
+            common_writer.write_array( temperature_title, obj.temperature, obj.mesh.spacing, obj.mesh.origin );
         end
         
         function a = to_array( obj )
@@ -98,11 +102,11 @@ classdef ThermalProfile < Process
         end
         
         function value = get.values( obj )
-            value = obj.unpad_get();
+            value = obj.get_profile();
         end
         
         function value = get.values_interior( obj )
-            value = obj.unpad_get( obj.mesh.interior );
+            value = obj.get_profile( obj.mesh.interior );
         end
         
         function value = get.filtered( obj )
@@ -115,6 +119,14 @@ classdef ThermalProfile < Process
         
         function value = get.filter_amount( obj )
             value = obj.compute_filter_amount( obj.values );
+        end
+        
+        function value = get.temperature( obj )
+            value = obj.get_temperature();
+        end
+        
+        function value = get.temperature_interior( obj )
+            value = obj.get_temperature( obj.mesh.interior );
         end
     end
     
@@ -246,17 +258,34 @@ classdef ThermalProfile < Process
             obj.sip = sip_in;
         end
         
-        function value = unpad_get( obj, mask_optional )
+        function value = get_profile( obj, mask_optional )
             if nargin < 2
                 mask_optional = true( size( obj.mesh.interior ) );
             end
-            mask_optional = padarray( ...
-                mask_optional, ...
+            mask_optional = obj.pad_mask( mask_optional );
+            value = obj.thermal_profile_query.get_profile( mask_optional );
+            value = obj.unpad( value );
+        end
+        
+        function value = get_temperature( obj, mask_optional )
+            if nargin < 2
+                mask_optional = true( size( obj.mesh.interior ) );
+            end
+            mask_optional = obj.pad_mask( mask_optional );
+            value = obj.thermal_profile_query.get_final_temperature( mask_optional );
+            value = obj.unpad( value );
+        end
+        
+        function value = pad_mask( obj, value )
+            value = padarray( ...
+                value, ...
                 double( obj.pad_count ), ...
                 true, ...
                 'both' ...
                 );
-            value = obj.thermal_profile_query.get( mask_optional );
+        end
+        
+        function value = unpad( obj, value )
             start = obj.pad_count + 1;
             finish = uint32( size( value ) ) - start + 1;
             value = value( ...

@@ -54,7 +54,12 @@ classdef Voxels < handle & matlab.mixin.Copyable
         
         function paint( obj, fv, value )
             to_paint = obj.rasterize( fv );
-            obj.values( to_paint ) = value;
+            obj.values( to_paint ) = double( value );
+        end
+        
+        function add( obj, fv, value )
+            to_paint = obj.rasterize( fv );
+            obj.values( to_paint ) = obj.values( to_paint ) + double( value );
         end
         
         function clear( obj )

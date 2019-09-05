@@ -6,7 +6,11 @@ classdef Settings < DynamicPropertyTree
                 return;
             end
             
+            if ischar( file )
+                file = string( file );
+            end
             assert( isstring( file ) );
+            assert( isscalar( file ) );
             
             obj.read_from_file( file );
         end
