@@ -20,8 +20,8 @@ classdef UniformVoxelMesh < MeshInterface
             assert( ~any( material_values == 0, 'all' ) );
             
             length = voxels.scale ./ 1000; % m <- mm
-            area = length .^ 2;
-            volume = length .^ 3;
+            area = voxels.element_area ./ ( 1000 .^ ( double( voxels.dimension_count ) - 1 ) );
+            volume = voxels.element_volume ./ ( 1000 .^ double( voxels.dimension_count ) );
             
             elements = Elements( ...
                 voxels.values( : ), ...
@@ -30,6 +30,7 @@ classdef UniformVoxelMesh < MeshInterface
                 );
             % external
             element_ids = cell2mat( voxels.external_elements );
+            element_ids = element_ids( : );
             areas = area .* ones( size( element_ids ) );
             distances = 0.5 .* length .* ones( size( element_ids ) );
             external_interfaces = ExternalInterfaces( ...
@@ -167,7 +168,7 @@ classdef UniformVoxelMesh < MeshInterface
     end
     
     properties ( Access = private )
-        shape(1,3) uint32 {mustBePositive} = [ 1 1 1 ]
+        shape(1,:) uint32 {mustBePositive}
         elements Elements
         internal_interfaces InternalInterfaces
         external_interfaces ExternalInterfaces

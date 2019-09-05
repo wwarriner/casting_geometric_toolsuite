@@ -66,6 +66,95 @@ classdef Voxels < handle & matlab.mixin.Copyable
             obj.values( : ) = obj.default_value;
         end
         
+        % @subset_line creates an axially-aligned linear subset of the
+        % current voxels. This method ONLY supports 3D and 2D Voxel objects
+        % (@dimension_count == 3 or 2).
+        function clone = subset_line( obj, slice_indices, line_dimension )
+            assert( ismember( obj.dimension_count, [ 2 3 ] ) );
+            
+            assert( isnumeric( slice_indices ) );
+            assert( isreal( slice_indices ) );
+            assert( all( isfinite( slice_indices ) ) );
+            other_shape = obj.shape;
+            other_shape( line_dimension ) = [];
+            for i = 1 : numel( slice_indices )
+                assert( 1 <= slice_indices( i ) );
+                assert( slice_indices( i ) <= other_shape( i ) );
+            end
+            
+            assert( isnumeric( line_dimension ) );
+            assert( isreal( line_dimension ) );
+            assert( isfinite( line_dimension ) );
+            assert( ismember( line_dimension, 1 : obj.dimension_count ) );
+            
+            clone = obj.copy();
+            
+            new_shape = obj.shape( line_dimension );
+            
+            new_origin = obj.origin( line_dimension );
+            
+            subs = cellfun( ...
+                @(x)1:obj.shape(x), ...
+                num2cell( 1 : obj.dimension_count ), ...
+                'uniformoutput', false ...
+                );
+            indices = num2cell( slice_indices );
+            other_dims = 1 : obj.dimension_count;
+            other_dims( line_dimension ) = [];
+            [ subs{ other_dims } ] = deal( indices{ : } );
+            new_values = squeeze( obj.values( subs{ : } ) );
+            
+            new_points = obj.compute_points( new_shape, new_origin, obj.scale );
+            
+            clone.shape = [ new_shape 1 ];
+            clone.origin = new_origin;
+            clone.values = new_values( : );
+            clone.points = new_points;
+        end
+        
+        % @subset_plane creates an axially-aligned planar subset of the
+        % current voxels. This method ONLY supports 3D Voxel objects
+        % (@dimension_count == 3).
+        function clone = subset_plane( obj, slice_index, normal_dimension )
+            assert( obj.dimension_count == 3 );
+            
+            assert( isnumeric( slice_index ) );
+            assert( isreal( slice_index ) );
+            assert( isfinite( slice_index ) );
+            assert( 1 <= slice_index );
+            assert( slice_index <= obj.shape( normal_dimension ) );
+            
+            assert( isnumeric( normal_dimension ) );
+            assert( isreal( normal_dimension ) );
+            assert( isfinite( normal_dimension ) );
+            assert( ismember( normal_dimension, 1 : obj.dimension_count ) );
+            
+            clone = obj.copy();
+            
+            new_shape = obj.shape;
+            new_shape( normal_dimension ) = [];
+            new_shape = squeeze( new_shape );
+            
+            new_origin = obj.origin;
+            new_origin( normal_dimension ) = [];
+            new_origin = squeeze( new_origin );
+            
+            subs = cellfun( ...
+                @(x)1:obj.shape(x), ...
+                num2cell( 1 : obj.dimension_count ), ...
+                'uniformoutput', false ...
+                );
+            subs{ normal_dimension } = slice_index;
+            new_values = squeeze( obj.values( subs{ : } ) );
+            
+            new_points = obj.compute_points( new_shape, new_origin, obj.scale );
+            
+            clone.shape = new_shape;
+            clone.origin = new_origin;
+            clone.values = new_values;
+            clone.points = new_points;
+        end
+        
         function clone = pad( obj, padsize )
             clone = obj.copy();
             new_origin = obj.origin - ( obj.scale .* double( padsize ) );
@@ -84,40 +173,37 @@ classdef Voxels < handle & matlab.mixin.Copyable
         end
         
         function value = get.dimension_count( obj )
-            value = ndims( obj.values );
+            if isvector( obj.values )
+                value = 1;
+            else
+                value = ndims( obj.values );
+            end
         end
         
         function value = get.element_count( obj )
             value = numel( obj.values );
         end
         
-        function value = get.strides( obj )
-            value = 1;
-            if obj.dimension_count > 1
-                value = [ value cumprod( obj.shape( 1 : end - 1 ) ) ];
-            end
-        end
-        
         function value = get.element_area( obj )
-            value = obj.scale .^ 2;
+            value = obj.scale .^ ( double( obj.dimension_count ) - 1 );
         end
         
         function value = get.element_volume( obj )
-            value = obj.scale .^ 3;
+            value = obj.scale .^ double( obj.dimension_count );
         end
         
-        % - external is a cell array with 2 * dimension_count vectors, each
+        % - external is a cell array with @dimension_count elements, each
         % composed of element indices
         % - the first dimension_count vectors represent elements on the
         % negative axial faces
         % - the second dimension_count vectors represent elements on the
         % positive axial faces
-        function elements = get.external_elements( obj )
+        function value = get.external_elements( obj )
             if obj.dimension_count == 1
-                elements = { 1, obj.shape() };
+                value = { 1, obj.element_count };
                 return;
             end
-            augmented_strides = [ obj.strides( : ); obj.element_count ];
+            augmented_strides = double( [ obj.strides( : ); obj.element_count ] );
             bases = cell( obj.dimension_count, 1 );
             for i = 1 : obj.dimension_count
                 current_stride = augmented_strides( i );
@@ -126,7 +212,7 @@ classdef Voxels < handle & matlab.mixin.Copyable
                 order = [ order( order == i ) order( order ~= i ) ];
                 bases{ i } = permute( 1 : current_stride : next_stride, order );
             end
-            elements = cell( 2 * obj.dimension_count, 1 );
+            value = cell( 2 * obj.dimension_count, 1 );
             for i = 1 : obj.dimension_count
                 order = 1 : obj.dimension_count;
                 order = order( order ~= i );
@@ -135,12 +221,12 @@ classdef Voxels < handle & matlab.mixin.Copyable
                     inds = inds + bases{ order( j ) };
                 end
                 inds = inds( : ) - obj.dimension_count + 2;
-                elements{ i } = inds;
-                elements{ i + obj.dimension_count } = obj.element_count - inds + 1;
+                value{ i } = sort( uint32( inds ) );
+                value{ i + obj.dimension_count } = sort( uint32( obj.element_count - inds + 1 ) );
             end
         end
         
-        function pairs = get.neighbor_pairs( obj )
+        function value = get.neighbor_pairs( obj )
             base = true( obj.element_count, obj.dimension_count );
             ext = obj.external_elements;
             for i = 1 : obj.dimension_count
@@ -153,7 +239,7 @@ classdef Voxels < handle & matlab.mixin.Copyable
                 double( obj.element_count ) ...
                 );
             [ lhs, rhs ] = find( connectivity );
-            pairs = [ lhs rhs ];
+            value = sortrows( uint32( [ lhs rhs ] ), [ 2 1 ] );
         end
         
         function clone = copy_blank( obj )
@@ -167,6 +253,15 @@ classdef Voxels < handle & matlab.mixin.Copyable
         points(:,1) cell
     end
     
+    methods
+        function value = get.strides( obj )
+            value = 1;
+            if obj.dimension_count > 1
+                value = [ value cumprod( obj.shape( 1 : end - 1 ) ) ];
+            end
+        end
+    end
+    
     methods ( Access = private )
         function array = rasterize( obj, fv )
             array = rasterize_fv( fv, obj.points );
@@ -175,7 +270,8 @@ classdef Voxels < handle & matlab.mixin.Copyable
     
     methods ( Access = private, Static )
         function scale = compute_scale( envelope, count )
-            scale = ( envelope.volume / double( count ) ) .^ ( 1.0 / 3.0 );
+            scale = ( envelope.volume / double( count ) ) ...
+                .^ ( 1.0 / double( envelope.dimension_count ) );
         end
         
         function shape = compute_desired_shape( envelope, scale )
@@ -198,7 +294,12 @@ classdef Voxels < handle & matlab.mixin.Copyable
         end
         
         function array = create_array( points, value )
-            array = value .* ones( cellfun( @numel, points ) );
+            assert( 1 <= numel( points ) );
+            if numel( points ) <= 1 
+                array = value .* ones( numel( points{ 1 } ), 1 );
+            else
+                array = value .* ones( cellfun( @numel, points ) );
+            end
         end
     end
     
