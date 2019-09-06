@@ -21,8 +21,13 @@ classdef UniformVoxelCanvas < handle
     end
     
     methods
-        function obj = UniformVoxelCanvas( element_count )
+        function obj = UniformVoxelCanvas( element_count, envelope )
+            if nargin < 2
+                envelope = [];
+            end
+            
             obj.desired_element_count = element_count;
+            obj.desired_envelope = envelope;
         end
         
         function add_body( obj, body )
@@ -30,7 +35,11 @@ classdef UniformVoxelCanvas < handle
         end
         
         function paint( obj )
-            envelope_in = obj.unify_envelopes();
+            if isempty( obj.desired_envelope )
+                envelope_in = obj.unify_envelopes();
+            else
+                envelope_in = obj.desired_envelope;
+            end
             voxels_in = obj.paint_voxels( envelope_in );
             
             obj.envelope = envelope_in;
@@ -57,6 +66,7 @@ classdef UniformVoxelCanvas < handle
     
     properties ( Access = private )
         desired_element_count(1,1) double {mustBeNonnegative}
+        desired_envelope % Envelope
         dimension_count(1,1) uint32 {mustBePositive} = 3
         body_list(:,1) Body
     end
