@@ -1,3 +1,7 @@
+%% MODE
+dimension_count = 1;
+analysis_dimension = 1;
+
 %% PHYSICAL PROPERTIES
 ambient_m = AmbientMaterial();
 ambient_m.id = 0;
@@ -40,17 +44,27 @@ mold = create_cube( ...
 mold.id = mold_m.id;
 
 %% MESHING
-element_count = 1e3;
-uvc = UniformVoxelCanvas( element_count );
+switch dimension_count
+    case 1
+        axs = 1 : 3;
+        axs( analysis_dimension ) = [];
+        envelope = mold.envelope.collapse_to( axs );
+    case 2
+        envelope = mold.envelope.collapse_to( analysis_dimension );
+    case 3
+        envelope = mold.envelope;
+    otherwise
+        assert( false )
+end
+
+element_count = 1e4;
+uvc = UniformVoxelCanvas( element_count, envelope );
 uvc.default_body_id = mold.id;
 uvc.add_body( mold );
 uvc.add_body( cavity );
 uvc.paint();
 
-%v = uvc.voxels; % 3D
-%v = uvc.voxels.subset_plane( 5, 2 ); % 2D
-v = uvc.voxels.subset_line( [ 5 5 ], 2 ); % 1D
-%uvm = UniformVoxelMesh( v, uvc.material_ids );
+uvm = UniformVoxelMesh( uvc.voxels, uvc.material_ids );
 
 %% INITIAL FIELD
 u_fn = @(id,locations)smp.lookup_initial_temperatures( id ) * ones( sum( locations ), 1 );
@@ -74,3 +88,80 @@ qbi.stagnation_tolerance = 1e-2;
 lp = Looper( qbi, @sp.is_finished );
 lp.add_result( SolidificationTimeResult( uvm, sp, qbi ) );
 lp.run();
+
+%% PLOTTING
+fh = figure();
+patch_axh = axes( fh );
+hold( patch_axh, 'on' );
+ph = patch( patch_axh, cavity.fv );
+ph.FaceColor = [ 0.5 1.0 0.5 ];
+ph.EdgeColor = 'none';
+ph = patch( patch_axh, mold.fv );
+ph.FaceColor = [ 0.7 0.0 0.7 ];
+ph.FaceAlpha = 0.2;
+ph.EdgeColor = 'none';
+axis( patch_axh, 'equal', 'vis3d' );
+view( patch_axh, 3 );
+light( patch_axh );
+
+rr = squeeze( uvm.reshape( lp.results.modulus ) );
+rr( isnan( rr ) ) = 0;
+
+switch dimension_count
+    case 1
+        x = [ envelope.min_point; envelope.max_point ];
+        ph = plot3( patch_axh, x( :, 1 ), x( :, 2 ), x( :, 3 ) );
+        ph.LineWidth = 5;
+        ph.Color = [ 0 0 0 ];
+        
+        fh = figure();
+        axh = axes( fh );
+        hold( axh, 'on' );
+        xl = [ ...
+            envelope.min_point( analysis_dimension ), ...
+            envelope.max_point( analysis_dimension ) ...
+            ];
+        xx = linspace( ...
+            xl( 1 ), ...
+            xl( 2 ), ...
+            numel( rr ) ...
+            );
+        plot( axh, xx, rr );
+        axh.XLim = xl;
+        axh.YLim( 1 ) = 0;
+        yyaxis( axh, 'right' );
+        plot( axh, xx, squeeze( uvc.voxels.values ) );
+        axh.YLim( 1 ) = 1;
+        axis( axh, 'square' );
+    case 2
+        axs = 1 : 3;
+        axs( analysis_dimension ) = [];
+        x = [ envelope.min_point; envelope.max_point ];
+        box( :, axs( 1 ) ) = [ ...
+            x( 1, axs( 1 ) )
+            x( 1, axs( 1 ) )
+            x( 2, axs( 1 ) )
+            x( 2, axs( 1 ) )
+            ];
+        box( :, axs( 2 ) ) = [ ...
+            x( 1, axs( 2 ) )
+            x( 2, axs( 2 ) )
+            x( 2, axs( 2 ) )
+            x( 1, axs( 2 ) )
+            ];
+        box( :, analysis_dimension ) = repmat( envelope.min_point( analysis_dimension ), [ 4 1 ] );
+        cc = zeros( [ 4 1 ] );
+        ph = patch( patch_axh, box( :, 1 ), box( :, 2 ), box( :, 3 ), cc );
+        ph.FaceColor = [ 0.3 0.3 0.3 ];
+        ph.FaceAlpha = 0.5;
+        ph.EdgeColor = [ 0 0 0 ];
+        
+        fh = figure();
+        axh = axes( fh );
+        imagesc( axh, flipud( rr.' ) );
+        axis( axh, 'equal' );
+    case 3
+        volumeViewer( rr );
+    otherwise
+        assert( false )
+end
