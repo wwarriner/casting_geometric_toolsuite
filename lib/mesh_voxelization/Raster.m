@@ -76,6 +76,10 @@ classdef Raster < handle
         end
         
         function value = get.normals( obj )
+            if isempty( obj.faces )
+                value = table();
+                return;
+            end
             n = compute_normals( obj.mesh );
             f = obj.faces;
             value = f( :, : );
