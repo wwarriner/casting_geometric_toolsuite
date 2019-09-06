@@ -29,17 +29,17 @@ classdef Voxels < handle & matlab.mixin.Copyable
                 default_value = 0.0;
             end
             
-            assert( isscalar( element_count ) )
             assert( isa( element_count, 'double' ) );
+            assert( isscalar( element_count ) )
             assert( isreal( element_count ) );
             assert( isfinite( element_count ) );
             assert( 0.0 < element_count );
             
-            assert( isscalar( envelope ) );
             assert( isa( envelope, 'Envelope' ) );
+            assert( isscalar( envelope ) );
             
-            assert( isscalar( default_value ) );
             assert( isa( default_value, 'double' ) );
+            assert( isscalar( default_value ) );
             
             scale = obj.compute_scale( envelope, element_count );
             desired_shape = obj.compute_desired_shape( envelope, scale );
