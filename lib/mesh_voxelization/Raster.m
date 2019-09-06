@@ -36,12 +36,12 @@ classdef Raster < handle
         faces table
     end
     
-    properties ( SetAccess = private )
+    properties ( SetAccess = private, Dependent )
         normals table
     end
     
     methods
-        function obj = Raster( grid, fv, rays )
+        function obj = Raster( grid, fv ) %, rays )
             if nargin < 3
                 rays = 'xyz';
             end
@@ -53,18 +53,20 @@ classdef Raster < handle
             assert( isfield( fv, 'faces' ) );
             assert( isfield( fv, 'vertices' ) );
             
-            if isstring( rays )
-                rays = char( rays );
-            end
-            if isempty( rays )
-                rays = 'xyz';
-            end
-            assert( ischar( rays ) );
-            assert( all( ismember( numel( rays ), 1 : 3 ) ) );
-            assert( all( ismember( rays, 'xyz' ) ) );
+%             if isstring( rays )
+%                 rays = char( rays );
+%             end
+%             if isempty( rays )
+%                 rays = 'xyz';
+%             end
+%             assert( ischar( rays ) );
+%             assert( all( ismember( numel( rays ), 1 : 3 ) ) );
+%             assert( all( ismember( rays, 'xyz' ) ) );
             
             mesh = convert_triangle_geometry_format( fv );
-            dimensions = find( ismember( 'xyz', rays ) );
+%             dimensions = find( ismember( 'xyz', rays ) );
+
+            dimensions = find( 1 < cellfun( @numel, grid.points ) );
             
             obj.grid = grid;
             obj.mesh = mesh;

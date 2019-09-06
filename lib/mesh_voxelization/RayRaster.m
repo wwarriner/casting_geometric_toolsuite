@@ -50,8 +50,12 @@ classdef RayRaster < handle
         end
         
         function value = get.interior_array( obj )
-            value = obj.construct_voxels();
-            value = obj.correct_voxels( value );
+            if isempty( obj.rays ) || isempty( obj.crossings )
+                value = false( obj.shape );
+            else
+                value = obj.construct_voxels();
+                value = obj.correct_voxels( value );
+            end
         end
     end
     
@@ -74,6 +78,9 @@ classdef RayRaster < handle
     methods ( Access = private )
         function prepare( obj )
             faces = obj.initialize_rays();
+            if isempty( faces )
+                return;
+            end
             obj.initialize_crossings( faces );
             v_cross = obj.identify_vertex_crossings();
             f_cross = obj.identify_face_crossings();
@@ -114,10 +121,14 @@ classdef RayRaster < handle
             yp( i : end ) = [];
             yi( i : end ) = [];
             correction = false( i - 1, 1 );
-            obj.rays = table( ...
-                xp, xi, yp, yi, correction, ...
-                'variablenames', { 'xp', 'xi', 'yp', 'yi', 'correction' } ...
-                );
+            if isempty( faces )
+                obj.rays = table();
+            else
+                obj.rays = table( ...
+                    xp, xi, yp, yi, correction, ...
+                    'variablenames', { 'xp', 'xi', 'yp', 'yi', 'correction' } ...
+                    );
+            end
         end
         
         function initialize_crossings( obj, faces )
@@ -166,24 +177,30 @@ classdef RayRaster < handle
             xx = obj.rays.xp( obj.crossings.rays );
             yy = obj.rays.yp( obj.crossings.rays );
             fy = obj.mesh(rem,2,2) - ((obj.mesh(rem,2,2)-obj.mesh(rem,2,3)) .* (obj.mesh(rem,1,2)-obj.mesh(rem,1,1))./(obj.mesh(rem,1,2)-obj.mesh(rem,1,3)));
-            ry = obj.mesh(rem,2,2) - ((obj.mesh(rem,2,2)-obj.mesh(rem,2,3)) .* (obj.mesh(rem,1,2)-xx)./(obj.mesh(rem,1,2)-obj.mesh(rem,1,3)));
-            check = (fy >= obj.mesh(rem,2,1) & ry >= yy) | (fy <= obj.mesh(rem,2,1) & ry <= yy);
+            ry_slope = (obj.mesh(rem,1,2)-xx)./(obj.mesh(rem,1,2)-obj.mesh(rem,1,3));
+            ry = obj.mesh(rem,2,2) - ((obj.mesh(rem,2,2)-obj.mesh(rem,2,3)) .* ry_slope);
+            vert_check = isnan( ry_slope ) & ( ( xx >= obj.mesh(rem,1,2) & fy >= obj.mesh(rem,2,1) ) | ( xx <= obj.mesh(rem,1,2) & fy <= obj.mesh(rem,2,1) ) );
+            check = (fy >= obj.mesh(rem,2,1) & ry >= yy) | (fy <= obj.mesh(rem,2,1) & ry <= yy) | vert_check;
             
             inds = inds( check );
             rem = rem( check );
             xx = xx( check );
             yy = yy( check );
             fy = obj.mesh(rem,2,3) - ((obj.mesh(rem,2,3)-obj.mesh(rem,2,1)) .* (obj.mesh(rem,1,3)-obj.mesh(rem,1,2))./(obj.mesh(rem,1,3)-obj.mesh(rem,1,1)));
-            ry = obj.mesh(rem,2,3) - ((obj.mesh(rem,2,3)-obj.mesh(rem,2,1)) .* (obj.mesh(rem,1,3)-xx)./(obj.mesh(rem,1,3)-obj.mesh(rem,1,1)));
-            check = (fy >= obj.mesh(rem,2,2) & ry >= yy) | (fy <= obj.mesh(rem,2,2) & ry <= yy);
+            ry_slope = (obj.mesh(rem,1,3)-xx)./(obj.mesh(rem,1,3)-obj.mesh(rem,1,1));
+            ry = obj.mesh(rem,2,3) - ((obj.mesh(rem,2,3)-obj.mesh(rem,2,1)) .* ry_slope);
+            vert_check = isnan( ry_slope ) & ( ( xx >= obj.mesh(rem,1,3) & fy >= obj.mesh(rem,2,2) ) | ( xx <= obj.mesh(rem,1,3) & fy <= obj.mesh(rem,2,2) ) );
+            check = (fy >= obj.mesh(rem,2,2) & ry >= yy) | (fy <= obj.mesh(rem,2,2) & ry <= yy) | vert_check;
             
             inds = inds( check );
             rem = rem( check );
             xx = xx( check );
             yy = yy( check );
             fy = obj.mesh(rem,2,1) - ((obj.mesh(rem,2,1)-obj.mesh(rem,2,2)) .* (obj.mesh(rem,1,1)-obj.mesh(rem,1,3))./(obj.mesh(rem,1,1)-obj.mesh(rem,1,2)));
-            ry = obj.mesh(rem,2,1) - ((obj.mesh(rem,2,1)-obj.mesh(rem,2,2)) .* (obj.mesh(rem,1,1)-xx)./(obj.mesh(rem,1,1)-obj.mesh(rem,1,2)));
-            check = (fy >= obj.mesh(rem,2,3) & ry >= yy) | (fy <= obj.mesh(rem,2,3) & ry <= yy);
+            ry_slope = (obj.mesh(rem,1,1)-xx)./(obj.mesh(rem,1,1)-obj.mesh(rem,1,2));
+            ry = obj.mesh(rem,2,1) - ((obj.mesh(rem,2,1)-obj.mesh(rem,2,2)) .* ry_slope);
+            vert_check = isnan( ry_slope ) & ( ( xx >= obj.mesh(rem,1,1) & fy >= obj.mesh(rem,2,3) ) | ( xx <= obj.mesh(rem,1,1) & fy <= obj.mesh(rem,2,3) ) );
+            check = (fy >= obj.mesh(rem,2,3) & ry >= yy) | (fy <= obj.mesh(rem,2,3) & ry <= yy) | vert_check;
             
             inds = inds( check );
             rem = rem( check );
@@ -219,7 +236,11 @@ classdef RayRaster < handle
             obj.crossings.z = round( z * ROUND_TOL ) / ROUND_TOL;
             check = obj.z_value_range( 1 ) <= obj.crossings.z & obj.crossings.z <= obj.z_value_range( 2 );
             obj.crossings = obj.crossings( check, : );
-            obj.crossings = unique( obj.crossings, 'stable', 'rows' );
+            if ~isempty( obj.crossings )
+                [ ~, ia ] = unique( obj.crossings( :, { 'rays' 'z' } ), 'stable', 'rows' );
+                obj.crossings = obj.crossings( ia, : );
+            end
+            %obj.crossings = unique( obj.crossings, 'stable', 'rows' );
         end
         
         function v = construct_voxels( obj )
@@ -278,9 +299,7 @@ classdef RayRaster < handle
             end
             
             xi = obj.rays.xi;
-            xc = xi( obj.rays.correction );
             yi = obj.rays.yi;
-            yc = yi( obj.rays.correction );
             v = padarray( v, [ 1 1 0 ], 0, 'both' );
             xi = xi + 1;
             yi = yi + 1;
