@@ -32,16 +32,12 @@ classdef Looper < handle
         end
         
         function add_result( obj, result )
-            if isempty( obj.results )
-                obj.results = result;
-            else
-                obj.results( end + 1 ) = result;
-            end
+            obj.results{ end + 1 } = result;
         end
     end
     
     properties ( Access = private )
-        iterator % IteratorBase
+        iterator(:,1) cell
         finish_check_fn function_handle
     end
     
@@ -52,7 +48,7 @@ classdef Looper < handle
         
         function update_results( obj )
             for i = 1 : numel( obj.results )
-                obj.results( i ).update();
+                obj.results{ i }.update();
             end
         end
     end

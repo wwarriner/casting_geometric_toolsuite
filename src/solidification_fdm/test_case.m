@@ -1,6 +1,6 @@
 %% MODE
-dimension_count = 1;
-analysis_dimension = 1;
+DIMENSION_COUNT = 1;
+ANALYSIS_DIMENSION = 1;
 
 %% PHYSICAL PROPERTIES
 ambient_m = AmbientMaterial();
@@ -30,9 +30,9 @@ sip.read( melt_m.id, mold_m.id, which( 'al_sand_htc.txt' ) );
 
 %% GEOMETRY
 
-stl = StlFile( which( 'bearing_block.stl' ) );
-cavity = Body( stl.fv );
-%cavity = create_cube( [ -15 -15 -15 ], [ 30 30 30 ], 'cavity' );
+%stl = StlFile( which( 'bearing_block.stl' ) );
+%cavity = Body( stl.fv );
+cavity = create_cube( [ -15 -15 -15 ], [ 30 30 30 ], 'cavity' );
 cavity.id = melt_m.id;
 
 mold_thickness = 10; % casting units
@@ -44,21 +44,21 @@ mold = create_cube( ...
 mold.id = mold_m.id;
 
 %% MESHING
-switch dimension_count
+switch DIMENSION_COUNT
     case 1
         axs = 1 : 3;
-        axs( analysis_dimension ) = [];
+        axs( ANALYSIS_DIMENSION ) = [];
         envelope = mold.envelope.collapse_to( axs );
     case 2
-        envelope = mold.envelope.collapse_to( analysis_dimension );
+        envelope = mold.envelope.collapse_to( ANALYSIS_DIMENSION );
     case 3
         envelope = mold.envelope;
     otherwise
         assert( false )
 end
 
-element_count = 1e4;
-uvc = UniformVoxelCanvas( element_count, envelope );
+ELEMENT_COUNT = 1e2;
+uvc = UniformVoxelCanvas( ELEMENT_COUNT, envelope );
 uvc.default_body_id = mold.id;
 uvc.add_body( mold );
 uvc.add_body( cavity );
@@ -86,7 +86,8 @@ qbi.stagnation_tolerance = 1e-2;
 %ct = CompressedTemperature( qbi, sp );
 
 lp = Looper( qbi, @sp.is_finished );
-lp.add_result( SolidificationTimeResult( uvm, sp, qbi ) );
+str = SolidificationTimeResult( uvm, sp, qbi );
+lp.add_result( str );
 lp.run();
 
 %% PLOTTING
@@ -104,10 +105,10 @@ axis( patch_axh, 'equal', 'vis3d' );
 view( patch_axh, 3 );
 light( patch_axh );
 
-rr = squeeze( uvm.reshape( lp.results.modulus ) );
+rr = squeeze( uvm.reshape( lp.results{ 1 }.modulus ) );
 rr( isnan( rr ) ) = 0;
 
-switch dimension_count
+switch DIMENSION_COUNT
     case 1
         x = [ envelope.min_point; envelope.max_point ];
         ph = plot3( patch_axh, x( :, 1 ), x( :, 2 ), x( :, 3 ) );
@@ -118,8 +119,8 @@ switch dimension_count
         axh = axes( fh );
         hold( axh, 'on' );
         xl = [ ...
-            envelope.min_point( analysis_dimension ), ...
-            envelope.max_point( analysis_dimension ) ...
+            envelope.min_point( ANALYSIS_DIMENSION ), ...
+            envelope.max_point( ANALYSIS_DIMENSION ) ...
             ];
         xx = linspace( ...
             xl( 1 ), ...
@@ -135,7 +136,7 @@ switch dimension_count
         axis( axh, 'square' );
     case 2
         axs = 1 : 3;
-        axs( analysis_dimension ) = [];
+        axs( ANALYSIS_DIMENSION ) = [];
         x = [ envelope.min_point; envelope.max_point ];
         box( :, axs( 1 ) ) = [ ...
             x( 1, axs( 1 ) )
@@ -149,7 +150,7 @@ switch dimension_count
             x( 2, axs( 2 ) )
             x( 1, axs( 2 ) )
             ];
-        box( :, analysis_dimension ) = repmat( envelope.min_point( analysis_dimension ), [ 4 1 ] );
+        box( :, ANALYSIS_DIMENSION ) = repmat( envelope.min_point( ANALYSIS_DIMENSION ), [ 4 1 ] );
         cc = zeros( [ 4 1 ] );
         ph = patch( patch_axh, box( :, 1 ), box( :, 2 ), box( :, 3 ), cc );
         ph.FaceColor = [ 0.3 0.3 0.3 ];
