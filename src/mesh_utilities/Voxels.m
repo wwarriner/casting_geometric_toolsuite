@@ -307,12 +307,20 @@ classdef Voxels < handle & matlab.mixin.Copyable
         
         function grid = compute_grid( shape, origin, scale )
             points = arrayfun( ...
-                @(x,y) x + scale .* ( 1 : y ) - scale / 2, ...
+                @(x,y)Voxels.generate_points(x,y,scale), ...
                 origin, ...
                 double( shape ), ...
                 'uniformoutput', false ...
                 );
             grid = Grid( points );
+        end
+        
+        function points = generate_points( origin, shape, scale )
+            if shape == 0
+                points = origin;
+            else
+                points = origin + scale .* ( 1 : shape ) - scale / 2;
+            end
         end
         
         function array = create_array( grid, value )
