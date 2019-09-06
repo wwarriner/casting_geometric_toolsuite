@@ -79,15 +79,15 @@ sp = SolidificationProblem( uvm, smp, sip, melt_m.id, u );
 
 qbi = QualityBisectionIterator( sp );
 qbi.maximum_iterations = 100;
-qbi.quality_target = 1/1000;
+qbi.quality_target = 1/10000;
 qbi.quality_tolerance = 0.1;
 qbi.stagnation_tolerance = 1e-2;
-
-%ct = CompressedTemperature( qbi, sp );
 
 lp = Looper( qbi, @sp.is_finished );
 str = SolidificationTimeResult( uvm, sp, qbi );
 lp.add_result( str );
+ct = CompressedTemperature( qbi, sp );
+lp.add_result( ct );
 lp.run();
 
 %% PLOTTING
