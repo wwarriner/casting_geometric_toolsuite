@@ -38,6 +38,31 @@ classdef Envelope < handle & matlab.mixin.Copyable
             new_max = max( obj.max_point, envelope.max_point );
             u = Envelope( new_min, new_max );
         end
+        
+        function clone = collapse_to( obj, dimensions, values )
+            assert( isnumeric( dimensions ) );
+            assert( isreal( dimensions ) );
+            assert( all( isfinite( dimensions ) ) );
+            assert( all( ismember( dimensions, 1 : obj.dimension_count ) ) );
+            
+            if nargin < 3
+                values = mean( [ obj.min_point; obj.max_point ] );
+                values = values( dimensions );
+            end
+            
+            assert( isnumeric( values ) );
+            assert( isreal( values ) );
+            assert( all( isfinite( values ) ) );
+            assert( numel( values ) == numel( dimensions ) );
+            
+            clone = obj.copy;
+            for i = 1 : numel( dimensions )
+                d = dimensions( i );
+                clone.min_point( d ) = values( i );
+                clone.max_point( d ) = values( i );
+            end
+            clone.recompute();
+        end
     end
     
     methods ( Access = private )
@@ -70,7 +95,10 @@ classdef Envelope < handle & matlab.mixin.Copyable
             obj.min_point = min( obj.min_point, obj.max_point );
             obj.max_point = max( obj.min_point, obj.max_point );
             obj.lengths = obj.max_point - obj.min_point;
-            obj.volume = prod( obj.lengths );
+            p_lengths = obj.lengths;
+            p_lengths( p_lengths == 0 ) = [];
+            obj.volume = prod( p_lengths );
+            obj.dimension_count = numel( p_lengths );
         end
     end
     
