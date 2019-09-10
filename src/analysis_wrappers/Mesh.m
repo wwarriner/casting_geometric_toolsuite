@@ -102,6 +102,16 @@ classdef Mesh < Process
             casting_volumes = mesh_volumes .* obj.voxels.element_volume;
         end
         
+        function casting_position = to_casting_position( obj, mesh_position, scale_origin )
+            s = Scaling;
+            s.factor = obj.scale;
+            s.origin = scale_origin;
+            s_position = s.apply( mesh_position );
+            t = Translation;
+            t.shift = obj.origin;
+            casting_position = t.apply( s_position );
+        end
+        
         function casting_body = move_to_casting( obj, mesh_body, scale_origin )
             s = Scaling;
             s.factor = obj.scale;

@@ -8,6 +8,7 @@ classdef Feeders < Process & matlab.mixin.Copyable
     properties ( SetAccess = private, Dependent )
         count(1,1) double
         fv(:,1) struct
+        position(:,3) double {mustBeReal,mustBeFinite}
         radius(:,1) double {mustBeReal,mustBeFinite,mustBePositive}
         magnitude(:,1) double {mustBeReal,mustBeFinite,mustBePositive}
         diameter(:,1) double {mustBeReal,mustBeFinite,mustBePositive}
@@ -32,7 +33,10 @@ classdef Feeders < Process & matlab.mixin.Copyable
         function clone = rotate( obj, rotation )
             clone = obj.copy();
             for i = 1 : obj.count
-                clone.bodies( i ) = obj.bodies( i ).rotate( rotation );
+                r = rotation.copy();
+                p = obj.position( i, : );
+                r.origin = p;
+                clone.bodies( i ) = obj.bodies( i ).rotate( r );
             end
             clone.prepare_boolean_values();
         end
@@ -43,6 +47,10 @@ classdef Feeders < Process & matlab.mixin.Copyable
         
         function value = get.fv( obj )
             value = arrayfun( @(b)b.fv, obj.bodies );
+        end
+        
+        function value = get.position( obj )
+            value = obj.mesh.to_casting_position( obj.feeder_query.position, [ 0 0 0 ] );
         end
         
         function value = get.radius( obj )
