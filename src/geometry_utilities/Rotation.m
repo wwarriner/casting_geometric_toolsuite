@@ -1,4 +1,4 @@
-classdef Rotation < handle
+classdef Rotation < handle & matlab.mixin.Copyable
     
     properties
         angles(1,3) double {mustBeReal,mustBeFinite} = [ 0 0 0 ]

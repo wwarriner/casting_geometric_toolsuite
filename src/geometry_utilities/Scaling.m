@@ -1,4 +1,4 @@
-classdef Scaling < handle
+classdef Scaling < handle & matlab.mixin.Copyable
     
     properties
         factor(1,1) double {mustBeReal,mustBeFinite,mustBePositive} = 1.0

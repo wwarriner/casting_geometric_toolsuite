@@ -1,4 +1,4 @@
-classdef Translation < handle
+classdef Translation < handle & matlab.mixin.Copyable
     
     properties
         shift(1,3) double {mustBeReal,mustBeFinite} = [ 0 0 0 ]
