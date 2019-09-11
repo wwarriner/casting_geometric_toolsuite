@@ -37,7 +37,7 @@ classdef Looper < handle
     end
     
     properties ( Access = private )
-        iterator(:,1) cell
+        iterator
         finish_check_fn function_handle
     end
     
