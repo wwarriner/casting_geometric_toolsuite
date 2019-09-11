@@ -6,7 +6,7 @@ classdef Looper < handle
     % a dashboard, visualizations, etc.
     
     properties ( SetAccess = private )
-        results(:,1)
+        results(:,1) cell
     end
     
     methods
@@ -37,7 +37,7 @@ classdef Looper < handle
     end
     
     properties ( Access = private )
-        iterator
+        iterator % IteratorBase
         finish_check_fn function_handle
     end
     
