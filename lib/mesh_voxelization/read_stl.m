@@ -104,6 +104,7 @@ else
     assert( false );
 end
 
+mesh = double( mesh );
 fv = convert_triangle_geometry_format( mesh );
 
 end
