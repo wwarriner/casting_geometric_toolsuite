@@ -56,6 +56,10 @@ classdef UniformVoxelCanvas < handle
             value = [ obj.ACCUMULATE obj.OVERWRITE ];
         end
         
+        function value = get.envelope( obj )
+            value = obj.envelope.copy();
+        end
+        
         function set.mode( obj, value )
             assert( isstring( value ) );
             assert( ismember( value, obj.modes ) ); %#ok<MCSUP>
