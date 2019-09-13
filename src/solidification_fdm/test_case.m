@@ -30,9 +30,9 @@ sip.read( melt_m.id, mold_m.id, which( 'al_sand_htc.txt' ) );
 
 %% GEOMETRY
 
-%stl = StlFile( which( 'bearing_block.stl' ) );
-%cavity = Body( stl.fv );
-cavity = create_cube( [ -15 -15 -15 ], [ 30 30 30 ], 'cavity' );
+stl = StlFile( which( 'bearing_block.stl' ) );
+cavity = Body( stl.fv );
+%cavity = create_cube( [ -15 -15 -15 ], [ 30 30 30 ], 'cavity' );
 cavity.id = melt_m.id;
 
 mold_thickness = 10; % casting units
@@ -57,19 +57,21 @@ switch DIMENSION_COUNT
         assert( false )
 end
 
-ELEMENT_COUNT = 1e2;
-uvc = UniformVoxelCanvas( ELEMENT_COUNT, envelope );
-uvc.default_body_id = mold.id;
-uvc.add_body( mold );
-uvc.add_body( cavity );
-uvc.paint();
+% ELEMENT_COUNT = 1e2;
+% uvc = UniformVoxelCanvas( ELEMENT_COUNT, envelope );
+% uvc.default_body_id = mold.id;
+% uvc.add_body( mold );
+% uvc.add_body( cavity );
+% uvc.paint();
+% 
+% uvm = UniformVoxelMesh( uvc.voxels, uvc.material_ids );
 
-uvm = UniformVoxelMesh( uvc.voxels, uvc.material_ids );
+tm = TetrahedralMesh( cavity, cavity.id );
+uvm = tm;
 
 %% INITIAL FIELD
-u_fn = @(id,locations)smp.lookup_initial_temperatures( id ) * ones( sum( locations ), 1 );
+u_fn = @(id,locations,volumes)smp.lookup_initial_temperatures( id ) * ones( sum( locations ), 1 );
 u = uvm.apply_material_property_fn( u_fn );
-%u = ufv.reshape( u );
 
 %% TESTING
 Printer.turn_print_on();
@@ -89,6 +91,27 @@ lp = Looper( qbi, @sp.is_finished );
 str = SolidificationTimeResult( uvm, sp, qbi );
 lp.add_result( str );
 lp.run();
+
+%% TEST
+fh = figure();
+axh = axes( fh );
+hold( axh, "on" );
+ph = tm.plot_mesh( axh );
+ph.FaceColor = [ 0.9 0.9 0.9 ];
+ph.FaceAlpha = 0.2;
+ph.EdgeAlpha = 0.2;
+ph = tm.plot_scalar_field( axh, lp.results{ 1 }.modulus );
+axis( axh, "equal", "vis3d" );
+view( axh, 3 );
+
+f = tm.create_interpolant( lp.results{ 1 }.modulus );
+x = linspace( cavity.envelope.min_point( 1 ), cavity.envelope.max_point( 1 ), 50 );
+y = linspace( cavity.envelope.min_point( 2 ), cavity.envelope.max_point( 2 ), 50 );
+z = linspace( cavity.envelope.min_point( 3 ), cavity.envelope.max_point( 3 ), 50 );
+[ X, Y, Z ] = meshgrid( x, y, z );
+v = f( X, Y, Z );
+v = rescale( v, 0, 1 ) + 1;
+v( isnan( v ) ) = 0;
 
 %% PLOTTING
 fh = figure();
