@@ -1,4 +1,5 @@
 classdef QProperty < TemperatureDependentPropertyBase
+    % units are J / kg
     
     properties ( Constant )
         name = "q"
