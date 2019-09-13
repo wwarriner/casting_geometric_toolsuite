@@ -112,6 +112,10 @@ classdef Body < handle
                 'facecolor', obj.facevertexcdata ...
                 );
         end
+        
+        function value = get.envelope( obj )
+            value = obj.envelope.copy();
+        end
     end
     
     properties ( Access = private, Constant )
