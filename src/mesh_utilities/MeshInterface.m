@@ -8,11 +8,7 @@ classdef (Abstract) MeshInterface < handle
     end
     
     
-    methods ( Access = public )
-        
-        add_body( obj, body );
-        build( obj );
-        
+    methods ( Abstract )
         assign_uniform_external_boundary_id( obj, id );
         assign_external_boundary_id( obj, id, interface_ids );
         
