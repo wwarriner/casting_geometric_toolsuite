@@ -59,6 +59,7 @@ classdef Mesh < Process
         end
         
         function envelope = get.envelope( obj )
+            % TODO make this not rely on casting
             envelope = obj.casting.envelope;
         end
         
