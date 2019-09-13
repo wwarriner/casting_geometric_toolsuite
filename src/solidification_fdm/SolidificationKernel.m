@@ -10,13 +10,13 @@ classdef SolidificationKernel < handle
         
         function [ A, b, x0 ] = create_system( obj )
             % material properties
-            rho_fn = @(id,locations)obj.smp.lookup( id, RhoProperty.name, obj.u( locations ) );
+            rho_fn = @(id,locations,volumes)obj.smp.lookup( id, RhoProperty.name, obj.u( locations ) );
             rho = obj.mesh.apply_material_property_fn( rho_fn );
             
-            cp_fn = @(id,locations)obj.smp.lookup( id, CpProperty.name, obj.u( locations ) );
+            cp_fn = @(id,locations,volumes)obj.smp.lookup( id, CpProperty.name, obj.u( locations ) );
             cp = obj.mesh.apply_material_property_fn( cp_fn );
             
-            k_fn = @(id,locations)obj.smp.lookup( id, KProperty.name, obj.u( locations ) );
+            k_fn = @(id,locations,volumes)obj.smp.lookup( id, KProperty.name, obj.u( locations ) );
             k = obj.mesh.apply_material_property_fn( k_fn );
             
             rho_cp_v = rho .* cp .* obj.mesh.volumes;

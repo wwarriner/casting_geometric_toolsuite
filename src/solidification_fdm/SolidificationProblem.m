@@ -43,7 +43,7 @@ classdef SolidificationProblem < ProblemInterface
             sk = SolidificationKernel( obj.smp, obj.sip, obj.mesh, obj.u );
             [ obj.A, obj.b, obj.u0 ] = sk.create_system();
             obj.u_prev = obj.u;
-            obj.max_q_prev = max( obj.smp.lookup( obj.primary_melt_id, QProperty.name, obj.u_prev ) );
+            obj.max_q_prev = obj.get_max_q( obj.u_prev );
             obj.prepare_callback( obj );
         end
         
@@ -118,10 +118,18 @@ classdef SolidificationProblem < ProblemInterface
     
     methods ( Access = private )
         function quality = compute_quality( obj, u )
-            max_q_curr = max( obj.smp.lookup( obj.primary_melt_id, QProperty.name, u ) );
+            [ max_q_curr, volume ] = obj.get_max_q( u );
             q_diff = obj.max_q_prev - max_q_curr;
-            latent_heat = obj.smp.get_latent_heat_j_per_kg( obj.primary_melt_id );
+            latent_heat = obj.smp.get_latent_heat_j_per_kg( obj.primary_melt_id ) * volume;
             quality = q_diff ./ latent_heat;
+        end
+        
+        function [ q, v ] = get_max_q( obj, u )
+            q_fn = @(id,locations,volumes)volumes.*obj.smp.lookup( obj.primary_melt_id, QProperty.name, u );
+            [ q, i ] = max( obj.mesh.apply_material_property_fn( q_fn ) );
+            v_fn = @(id,locations,volumes)volumes;
+            v = obj.mesh.apply_material_property_fn( v_fn );
+            v = v( i );
         end
     end
     

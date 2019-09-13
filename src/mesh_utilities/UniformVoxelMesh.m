@@ -150,7 +150,7 @@ classdef UniformVoxelMesh < MeshInterface
                 id = ids( i );
                 locations = obj.elements.material_ids == id;
                 fn = fns{ i };
-                values( locations ) = fn( id, locations );
+                values( locations ) = fn( id, locations, obj.volumes );
             end
         end
         

@@ -18,7 +18,7 @@ classdef ThermalProfileQuery < handle
             assert( isscalar( melt_id ) );
             assert( 0 < melt_id );
             
-            u_fn = @(id,locations)smp.lookup_initial_temperatures( id ) ...
+            u_fn = @(id,locations,volumes)smp.lookup_initial_temperatures( id ) ...
                 * ones( sum( locations ), 1 );
             u = mesh.apply_material_property_fn( u_fn );
             
