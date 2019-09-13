@@ -13,6 +13,7 @@ classdef FeederQuery < handle
         diameter(:,1) double {mustBeReal,mustBeFinite,mustBePositive}
         height(:,1) double {mustBeReal,mustBeFinite,mustBePositive}
         area(:,1) double {mustBeReal,mustBeFinite,mustBePositive}
+        surface_area(:,1) double {mustBeReal,mustBeFinite,mustBePositive}
         volume(:,1) double {mustBeReal,mustBeFinite,mustBePositive}
     end
     
@@ -54,6 +55,11 @@ classdef FeederQuery < handle
         
         function value = get.area( obj )
             value = pi .* ( obj.radius .^ 2 );
+        end
+        
+        function value = get.surface_area( obj )
+            value = ( 2 .* obj.area ) ...
+                + ( pi .* obj.diameter .* obj.height );
         end
         
         function value = get.volume( obj )
