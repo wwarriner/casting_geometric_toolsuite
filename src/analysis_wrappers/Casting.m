@@ -44,6 +44,10 @@ classdef Casting < Process & matlab.mixin.Copyable
             % update draft
         end
         
+        function body = rotate_for_display( obj, rotation )
+            body = obj.body.rotate( rotation );
+        end
+        
         function write( obj, writer )
             writer.write_fv( obj.NAME, obj.fv )
             %writer.write_colored_fv( strjoin( [ obj.NAME "draft" ], "_" ), obj.draft_fv );

@@ -14,6 +14,7 @@ classdef Feeders < Process & matlab.mixin.Copyable
         diameter(:,1) double {mustBeReal,mustBeFinite,mustBePositive}
         height(:,1) double {mustBeReal,mustBeFinite,mustBePositive}
         area(:,1) double {mustBeReal,mustBeFinite,mustBePositive}
+        surface_area(:,1) double {mustBeReal,mustBeFinite,mustBePositive}
         volume(:,1) double {mustBeReal,mustBeFinite,mustBePositive}
         accessibility(:,1) double {mustBeReal,mustBeFinite,mustBeNonnegative}
     end
@@ -39,6 +40,21 @@ classdef Feeders < Process & matlab.mixin.Copyable
                 clone.bodies( i ) = obj.bodies( i ).rotate( r );
             end
             clone.prepare_boolean_values();
+        end
+        
+        function bodies = rotate_for_display( obj, rotation )
+            bodies = Body.empty( obj.count, 0 );
+            for i = 1 : obj.count
+                old_position = obj.position( i, : );
+                
+                translation = Translation();
+                translation.shift = -old_position;
+                body = obj.bodies( i ).translate( translation );
+                
+                new_position = rotation.apply( old_position );
+                translation.shift = new_position;
+                bodies( i ) = body.translate( translation );
+            end
         end
         
         function value = get.count( obj )
@@ -71,6 +87,10 @@ classdef Feeders < Process & matlab.mixin.Copyable
         
         function value = get.area( obj )
             value = obj.mesh.to_casting_area( obj.feeder_query.area );
+        end
+        
+        function value = get.surface_area( obj )
+            value = obj.mesh.to_casting_area( obj.feeder_query.surface_area );
         end
         
         function value = get.volume( obj )
@@ -124,10 +144,10 @@ classdef Feeders < Process & matlab.mixin.Copyable
             value = list2table( ...
                 { 'count' 'min_accessibility' ...
                 'median_accessibility' 'sum_intersection_volume' ...
-                'sum_interface_area' }, ...
+                'sum_interface_area', 'sum_surface_area' }, ...
                 { obj.count min( obj.accessibility ), ...
                 median( obj.accessibility ) sum( obj.intersection_volume ) ...
-                sum( obj.interface_area ) } ...
+                sum( obj.interface_area ) sum( obj.surface_area ) } ...
                 );
         end
     end
