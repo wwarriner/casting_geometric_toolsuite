@@ -8,33 +8,78 @@ classdef TetrahedralMesh < MeshInterface
     end
     
     methods
-        function obj = TetrahedralMesh( body, material_ids )
-            [ nodes, elements, external_faces ] = s2m( ...
-                body.fv.vertices, ...
-                body.fv.faces, ...
-                1.0, ...
-                body.volume / 100 ...
+        function obj = TetrahedralMesh()
+            obj.canvas = BodyCanvas();
+        end
+        
+        function add_body( obj, body )
+            obj.canvas.add_body( body );
+        end
+        
+        function generate( obj )
+            material_ids = obj.canvas.material_ids;
+            fv = obj.canvas.fv;
+            max_volume = max( obj.canvas.volumes ) ./ ( 1000 .^ 3 );
+            [ nodes_in, elements_in, external_faces_in ] = s2m( ...
+                fv.vertices, ...
+                fv.faces, ...
+                0.35, ...
+                max_volume / 100, ...
+                'tetgen', ...
+                obj.canvas.region_points ...
                 );
-            %plotmesh( nodes, elements, external_faces );
             
-            elements = elements( :, 1 : 4 );
-            external_faces = external_faces( :, 1 : 3 );
+            body_ids_in = elements_in( :, 5 );
+            body_ids = body_ids_in;
             
-            ids = ones( size( elements, 1 ), 1 );
-            material_values = material_ids( ids );
+            material_values = material_ids( body_ids );
             assert( ~any( material_values == 0, 'all' ) );
             
-            f1 = elements( :, [ 1 2 3 ] );
-            f2 = elements( :, [ 1 2 4 ] );
-            f3 = elements( :, [ 1 3 4 ] );
-            f4 = elements( :, [ 2 3 4 ] );
+            a = nodes_in( elements_in( :, 1 ), : );
+            b = nodes_in( elements_in( :, 2 ), : );
+            c = nodes_in( elements_in( :, 3 ), : );
+            d = nodes_in( elements_in( :, 4 ), : );
+            volumes_in = abs( dot( a-d, cross( b-d, c-d, 2 ), 2 ) ) / 6.0;
+            volumes_in = volumes_in ./ ( 1000 .^ 3 ); % m^3 <- mm^3;
+            ee = Elements( body_ids, material_values, volumes_in );
+            
+            elements_in = elements_in( :, 1 : 4 );
+            external_faces_in = external_faces_in( :, 1 : 3 );
+            
+            f1 = elements_in( :, [ 1 2 3 ] );
+            f2 = elements_in( :, [ 1 2 4 ] );
+            f3 = elements_in( :, [ 1 3 4 ] );
+            f4 = elements_in( :, [ 2 3 4 ] );
             orig_faces = [ f1; f2; f3; f4 ];
-            elems = repmat( ( 1 : size( elements, 1 ) ).', [ 4 1 ] );
+            elems = repmat( ( 1 : size( elements_in, 1 ) ).', [ 4 1 ] );
+            mats = repmat( material_values, [ 4 1 ] );
             
             SORT_DIM = 2;
             faces = sort( orig_faces, SORT_DIM, "ascend" );
-            external_faces_sorted = sort( external_faces, SORT_DIM, "ascend" );
+            external_faces_sorted = sort( external_faces_in, SORT_DIM, "ascend" );
             is_ex_face = ismember( faces, external_faces_sorted, "rows" );
+            
+            external_faces_cell = containers.Map( ...
+                "keytype", "double", ...
+                "valuetype", "any" ...
+                );
+            prev_ex_mat_face = false( numel( mats ), 1 );
+            duplicated = false( numel( mats ), 1 );
+            for i = numel( material_ids ) : -1 : 1
+                id = material_ids( i );
+                is_ex_mat_face = is_ex_face & ( mats == id );
+                
+                ii = ismember( faces, faces( is_ex_mat_face, : ), "rows" );
+                
+                duplicated = duplicated | ( ii & ~is_ex_mat_face & prev_ex_mat_face );
+                prev_ex_mat_face = prev_ex_mat_face | ii;
+                external_faces_cell( id ) = orig_faces( is_ex_mat_face, : );
+            end
+            
+            is_ex_face = is_ex_face( ~duplicated );
+            faces = faces( ~duplicated, : );
+            elems = elems( ~duplicated, : );
+            
             ex_inds = find( is_ex_face );
             ex_elems = elems( ex_inds );
             
@@ -44,39 +89,33 @@ classdef TetrahedralMesh < MeshInterface
             in_elems_lhs = elems( in_inds_lhs );
             in_inds_rhs = i( 2 : 2 : end );
             in_elems_rhs = elems( in_inds_rhs );
+            assert( all( faces( in_inds_lhs, : ) == faces( in_inds_rhs, : ), "all" ) );
             
-            areas = compute_triangle_areas( faces, nodes );
-            
-            a = nodes( elements( :, 1 ), : );
-            b = nodes( elements( :, 2 ), : );
-            c = nodes( elements( :, 3 ), : );
-            d = nodes( elements( :, 4 ), : );
-            volumes = abs( dot( a-d, cross( b-d, c-d, 2 ), 2 ) ) / 6.0;
+            areas = compute_triangle_areas( faces, nodes_in );
             
             orig_centroids = ( a + b + c + d ) / 4.0;
-            centroids = repmat( orig_centroids, [ 4 1 ] );
+            centroids_in = repmat( orig_centroids, [ 4 1 ] );
+            %centroids_in = centroids_in( ~duplicated, : );
             
-            a = nodes( faces( :, 1 ), : );
-            b = nodes( faces( :, 2 ), : );
-            c = nodes( faces( :, 3 ), : );
-            distances = abs( dot( a-centroids, cross( b-centroids, c-centroids, 2 ), 2 ) ) / 6.0;
-            distances = 3.0 * distances ./ areas;
+            a = nodes_in( faces( :, 1 ), : );
+            b = nodes_in( faces( :, 2 ), : );
+            c = nodes_in( faces( :, 3 ), : );
+            distances_in = abs( dot( a-centroids_in, cross( b-centroids_in, c-centroids_in, 2 ), 2 ) ) / 6.0;
+            distances_in = 3.0 * distances_in ./ areas;
             
-            distances = distances ./ 1000; % m <- mm;
+            distances_in = distances_in ./ 1000; % m <- mm;
             areas = areas ./ ( 1000 .^ 2 ); % m^2 <- mm^2;
-            volumes = volumes ./ ( 1000 .^ 3 ); % m^3 <- mm^3;
-            ee = Elements( ids, material_values, volumes );
-            ex = ExternalInterfaces( ee, ex_elems, areas( ex_inds ), distances( ex_inds ) );
+            ex = ExternalInterfaces( ee, ex_elems, areas( ex_inds ), distances_in( ex_inds ) );
             in_elems = [ in_elems_lhs in_elems_rhs ];
             in_inds = [ in_inds_lhs in_inds_rhs ];
-            in = InternalInterfaces( ee, in_elems, areas( in_inds_rhs ), distances( in_inds ) );
+            in = InternalInterfaces( ee, in_elems, areas( in_inds_rhs ), distances_in( in_inds ) );
             
             obj.internal_interfaces = in;
             obj.external_interfaces = ex;
             obj.elements = ee;
             obj.centroids = orig_centroids;
-            obj.nodes = nodes;
-            obj.external_faces = external_faces;
+            obj.nodes = nodes_in;
+            obj.external_faces = external_faces_cell;
         end
         
         function value = get.connectivity( obj )
@@ -185,27 +224,59 @@ classdef TetrahedralMesh < MeshInterface
             value = fn( obj.elements.material_ids );
         end
         
-        function ph = plot_scalar_field( obj, axh, field )
+        function ph = plot_scalar_field( obj, axh, field, mask )
+            if nargin < 4
+                mask = ones( obj.count, 1 );
+            end
+            
+            assert( isa( axh, "matlab.graphics.axis.Axes" ) );
+            
+            assert( isa( field, "double" ) );
+            assert( isreal( field ) );
+            assert( all( isfinite( field ) ) );
+            assert( numel( field ) == obj.count );
+            
+            assert( islogical( mask ) );
+            assert( numel( mask ) == obj.count );
+            
             ph = scatter3( ...
                 axh, ...
-                obj.centroids(:,1), ...
-                obj.centroids(:,2), ...
-                obj.centroids(:,3), ...
+                obj.centroids( mask, 1 ), ...
+                obj.centroids( mask, 2 ), ...
+                obj.centroids( mask, 3 ), ...
                 10, ...
-                field, ...
+                field( mask ), ...
                 "filled" ...
                 );
         end
         
-        function ph = plot_mesh( obj, axh )
-            ph = patch( ...
-                axh, ...
-                "vertices", obj.nodes, ...
-                "faces", obj.external_faces ...
-                );
+        function ph = plot_mesh( obj, axh, ids )
+            assert( isa( axh, "matlab.graphics.axis.Axes" ) );
+            if nargin < 3
+                ids = obj.elements.material_ids;
+            end
+            
+            assert( isa( ids, "double" ) );
+            assert( isreal( ids ) );
+            assert( all( isfinite( ids ) ) );
+            assert( ismember( ids, obj.canvas.material_ids ) );
+            
+            ph = gobjects( numel( ids ), 0 );
+            for i = 1 : numel( ids )
+                ph( i ) = patch( ...
+                    axh, ...
+                    "vertices", obj.nodes, ...
+                    "faces", obj.external_faces( ids( i ) ) ...
+                    );
+            end
         end
         
         function f = create_interpolant( obj, field )
+            assert( isa( field, "double" ) );
+            assert( isreal( field ) );
+            assert( all( isfinite( field ) ) );
+            assert( numel( field ) == obj.count );
+            
             f = scatteredInterpolant( ...
                 obj.centroids( :, 1 ), ...
                 obj.centroids( :, 2 ), ...
@@ -217,12 +288,13 @@ classdef TetrahedralMesh < MeshInterface
     end
     
     properties ( Access = private )
+        canvas BodyCanvas
         elements Elements
         internal_interfaces InternalInterfaces
         external_interfaces ExternalInterfaces
         centroids(:,3) double {mustBeReal,mustBeFinite}
         nodes(:,3) double {mustBeReal,mustBeFinite}
-        external_faces(:,3) double {mustBeReal,mustBeFinite}
+        external_faces containers.Map
     end
     
 end

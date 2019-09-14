@@ -34,14 +34,16 @@ stl = StlFile( which( 'bearing_block.stl' ) );
 cavity = Body( stl.fv );
 %cavity = create_cube( [ -15 -15 -15 ], [ 30 30 30 ], 'cavity' );
 cavity.id = melt_m.id;
+cavity_point = cavity.fv.vertices( 1, : );
 
-mold_thickness = 10; % casting units
+coeff = 1.0 / 8.0;
 mold = create_cube( ...
-    cavity.envelope.min_point - mold_thickness, ...
-    cavity.envelope.lengths + 2 * mold_thickness, ...
+    cavity.envelope.min_point - coeff .* cavity.envelope.lengths, ...
+    cavity.envelope.lengths + 2 * coeff .* cavity.envelope.lengths, ...
     'mold' ...
     );
 mold.id = mold_m.id;
+mold_point = mold.fv.vertices( 1, : );
 
 %% MESHING
 switch DIMENSION_COUNT
@@ -66,14 +68,17 @@ end
 % 
 % uvm = UniformVoxelMesh( uvc.voxels, uvc.material_ids );
 
-tm = TetrahedralMesh( cavity, cavity.id );
+tm = TetrahedralMesh();
+tm.add_body( mold );
+tm.add_body( cavity );
+tm.generate();
 uvm = tm;
 
 %% INITIAL FIELD
 u_fn = @(id,locations,volumes)smp.lookup_initial_temperatures( id ) * ones( sum( locations ), 1 );
 u = uvm.apply_material_property_fn( u_fn );
 
-%% TESTING
+%% RUN
 Printer.turn_print_on();
 Printer.set_printer( @fprintf );
 
@@ -96,15 +101,23 @@ lp.run();
 fh = figure();
 axh = axes( fh );
 hold( axh, "on" );
-ph = tm.plot_mesh( axh );
-ph.FaceColor = [ 0.9 0.9 0.9 ];
+ph = uvm.plot_mesh( axh, double( melt_m.id ) );
+ph.FaceColor = "none";
 ph.FaceAlpha = 0.2;
 ph.EdgeAlpha = 0.2;
-ph = tm.plot_scalar_field( axh, lp.results{ 1 }.modulus );
+ph = uvm.plot_mesh( axh, double( mold_m.id ) );
+ph.FaceColor = "none";
+ph.FaceAlpha = 0;
+ph.EdgeAlpha = 0.2;
+modulus_field = lp.results{ 1 }.modulus;
+modulus_field( isnan( modulus_field ) ) = 0;
+mask = uvm.map( @(ids)ids == melt_m.id );
+ph = uvm.plot_scalar_field( axh, modulus_field, mask );
 axis( axh, "equal", "vis3d" );
 view( axh, 3 );
+colormap( axh, magma );
 
-f = tm.create_interpolant( lp.results{ 1 }.modulus );
+f = uvm.create_interpolant( modulus_field );
 x = linspace( cavity.envelope.min_point( 1 ), cavity.envelope.max_point( 1 ), 50 );
 y = linspace( cavity.envelope.min_point( 2 ), cavity.envelope.max_point( 2 ), 50 );
 z = linspace( cavity.envelope.min_point( 3 ), cavity.envelope.max_point( 3 ), 50 );

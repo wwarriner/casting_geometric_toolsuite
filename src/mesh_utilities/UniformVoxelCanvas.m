@@ -11,7 +11,7 @@ classdef UniformVoxelCanvas < handle
     end
     
     properties ( SetAccess = private, Dependent )
-        material_ids(:,1) uint32 {mustBeNonnegative}
+        material_ids(:,1) double
         modes(:,1) string
     end
     
@@ -21,6 +21,9 @@ classdef UniformVoxelCanvas < handle
     end
     
     methods
+        % To use functionality for 3D, pass only one argument.
+        % To use functionality for 1D or 2D, also pass an envelope with 1D 
+        % or 2D extent.
         function obj = UniformVoxelCanvas( element_count, envelope )
             if nargin < 2
                 envelope = [];
@@ -31,12 +34,12 @@ classdef UniformVoxelCanvas < handle
         end
         
         function add_body( obj, body )
-            obj.body_list = [ obj.body_list body ];
+            obj.bodies.add_body( body );
         end
         
         function paint( obj )
             if isempty( obj.desired_envelope )
-                envelope_in = obj.unify_envelopes();
+                envelope_in = obj.bodies.envelope;
             else
                 envelope_in = obj.desired_envelope;
             end
@@ -47,9 +50,7 @@ classdef UniformVoxelCanvas < handle
         end
         
         function value = get.material_ids( obj )
-            id_list = [ obj.body_list.id ];
-            value = nan( max( id_list ), 1 );
-            value( id_list ) = id_list;
+            value = obj.bodies.material_ids;
         end
         
         function value = get.modes( obj )
@@ -68,7 +69,7 @@ classdef UniformVoxelCanvas < handle
         desired_element_count(1,1) double {mustBeNonnegative}
         desired_envelope % Envelope
         dimension_count(1,1) uint32 {mustBePositive} = 3
-        body_list(:,1) Body
+        bodies BodyCanvas
     end
     
     methods ( Access = private )
@@ -81,14 +82,6 @@ classdef UniformVoxelCanvas < handle
             for i = 1 : numel( obj.body_list )
                 b = obj.body_list( i );
                 voxels = obj.paint_body( b, voxels );
-            end
-        end
-        
-        function envelope = unify_envelopes( obj )
-            envelope = obj.body_list( 1 ).envelope.copy();
-            for i = 2 : numel( obj.body_list )
-                body = obj.body_list( 1 );
-                envelope = envelope.union( body.envelope );
             end
         end
         

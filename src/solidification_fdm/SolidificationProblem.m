@@ -125,9 +125,9 @@ classdef SolidificationProblem < ProblemInterface
         end
         
         function [ q, v ] = get_max_q( obj, u )
-            q_fn = @(id,locations,volumes)volumes.*obj.smp.lookup( obj.primary_melt_id, QProperty.name, u );
+            q_fn = @(id,locations,volumes)volumes( locations ).*obj.smp.lookup( obj.primary_melt_id, QProperty.name, u( locations ) );
             [ q, i ] = max( obj.mesh.apply_material_property_fn( q_fn ) );
-            v_fn = @(id,locations,volumes)volumes;
+            v_fn = @(id,locations,volumes)volumes( locations );
             v = obj.mesh.apply_material_property_fn( v_fn );
             v = v( i );
         end
