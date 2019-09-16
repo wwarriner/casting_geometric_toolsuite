@@ -40,7 +40,7 @@ MAILTYPE=FAIL
 MAILADDRESS='wwarr@uab.edu'
 
 #0-$ARRAYMAX
-srun --job-name $NAME --output=$ROOT_DIR/output/output_%A.txt --ntasks=$TASKS --mem-per-cpu=$MEMORY --time=$TIME --partition=$PARTITION --mail-type=$MAILTYPE --mail-user=$MAILADDRESS <<LIMITING_STRING
+sbatch --array=0%1 --job-name $NAME --output=$ROOT_DIR/output/output_%A.txt --ntasks=$TASKS --mem-per-cpu=$MEMORY --time=$TIME --partition=$PARTITION --mail-type=$MAILTYPE --mail-user=$MAILADDRESS <<LIMITING_STRING
 #!/bin/bash
 module load rc/matlab/R2019a
 matlab -nodesktop -nodisplay -sd "$REPOS_DIR" -r "$RUN_CMD"
