@@ -18,7 +18,7 @@ if [ ! -d "$CGT_DIR" ]; then
 	printf "Can't locate CGT_DIR: %s\n" $CGT_DIR
 	exit
 fi
-DEMO_SETTINGS=$CGT_DIR'/res/demo_settings.json'
+DEMO_SETTINGS=$CGT_DIR'/examples/demo/res/demo_settings.json'
 if [ ! -f "$DEMO_SETTINGS" ]; then
 	printf "Can't locate DEMO SETTINGS: %s\n" $DEMO_SETTINGS
 	exit
