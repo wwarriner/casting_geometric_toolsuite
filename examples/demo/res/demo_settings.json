@@ -1,7 +1,16 @@
 {
 "manager":{
 	"output_folder":"",
-	"user_needs":["Feeders"]
+	"user_needs":[
+		"Component",
+		"Feeders",
+		"CavityThinSections",
+		"CavityThickSections",
+		"MoldThinSections",
+		"GeometricProfile",
+		"ThermalProfile",
+		"IsolatedSections"
+		]
 	},
 "processes":{
 	"Casting":{
@@ -23,7 +32,7 @@
 	"Feeders":{},
 	"GeometricProfile":{},
 	"IsolatedSections":{
-		"use_thermal_profile":false
+		"use_thermal_profile":true
 		},
 	"Mesh":{
 		"desired_element_count":1e7
