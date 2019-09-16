@@ -2,7 +2,7 @@
 "manager":{
 	"output_folder":"",
 	"user_needs":[
-		"Component",
+		"Casting",
 		"Feeders",
 		"CavityThinSections",
 		"CavityThickSections",
