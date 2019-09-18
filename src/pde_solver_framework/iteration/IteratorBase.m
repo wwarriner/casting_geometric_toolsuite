@@ -68,7 +68,7 @@ classdef IteratorBase < Printer & handle
         end
     end
     
-    properties ( Access = protected )
+    properties ( GetAccess = protected, SetAccess = private )
         problem % ProblemInterface
     end
     
@@ -110,7 +110,9 @@ classdef IteratorBase < Printer & handle
             obj.solver_iterations = StepTracker();
             obj.problem = problem;
         end
-        
+    end
+    
+    methods ( Access = private )
         function message = assemble_iteration_message( obj )
             step = sprintf( "Step %i", obj.count );
             comp = sprintf( ...
