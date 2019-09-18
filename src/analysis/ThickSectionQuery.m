@@ -1,5 +1,9 @@
 classdef ThickSectionQuery < handle
     
+    properties ( SetAccess = private )
+        thick_threshold(1,1) double
+    end
+    
     properties ( SetAccess = private, Dependent )
         count(1,1) double
         label_array(:,:,:) uint32
@@ -64,6 +68,7 @@ classdef ThickSectionQuery < handle
             sweep_distance = max( sweep_distance, 1 );
             thick_wall = distance_sweep( mask, thick_wall, sweep_distance );
             obj.cc = bwconncomp( thick_wall );
+            obj.thick_threshold = thick_threshold;
         end
         
         function count = get.count( obj )
