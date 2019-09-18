@@ -19,7 +19,7 @@ x = x(:);
 count = size( knots, 2 );
 xbin = nan( numel( x ), count );
 for i = 1 : count
-    [~,~,xbin(:,i)] = histcounts(x,knots(:,i));
+    [~,~,xbin(:,i)] = histcounts( x, knots(:,i) );
 end
 
 dx = diff(knots);

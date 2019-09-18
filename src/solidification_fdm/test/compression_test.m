@@ -6,14 +6,10 @@ t = ct.t;
 temp = ct.u(:,21);
 
 %% Testing
-
-fh = figure();
-axh = axes( fh );
-
 k = 3;
 TARGET = 0.01;
 
-spg = SplineGenerator( k, t, temp );
+spg = SplineGenerator( k, log(t+1), temp );
 
 bisector = BisectionTracker( ...
     25, ...
@@ -21,15 +17,27 @@ bisector = BisectionTracker( ...
     inf, ...
     @(p)-(spg.generate(p)-TARGET), ...
     0, ...
-    1e-4 ...
+    1e-3 ...
     );
-MAX_ITERATION_COUNT = 50;
+% x = ga( ...
+%     @(p)-(spg.generate(p)-TARGET), ...
+%     1, ... nvars
+%     [], ... A
+%     [], ... b
+%     [], ...
+%     [], ...
+%     5, ... lb
+%     500, ... ub
+%     [], ... nonlcon
+%     1 ... intcon
+%     );
+
+MAX_ITERATION_COUNT = 10;
 iteration_count = 0;
 while true
     
     done = bisector.update();
-    plot( axh, spg.x, spg.yy, 'b+', spg.x, spg.y, 'k.' );
-    fprintf( 1, '%i, %.6f\n', bisector.x, spg.error );
+    fprintf( 1, '%i, %.6f\n', bisector.x, bisector.y );
     drawnow();
     if done
         break;
@@ -40,6 +48,24 @@ while true
     end
     
 end
+
+%%
+fh = figure();
+axh = axes( fh );
+hold( axh, "on" );
+%time = exp(spg.x)-1;
+time = spg.x;
+plot( axh, time, spg.yy, 'b', time, spg.y, 'k' );
+sol = melt_m.solidus_temperature_c;
+plot( axh, axh.XLim, [ sol sol ], 'k:' );
+fe = melt_m.feeding_effectivity_temperature_c;
+plot( axh, axh.XLim, [ fe fe ], 'k:' );
+liq = melt_m.liquidus_temperature_c;
+plot( axh, axh.XLim, [ liq liq ], 'k:' );
+
+fh = figure();
+axh = axes( fh );
+plot( axh, time, 100 .* ( spg.y - spg.yy ) ./ spg.y, 'r' );
 
 %%
 a = spg.sp;
