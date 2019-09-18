@@ -19,6 +19,8 @@ classdef (Sealed) GeometricProfile < Process
         scaled_interior(:,:,:) double {mustBeReal,mustBeFinite}
         filtered(:,:,:) double {mustBeReal,mustBeFinite}
         filtered_interior(:,:,:) double {mustBeReal,mustBeFinite}
+        filtered_unscaled(:,:,:) double {mustBeReal,mustBeFinite}
+        filtered_interior_unscaled(:,:,:) double {mustBeReal,mustBeFinite}
         filter_amount(1,1) double {mustBeReal,mustBeFinite}
     end
     
@@ -68,6 +70,14 @@ classdef (Sealed) GeometricProfile < Process
         
         function value = get.filtered_interior( obj )
             value = obj.filtered_profile_query.get( obj.mesh.interior );
+        end
+        
+        function value = get.filtered_unscaled( obj )
+            value = obj.mesh.to_mesh_length( obj.filtered );
+        end
+        
+        function value = get.filtered_interior_unscaled( obj )
+            value = obj.mesh.to_mesh_length( obj.filtered_interior );
         end
         
         function value = get.filter_amount( obj )
