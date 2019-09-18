@@ -40,9 +40,9 @@ classdef (Abstract) SolverBase < handle
                 assert( length( x0 ) == size( A, 1 ) );
             end
             
-            tic;
+            t = tic;
             [ x, obj.iteration_count ] = obj.solve_impl( A, b, x0 );
-            obj.time = toc;
+            obj.time = toc( t );
         end
     end
     

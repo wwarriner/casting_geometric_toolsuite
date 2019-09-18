@@ -49,13 +49,13 @@ classdef QualityBisectionIterator < IteratorBase
     
     methods ( Access = protected )
         function iterate_impl( obj )
-            tic;
+            t = tic;
             obj.bisector = obj.create_bisector();
             obj.solver_counts = StepTracker();
             while ~obj.update( obj.bisector ); end
             obj.qualities.append( obj.bisector.y );
             obj.bisection_iterations.append( obj.bisector.count );
-            obj.computation_time = toc;
+            obj.computation_time = toc( t );
         end
         
         function time = get_simulation_time( obj )
