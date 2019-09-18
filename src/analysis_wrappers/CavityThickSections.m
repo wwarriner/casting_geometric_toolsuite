@@ -33,6 +33,7 @@ classdef (Sealed) CavityThickSections < Process
     properties ( SetAccess = private, Dependent )
         count(1,1) double
         label_array(:,:,:) uint32
+        thick_threshold(1,1) double
         volume(1,1) double
     end
     
@@ -62,6 +63,10 @@ classdef (Sealed) CavityThickSections < Process
         
         function value = get.label_array( obj )
             value = obj.thick_section_query.label_array;
+        end
+        
+        function value = get.thick_threshold( obj )
+            value = obj.mesh.to_casting_length( obj.thick_section_query.thick_threshold );
         end
         
         function value = get.volume( obj )
