@@ -74,8 +74,10 @@ classdef MeltMaterial < SolidificationMaterial
     
     methods ( Access = private )
         function t = compute_default_initial_temperature( obj )
-            t_k = obj.liquidus_temperature_c + 273.15;
-            t = ( 1.05 .* t_k ) - 273.15;
+            t_k = obj.liquidus_temperature_c ...
+                - TemperatureDependentPropertyBase.TEMPERATURE_RANGE( 1 );
+            t = ( 1.05 .* t_k ) ...
+                + TemperatureDependentPropertyBase.TEMPERATURE_RANGE( 1 );
         end
         
         function value = compute_sensible_heat( obj, lower_t, upper_t )

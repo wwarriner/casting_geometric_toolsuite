@@ -9,6 +9,11 @@ classdef SolidificationProblem < ProblemInterface
     % - @u_init, a real, finite double vector with length equal to the number of
     % mesh elements. Represents the initial temperature field.
     
+    properties
+        stop_temperature(1,1) double {mustBeReal,mustBeFinite}
+        default_stop_temperature(1,1) double {mustBeReal,mustBeFinite}
+    end
+    
     properties ( SetAccess = private )
         u(:,1) double {mustBeReal,mustBeFinite}
         u_prev(:,1) double {mustBeReal,mustBeFinite}
@@ -17,7 +22,6 @@ classdef SolidificationProblem < ProblemInterface
     
     properties ( SetAccess = private, Dependent )
         initial_time_step(1,1) double {mustBeReal,mustBeFinite,mustBePositive}
-        stop_temperature(1,1) double {mustBeReal,mustBeFinite}
         primary_melt(:,1) logical
     end
     
@@ -61,6 +65,16 @@ classdef SolidificationProblem < ProblemInterface
             finished = all( double( obj.u <= t ), 'all' );
         end
         
+        function set.stop_temperature( obj, value )
+            assert( TemperatureDependentPropertyBase.TEMPERATURE_RANGE( 1 ) <= value );
+            assert( value <= TemperatureDependentPropertyBase.TEMPERATURE_RANGE( 2 ) );
+            obj.stop_temperature = value;
+        end
+        
+        function value = get.default_stop_temperature( obj )
+            value = obj.smp.get_liquidus_temperature_c( obj.primary_melt_id );
+        end
+        
         function value = get.initial_time_step( obj )
             % based on p421 of Ozisik _Heat Conduction_ 2e, originally from
             % Gupta and Kumar ref 79
@@ -92,10 +106,6 @@ classdef SolidificationProblem < ProblemInterface
             value = numerator / denominator;
             
             assert( value > 0 );
-        end
-        
-        function value = get.stop_temperature( obj )
-            value = obj.smp.get_liquidus_temperature_c( obj.primary_melt_id );
         end
         
         function value = get.primary_melt( obj )
