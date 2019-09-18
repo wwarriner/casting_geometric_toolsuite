@@ -18,6 +18,7 @@ classdef (Sealed) CavityThinSections < Process
     properties ( SetAccess = private, Dependent )
         count(1,1) double
         label_array(:,:,:) uint32
+        regional_maxima_label_array(:,:,:) uint32
         volume(1,1) double
     end
     
@@ -34,6 +35,7 @@ classdef (Sealed) CavityThinSections < Process
         
         function write( obj, common_writer )
             common_writer.write_array( obj.NAME, obj.to_array(), obj.mesh.spacing, obj.mesh.origin );
+            common_writer.write_array( "regional_maxima_" + obj.NAME, obj.regional_maxima_label_array, obj.mesh.spacing, obj.mesh.origin );
             common_writer.write_table( obj.NAME, obj.to_table() );
         end
         
@@ -47,6 +49,10 @@ classdef (Sealed) CavityThinSections < Process
         
         function value = get.label_array( obj )
             value = obj.thin_section_query.label_array;
+        end
+        
+        function value = get.regional_maxima_label_array( obj )
+            value = obj.thin_section_query.regional_maxima;
         end
         
         function value = get.volume( obj )
