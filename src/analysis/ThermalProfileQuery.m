@@ -30,6 +30,10 @@ classdef ThermalProfileQuery < handle
             iterator_in.quality_tolerance = obj.quality_tolerance;
             iterator_in.stagnation_tolerance = obj.stagnation_tolerance;
             
+			% Add optional sequential iterator, may take significant refactoring?
+            % fn = @(i)0.17 .* sqrt( i );
+            % iterator_in = SequentialIterator( problem_in, fn );
+            
             times_in = SolidificationTimeResult( mesh, problem_in, iterator_in );
             
             obj.mesh = mesh;
@@ -42,7 +46,9 @@ classdef ThermalProfileQuery < handle
             p = obj.problem;
             looper = Looper( obj.iterator, @p.is_finished );
             looper.add_result( obj.times );
+            %t = tic;
             looper.run();
+            %toc( t );
         end
         
         % @get_profile returns the distance field masked in by
