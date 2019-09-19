@@ -77,16 +77,24 @@ Printer.set_printer( @fprintf );
 
 sp = SolidificationProblem( uvm, smp, sip, melt_m.id, u );
 
-qbi = QualityBisectionIterator( sp );
-qbi.maximum_iterations = 100;
-qbi.quality_target = 1/1000;
-qbi.quality_tolerance = 0.1;
-qbi.stagnation_tolerance = 1e-2;
+% qbi = QualityBisectionIterator( sp );
+% qbi.maximum_iterations = 100;
+% qbi.quality_target = 1/1000;
+% qbi.quality_tolerance = 0.1;
+% qbi.stagnation_tolerance = 1e-2;
+% iter_strategy = qbi;
+
+%initial_time_step = sp.initial_time_step;
+initial_time_step = 0.02;
+fn = @(i)initial_time_step .* sqrt( i );
+sq = Sequence( fn );
+sqi = SequentialIterator( sp, sq );
+iter_strategy = sqi;
 
 %ct = CompressedTemperature( qbi, sp );
 
-lp = Looper( qbi, @sp.is_finished );
-str = SolidificationTimeResult( uvm, sp, qbi );
+lp = Looper( iter_strategy, @sp.is_finished );
+str = SolidificationTimeResult( uvm, sp, iter_strategy );
 lp.add_result( str );
 lp.run();
 
