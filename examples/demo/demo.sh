@@ -28,6 +28,17 @@ TIME=$(date +%s%N)
 OUTPUT_BASE_PATH=$ROOT_DIR'/demo_results/'$COMPONENT_NAME
 OUTPUT_PATH=$OUTPUT_BASE_PATH'_'$TIME
 mkdir -p $OUTPUT_PATH
+if [ ! -d "$OUTPUT_PATH" ]; then
+	printf "Can't locate OUTPUT_PATH: %s\n" $OUTPUT_PATH
+	exit
+fi
+
+LOGGING_PATH=$ROOT_DIR'/output_'$TIME
+mkdir -p $LOGGING_PATH
+if [ ! -d "$LOGGING_PATH" ]; then
+	printf "Can't locate LOGGING_PATH: %s\n" $LOGGING_PATH
+	exit
+fi
 
 RUN_CMD='addpath( genpath( '\'$CGT_DIR\'' ) );demo_fn( '\'$DEMO_SETTINGS\'', '\'$STL_FILE\'', '\'$OUTPUT_PATH\'' );exit;'
 
@@ -40,7 +51,7 @@ MAILTYPE=FAIL
 MAILADDRESS='wwarr@uab.edu'
 
 #0-$ARRAYMAX
-sbatch --array=0%1 --job-name $NAME --output=$ROOT_DIR/output/output_%A.txt --ntasks=$TASKS --mem-per-cpu=$MEMORY --time=$TIME --partition=$PARTITION --mail-type=$MAILTYPE --mail-user=$MAILADDRESS <<LIMITING_STRING
+sbatch --array=0%1 --job-name $NAME --output=$LOGGING_PATH/output_%A.txt --ntasks=$TASKS --mem-per-cpu=$MEMORY --time=$TIME --partition=$PARTITION --mail-type=$MAILTYPE --mail-user=$MAILADDRESS <<LIMITING_STRING
 #!/bin/bash
 module load rc/matlab/R2019a
 matlab -nodesktop -nodisplay -sd "$REPOS_DIR" -r "$RUN_CMD"
