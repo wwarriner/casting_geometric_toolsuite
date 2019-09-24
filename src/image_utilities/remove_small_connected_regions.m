@@ -17,9 +17,11 @@ segment_element_counts = arrayfun( @(y)sum( segments( : ) == y ), 1 : segment_co
 segment_element_ratios = segment_element_counts ./ numel( binary_image );
 
 %% THRESHOLD REGIONS BY RATIO
-indices_to_remove = ...
-    isoutlier( 1 ./ segment_element_counts, 'grubbs' ) ...
-    | segment_element_ratios < 1e-4;
+% indices_to_remove = ...
+%     isoutlier( 1 ./ segment_element_counts, 'grubbs' ) ...
+%     | segment_element_ratios < 1e-4;
+indices_to_remove = segment_element_ratios < 1e-4;
+% TODO improve statistics
 adjusted_image = segments;
 for i = 1 : segment_count
     if indices_to_remove( i )
