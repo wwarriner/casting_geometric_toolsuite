@@ -142,6 +142,13 @@ classdef Mesh < Process
             im = im & obj.interior;
         end
         
+        function im = intersect_surface( obj, im )
+            assert( islogical( im ) );
+            assert( all( size( im ) == obj.shape ) );
+            
+            im = im & obj.surface;
+        end
+        
         function im = subtract( obj, im )
             assert( islogical( im ) );
             assert( all( size( im ) == obj.shape ) );

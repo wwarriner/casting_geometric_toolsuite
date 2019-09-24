@@ -205,9 +205,9 @@ classdef Feeders < Process & matlab.mixin.Copyable
         end
         
         function area = compute_interface_area( obj, voxels )
-            interface = obj.mesh.intersect( voxels.values > 0 );
+            interface = obj.mesh.intersect_surface( voxels.values > 0 );
             interface_count = sum( interface, 'all' );
-            area = obj.mesh.to_casting_volume( interface_count );
+            area = obj.mesh.to_casting_area( interface_count );
         end
     end
     
