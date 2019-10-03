@@ -128,7 +128,7 @@ classdef (Sealed) ProcessManager < Cancelable & Notifier & Printer & handle
                 );
             write_folder = fullfile( output_folder, name );
             output_files = OutputFiles( write_folder, name );
-            output_files.prepare_output_path();
+            %output_files.prepare_output_path();
         end
     end
     
