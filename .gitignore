@@ -10,4 +10,7 @@ examples/legacy_demo/legacy_demo.asv
 *.mexa64
 *.mexmaci64
 *.mex
+**/settings.json
+**/launch.json
+**/*.pyc
 build/process_implementation_includer.m
