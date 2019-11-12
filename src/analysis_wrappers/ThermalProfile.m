@@ -6,9 +6,12 @@ classdef ThermalProfile < Process
     % ambient environment in units of W / m^2 * K.
     % - @ambient_temperature_c, REQUIRED FINITE, temperature of ambient
     % environment in units of C. Also used for mold temperature.
+    % - @filter_thermal_modulus_range_ratio, ratio for filtering thermal modulus
+    % for downstream processing.
     % - @latent_heat_quality_target, target quality value. Lower values,
     % including those below zero, result in smaller time steps, which requires
-    % more computational effort, longer computation time, and greater accuracy.
+    % more computational effort, longer computation time, and results in greater
+    % accuracy.
     % - @melt_material_file, REQUIRED VALID MATERIAL DATA FILE, data file
     % containing temperature-property information for melt material.
     % - @melt_mold_h_file, REQUIRED VALID MATERIAL DATA FILE, data file
