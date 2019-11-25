@@ -255,7 +255,7 @@ classdef ThermalProfile < Process
             sip_in = SolidificationInterfaceProperties();
             sip_in.add_ambient( melt.id, HProperty( obj.ambient_h_w_per_m_sq_k ) );
             sip_in.add_ambient( mold.id, HProperty( obj.ambient_h_w_per_m_sq_k ) );
-            sip_in.read( melt.id, mold.id, which( obj.melt_mold_h_file ) );
+            sip_in.add_from_file( melt.id, mold.id, which( obj.melt_mold_h_file ) );
             
             obj.smp = smp_in;
             obj.sip = sip_in;
