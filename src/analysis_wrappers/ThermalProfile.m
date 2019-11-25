@@ -202,8 +202,12 @@ classdef ThermalProfile < Process
             obj.printf( "  Computing statistics...\n" );
             [ obj.minimum_modulus, obj.maximum_modulus ] = ...
                 obj.modulus_analysis( obj.values_interior );
-            obj.modulus_ratio = ...
-                1 - ( obj.minimum_modulus / obj.maximum_modulus );
+            if obj.maximum_modulus ~= 0
+                obj.modulus_ratio = ...
+                    1 - ( obj.minimum_modulus / obj.maximum_modulus );
+            else
+                obj.modulus_ratio = 0;
+            end
         end
         
         function prepare_filtered_profile_query( obj )
@@ -299,7 +303,12 @@ classdef ThermalProfile < Process
         end
         
         function threshold = compute_filter_amount( obj, modulus )
-            min_m = min( modulus( modulus > 0 ), [], 'all' );
+            mod = modulus( modulus > 0 );
+            if isempty( mod )
+                min_m = 0;
+            else
+                min_m = min( mod, [], 'all' );
+            end
             max_m = max( modulus, [], 'all' );
             range = max_m - min_m;
             threshold = obj.filter_thermal_modulus_range_ratio .* range;
