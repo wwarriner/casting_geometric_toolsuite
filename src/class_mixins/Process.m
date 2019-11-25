@@ -1,11 +1,20 @@
 classdef (Abstract) Process < UserInterface & handle
     
+    properties ( SetAccess = public )
+        % Properties intended to be changed by JSON interface should be in a
+        % block like this in subclasses. The run() method will automatically
+        % apply settings with the exact same name as the property here. The
+        % properties should be located at processes.<ProcessName>.<PropertyName>
+    end
+    
     methods ( Abstract )
         value = write( obj, files );
     end
     
     methods
         function obj = Process( results, settings )
+            % signature of subclasses will generally be:
+            % obj = obj@Process( varargin{ : } );
             obj.check_errors_early();
             if nargin == 0; return; end
             obj.results = results;
@@ -39,7 +48,7 @@ classdef (Abstract) Process < UserInterface & handle
         name = NAME(); % MUST be implemented as
         %{
         function name = NAME()
-            [ ~, name ] = fileparts( mfilename( 'full' ) );
+            name = string( mfilename( 'class' ) );
         end
         %}
     end
@@ -50,10 +59,10 @@ classdef (Abstract) Process < UserInterface & handle
     end
     
     methods ( Abstract, Access = protected )
-        check_settings( obj )
-        update_dependencies( obj )
-        run_impl( obj )
-        to_table_impl( obj )
+        check_settings( obj ) % Checks whether settings are valid.
+        update_dependencies( obj ) % Gets any dependencies from results object.
+        run_impl( obj ) % Domain-specific code.
+        to_table_impl( obj ) % Implementation of domain-specific tabular data.
     end
     
 end
