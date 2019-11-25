@@ -1,6 +1,7 @@
 {
   "manager": {
     "output_folder": "",
+    "overwrite_output": false,
     "user_needs": [
       "Casting",
       "Feeders",

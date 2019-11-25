@@ -2,6 +2,7 @@ classdef (Sealed) ProcessManager < Cancelable & Notifier & Printer & handle
     
     properties
         user_needs(:,1) string = []
+        overwrite_output(1,1) logical = false
     end
     
     methods ( Access = public )
@@ -15,6 +16,20 @@ classdef (Sealed) ProcessManager < Cancelable & Notifier & Printer & handle
             
             obj.settings = settings;
             obj.results = results;
+        end
+        
+        function output_files = prepare_output_files( obj )
+            input_file = obj.settings.processes.Casting.input_file;
+            [ input_folder, name, ~ ] = fileparts( input_file );
+            output_folder = obj.settings.manager.output_folder;
+            assert( ...
+                ~strcmpi( input_folder, output_folder ) || ...
+                ( isempty( input_folder ) && isempty( output_folder ) ) ...
+                );
+            write_folder = fullfile( output_folder, name );
+            output_files = OutputFiles( ...
+                write_folder, name, obj.overwrite_output ...
+                );
         end
         
         function run( obj )
@@ -116,19 +131,6 @@ classdef (Sealed) ProcessManager < Cancelable & Notifier & Printer & handle
             obj.printf( 'Writing %s...\n', process_key.name );
             result = obj.results.get( process_key );
             result.write( obj.output_files );
-        end
-        
-        function output_files = prepare_output_files( obj )
-            input_file = obj.settings.processes.Casting.input_file;
-            [ input_folder, name, ~ ] = fileparts( input_file );
-            output_folder = obj.settings.manager.output_folder;
-            assert( ...
-                ~strcmpi( input_folder, output_folder ) || ...
-                ( isempty( input_folder ) && isempty( output_folder ) ) ...
-                );
-            write_folder = fullfile( output_folder, name );
-            output_files = OutputFiles( write_folder, name );
-            %output_files.prepare_output_path();
         end
     end
     

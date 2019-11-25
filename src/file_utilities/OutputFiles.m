@@ -6,16 +6,21 @@ classdef OutputFiles < handle
     end
     
     methods ( Access = public )
-        function obj = OutputFiles( output_folder, name )
-            assert( ~isfile( output_folder ) );
-            obj.path = output_folder;
+        % Throws if output_folder exists, is not empty, and overwrite is false.
+        % Destroys contents of output_folder if overwrite is true.
+        function obj = OutputFiles( output_folder, name, overwrite )
+            if nargin < 3
+                overwrite = false;
+            end
+            assert( islogical( overwrite ) );
             
+            assert( ~isfile( output_folder ) );
             assert( ~isempty( name ) );
+            
+            obj.prepare_output_folder( output_folder, overwrite )
+            
+            obj.path = output_folder;
             obj.name = name;
-        end
-        
-        function prepare_output_path( obj )
-            prepare_folder( obj.path );
         end
         
         function write_array( obj, title, a, spacing, origin )
@@ -116,6 +121,24 @@ classdef OutputFiles < handle
         function file_path = compose_file_path( obj, formatspec, varargin )
             file_name = sprintf( formatspec, obj.name, varargin{ : } );
             file_path = fullfile( obj.path, char( file_name ) );
+        end
+    end
+    
+    methods ( Access = private, Static )
+        function prepare_output_folder( output_folder, overwrite )
+            exists = isfolder( output_folder );
+            empty = is_folder_empty( output_folder );
+            if exists && ~empty && ~overwrite
+                ME = MException( ...
+                    "OutputFiles:noOverwrite", ...
+                    "Folder exists, is not empty, and overwrite off.\n" ...
+                    + "%s", ...
+                    output_folder ...
+                    );
+                throw( ME )
+            else
+                prepare_folder( output_folder );
+            end
         end
     end
     
