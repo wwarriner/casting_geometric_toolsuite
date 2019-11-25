@@ -27,6 +27,11 @@
       "sweep_coefficient": 2,
       "threshold_casting_length": 2.35
     },
+    "CoolingChannels": {
+      "channel_casting_surface_d_mm": 12.0,
+      "channel_other_surface_d_mm": 8.0,
+      "channel_diameter_mm": 10.0
+    },
     "Cores": {
       "expansion_ratio": 0.05
     },
