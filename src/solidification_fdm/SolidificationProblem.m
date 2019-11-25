@@ -23,6 +23,7 @@ classdef SolidificationProblem < ProblemInterface
     
     methods
         function obj = SolidificationProblem( mesh, smp, sip, primary_melt_id, u_init )
+            check_suitesparse();
             assert( isa( mesh, 'MeshInterface' ) );
             
             assert( isa( u_init, 'double' ) );

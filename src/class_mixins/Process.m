@@ -6,6 +6,7 @@ classdef (Abstract) Process < UserInterface & handle
     
     methods
         function obj = Process( results, settings )
+            obj.check_errors_early();
             if nargin == 0; return; end
             obj.results = results;
             obj.settings = settings;
@@ -25,6 +26,12 @@ classdef (Abstract) Process < UserInterface & handle
         function value = to_table( obj )
             opts.pre = obj.NAME;
             value = append_to_variable_names( obj.to_table_impl(), opts );
+        end
+    end
+    
+    methods ( Static )
+        function check_errors_early()
+            % NO OP
         end
     end
     

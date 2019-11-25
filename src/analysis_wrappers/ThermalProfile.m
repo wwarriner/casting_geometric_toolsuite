@@ -133,9 +133,13 @@ classdef ThermalProfile < Process
         end
     end
     
-    methods ( Access = public, Static )
+    methods ( Static )
         function name = NAME()
             name = string( mfilename( 'class' ) );
+        end
+        
+        function check_errors_early()
+            check_suitesparse();
         end
     end
     
