@@ -7,41 +7,51 @@ import math
 class Canvas:
     """Creates and Manages pipeline objects."""
 
-    def __init__(self, view, output_files):
-        self._output_files = output_files
+    def __init__(self, view, input_files):
+        self._input_files = input_files
         self._view = view
 
-    def load_stl(self, name, color=[]):
+    def load_stl(self, name, color=None):
         EXT = ".stl"
-        stl_file = self._output_files.build_path(suffix=name, extension=EXT)
+        stl_file = self._input_files.build_path(suffix=name, extension=EXT)
         return self._load_stl_file(stl_file, color)
 
-    def load_stl_batch(self, name, colors=[]):
+    def load_stl_batch(self, name, colors=[None]):
         EXT = ".stl"
-        stl_files = self._output_files.build_batch_paths(suffix=name, extension=EXT)
+        stl_files = self._input_files.build_batch_paths(suffix=name, extension=EXT)
         stls = []
         displays = []
         for i, f in enumerate(stl_files):
             stls[i], displays[i] = self._load_stl_file(f, next(colors))
         return stls, displays
 
-    def load_segment_volume(self, name):
+    def load_segment_volume(self, name, threshold_range=None, color=None):
         EXT = ".vtk"
-        vtk_file = self._output_files.build_path(suffix=name, extension=EXT)
+        vtk_file = self._input_files.build_path(suffix=name, extension=EXT)
         vtk = self._load_vtk_file(vtk_file)
+        return self._threshold_vtk(vtk, name, threshold_range)
 
-        pass
-
-    def _threshold_vtk(self, vtk, range):
-
+    def _threshold_vtk(self, vtk, scalars, threshold_range=None, color=None):
+        threshold = ps.Threshold(Input=vtk)
+        threshold.Scalars = ["POINTS", scalars]
+        if threshold_range is not None:
+            initial_range = threshold.ThresholdRange
+            if threshold_range[0] is None:
+                threshold_range[0] = -1e300
+            if threshold_range[1] is None:
+                threshold_range[1] = 1e300
+            threshold.ThresholdRange = threshold_range
+        display = ps.Show(threshold, self._view)
+        return threshold, display
 
     def _load_vtk_file(self, path):
-        vtk = ps.LegacyVTKReader(FileNames=[path])
+        vtk = ps.LegacyVTKReader(FileNames=[str(path)])
+        return vtk
 
-    def _load_stl_file(self, path, color=[]):
-        stl = ps.STLReader(FileNames=[path])
+    def _load_stl_file(self, path, color=None):
+        stl = ps.STLReader(FileNames=[str(path)])
         display = ps.Show(stl, self._view)
-        if color:
+        if color is not None:
             self._apply_solid_color(display, color)
         return stl, display
 
@@ -52,23 +62,21 @@ class Canvas:
     from pathlib import PurePath, Path
 
 
-class OutputFiles:
+class InputFiles:
     """Manages and loads output files."""
 
     _STL = PurePath(".stl")
     _VTK = PurePath(".vtk")
 
-    def __init__(self, input_file_str, output_folder_str):
-        input_file = PurePath(input_file_str)
-        name = input_file.stem
-        output_folder = PurePath(output_folder_str) / name
+    def __init__(self, name, input_folder_str):
+        input_folder = PurePath(input_folder_str)
 
         self._name = name
-        self._output_folder = output_folder
+        self._input_folder = input_folder
 
     def build_path(self, suffix="", extension=""):
         extension = self.fix_extension(extension)
-        formatted = self._output_folder / self._format_name(suffix, extension)
+        formatted = self._input_folder / self._format_name(suffix, extension)
         formatted = str(formatted).format(suffix=suffix, extension=extension)
         return PurePath(formatted)
 
@@ -78,7 +86,7 @@ class OutputFiles:
         glob = self.build_path(suffix=suffix, extension=extension)
         glob = PurePath(glob.name)
         glob = str(glob).format(suffix=suffix, extension=extension)
-        files = list(Path(self._output_folder).glob(glob))
+        files = list(Path(self._input_folder).glob(glob))
 
         expr = r"^.*?([0-9]+).*?$"
         r = re.compile(expr, re.IGNORECASE)
@@ -111,11 +119,3 @@ class OutputFiles:
     @staticmethod
     def fix_extension(extension):
         return extension.lstrip(".")
-
-
-of = OutputFiles("steering_column_mount.stl", "C:/Users/wwarr/Desktop/a")
-b = of.build_path("Parting", ".vtk")
-print(b)
-
-c = of.build_batch_paths("Feeders", ".stl")
-print(c)
