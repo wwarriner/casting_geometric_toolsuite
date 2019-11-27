@@ -22,7 +22,7 @@ classdef FilteredProfileQuery < handle
             assert( isa( amount, 'double' ) );
             assert( isreal( amount ) );
             assert( isfinite( amount ) );
-            assert( 0.0 < amount );
+            assert( 0.0 <= amount );
             
             mask = 0 < profile;
             positive = filter_masked( profile, mask, amount );

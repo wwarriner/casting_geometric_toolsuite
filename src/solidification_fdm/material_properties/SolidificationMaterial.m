@@ -28,6 +28,17 @@ classdef SolidificationMaterial < MaterialBase
             ready = ready & obj.has( KProperty.name );
             ready = ready & obj.has( QProperty.name );
         end
+        
+        function set.initial_temperature_c( obj, value )
+            obj.check_value( value )
+            obj.initial_temperature_c = value;
+        end
+    end
+    
+    methods ( Access = protected )
+        function check_value( ~, ~ )
+            % NO OP
+        end
     end
     
 end

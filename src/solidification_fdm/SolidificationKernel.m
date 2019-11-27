@@ -2,6 +2,7 @@ classdef SolidificationKernel < handle
     
     methods
         function obj = SolidificationKernel( smp, sip, mesh, u )
+            check_suitesparse();
             obj.smp = smp;
             obj.sip = sip;
             obj.mesh = mesh;

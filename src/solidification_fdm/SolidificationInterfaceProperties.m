@@ -5,11 +5,11 @@ classdef SolidificationInterfaceProperties < InterfacePropertiesBase
     end
     
     methods
-        function data = read_ambient( obj, id, file )
-            data = obj.read( obj.ambient_id, id, file );
+        function data = add_ambient_from_file( obj, id, file )
+            data = obj.add_from_file( obj.ambient_id, id, file );
         end
         
-        function data = read( obj, first_id, second_id, file )
+        function data = add_from_file( obj, first_id, second_id, file )
             data = readtable( file );
             h = HProperty( data.h_t, data.h );
             obj.add( first_id, second_id, h );
