@@ -1,6 +1,7 @@
 import argparse
 import sys
 import os
+import json
 
 import paraview.simple as ps
 from pathlib import PurePath, Path
@@ -38,23 +39,29 @@ parser.add_argument(
 )
 args = parser.parse_args()
 
+ERR_BAD_SCRIPT_FOLDER = 2
 script_folder = args.script_folder
 if script_folder is None or not Path(script_folder).is_dir():
     print("No valid script folder supplied using -S option!")
     print("{:s}".format(str(script_folder)))
+    sys.exit(ERR_BAD_SCRIPT_FOLDER)
 
+ERR_BAD_INPUT_FOLDER = 3
 input_folder = args.input_folder
 if input_folder is None or not Path(input_folder).is_dir():
     print("No valid input folder supplied using -I option!")
     print("{:s}".format(str(input_folder)))
+    sys.exit(ERR_BAD_INPUT_FOLDER)
 
+ERR_BAD_NAME = 4
 name = args.name
 if name is None:
     print("No valid name supplied using -n option!")
     print("{:s}".format(str(name)))
+    sys.exit(ERR_BAD_NAME)
 
 sys.path.append(script_folder)
-from helpers import InputFiles, Canvas
+import cgt_objects
 
 #### disable automatic camera reset on 'Show'
 ps._DisableFirstRenderCameraReset()
@@ -64,14 +71,25 @@ view = ps.GetActiveViewOrCreate("RenderView")
 view.CameraParallelProjection = True
 # view.ViewSize = [960, 720]
 
-files = InputFiles(name, input_folder)
-cv = Canvas(view, files)
-casting, casting_display = cv.load_stl("Casting")
-casting_display.Opacity = 0.2
+config = None
+config_file = PurePath(args.script_folder) / "visualization_config.json"
+with open(config_file) as f:
+    config = json.load(f)
+assert config is not None
 
-gprof_thold, gprof_display = cv.load_segment_volume(
-    "filtered_GeometricProfile", [15, None]
-)
+input_files = cgt_objects.InputFiles(PurePath(args.input_folder))
+visuals = cgt_objects.Visuals(view, config, input_files)
+
+# pseudocode
+# determine load strategy
+#  try .data
+#  fail? try extension
+#  fail? go to next object
+# try load object
+#  fail? go to next object
+# determine vis strategy
+#  use combination of .data and .type
+# apply vis strategy to loaded object
 
 # reset view to fit data
 view.Update()

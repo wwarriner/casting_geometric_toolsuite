@@ -1,0 +1,102 @@
+{
+  "processes": {
+    "Casting": {
+      "alpha": 0.2,
+      "color": null,
+      "data": {
+        "format": "stl",
+        "type": "single"
+      }
+    },
+    "CavityThickSections": {
+      "alpha": 1.0,
+      "color": "Viridis",
+      "data": {
+        "format": "vtk",
+        "type": "categorical"
+      }
+    },
+    "CavityThinSections": {
+      "alpha": 1.0,
+      "color": null,
+      "data": {
+        "format": "vtk",
+        "type": "categorical"
+      }
+    },
+    "Cores": {
+      "alpha": 1.0,
+      "color": "Viridis",
+      "data": {
+        "format": "vtk",
+        "type": "categorical"
+      }
+    },
+    "Feeders": {
+      "alpha": 1.0,
+      "color": "Viridis",
+      "data": {
+        "format": "stl",
+        "type": "categorical"
+      }
+    },
+    "scaled_GeometricProfile": {
+      "alpha": 1.0,
+      "color": "Viridis",
+      "data": {
+        "format": "vtk",
+        "type": "continuous"
+      },
+      "range": ["+eps", "max"]
+    },
+    "IsolatedSections": {
+      "alpha": 1.0,
+      "color": "Viridis",
+      "data": {
+        "format": "vtk",
+        "type": "categorical"
+      }
+    },
+    "Mesh": {
+      "alpha": 1.0,
+      "color": [0.63, 0.63, 0.63],
+      "data": {
+        "format": "vtk",
+        "type": "single"
+      }
+    },
+    "MoldThinSections": {
+      "alpha": 1.0,
+      "color": "Viridis",
+      "data": {
+        "format": "vtk",
+        "type": "categorical"
+      }
+    },
+    "line_Parting": {
+      "alpha": 1.0,
+      "color": "ffffff",
+      "data": {
+        "format": "vtk",
+        "type": "categorical"
+      }
+    },
+    "ThermalProfile": {
+      "alpha": 1.0,
+      "color": "Inferno",
+      "data": {
+        "format": "vtk",
+        "type": "continuous"
+      },
+      "range": ["+eps", "max"]
+    },
+    "Undercuts": {
+      "alpha": 1.0,
+      "color": "Viridis",
+      "data": {
+        "format": "vtk",
+        "type": "categorical"
+      }
+    }
+  }
+}
