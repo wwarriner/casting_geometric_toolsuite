@@ -144,6 +144,7 @@ class Volume(Visualization):
             data_range = (0.0, 0.0)
 
         out_range = [0.0, 0.0]
+        flexible = [False, False]
         for i, r in enumerate(in_range):
             if r == "min":
                 val = data_range[0]
@@ -151,14 +152,25 @@ class Volume(Visualization):
                 val = data_range[1]
             elif r is None:
                 val = data_range[i]
+                flexible[i] = True
             elif r in ["+eps", "eps"]:
                 val = float_info.epsilon
+                flexible[i] = True
             elif r == "-eps":
                 val = -float_info.epsilon
+                flexible[i] = True
             else:
                 val = in_range[i]
+                flexible[i] = True
             out_range[i] = val
-        assert out_range[0] <= out_range[1]
+        if out_range[1] < out_range[0]:
+            if flexible[0] and flexible[1]:
+                mean = sum(out_range) / len(out_range)
+                out_range = [mean, mean]
+            elif flexible[0]:
+                out_range[0] = out_range[1]
+            else:
+                out_range[1] = out_range[0]
         self._data.ThresholdRange = out_range
 
     def _threshold_vtk(self, vtk, name):
@@ -177,6 +189,10 @@ class InputFiles:
 
     def __init__(self, input_folder_str):
         self._input_folder = PurePath(input_folder_str)
+
+    def exists(self, postfix="", extension=""):
+        path = self.build_path(postfix, extension)
+        return Path(path).is_file()
 
     def build_path(self, postfix="", extension=""):
         extension = self._fix_extension(extension)
@@ -256,6 +272,8 @@ class Visuals:
     def __init__(self, view, config, input_files):
         self._strategies = self._build_strategies()
         for process, config_item in config["processes"].items():
+            if not self._exists(process, config_item, input_files):
+                continue
             strategy = self._get_strategy(config_item)
             strategy(view, process, config_item, input_files)
 
@@ -308,6 +326,9 @@ class Visuals:
 
     def _get_strategy(self, config):
         return self._strategies[self._get_format(config)][self._get_type(config)]
+
+    def _exists(self, process, config, input_files):
+        return input_files.exists(postfix=process, extension=self._get_format(config))
 
     def _get_path(self, process, config, input_files):
         return input_files.build_path(
