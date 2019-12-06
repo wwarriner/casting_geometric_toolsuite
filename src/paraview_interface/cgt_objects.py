@@ -7,7 +7,7 @@ from itertools import takewhile
 
 import paraview.simple as ps
 
-
+# TODO need to expose .show()/.hide() methods so we can choose
 class Visualization(ABC):
     def __init__(self, view, base_name):
         self._view = view
@@ -252,6 +252,10 @@ class InputFiles:
     @staticmethod
     def _fix_extension(extension):
         return extension.lstrip(".")
+
+
+# TODO This code feels inverted, a lot of this can probably be offloaded to the
+# TODO subclasses or input_files
 
 
 class Visuals:
