@@ -1,0 +1,62 @@
+{
+  "manager": {
+    "output_folder": "output",
+    "overwrite_output": true,
+    "user_needs": [
+      "Casting",
+      "Feeders",
+      "CavityThinSections",
+      "CavityThickSections",
+      "MoldThinSections",
+      "GeometricProfile",
+      "ThermalProfile",
+      "IsolatedSections"
+    ]
+  },
+  "processes": {
+    "Casting": {
+      "input_file": "sample_geometries/bearing_block.stl"
+    },
+    "CavityThickSections": {
+      "strategy": "lognormal",
+      "quantile": 0.25,
+      "sweep_coefficient": 2.0,
+      "threshold_casting_length": 2.35
+    },
+    "CavityThinSections": {
+      "sweep_coefficient": 2.0,
+      "threshold_casting_length": 2.35
+    },
+    "Cores": {
+      "expansion_ratio": 0.05
+    },
+    "Feeders": {},
+    "GeometricProfile": {},
+    "IsolatedSections": {
+      "use_thermal_profile": false
+    },
+    "Mesh": {
+      "desired_element_count": 1e6
+    },
+    "MoldThinSections": {
+      "sweep_coefficient": 2.0,
+      "threshold_casting_length": 6.25
+    },
+    "Parting": {},
+    "ThermalProfile": {
+      "ambient_h_w_per_m_sq_k": 10,
+      "ambient_temperature_c": 25,
+      "filter_thermal_modulus_range_ratio": 0.05,
+      "latent_heat_quality_target": 0.2,
+      "melt_feeding_effectivity": 0.5,
+      "melt_initial_temperature_c": 700,
+      "melt_material_file": "a356.txt",
+      "melt_mold_h_file": "merge_materials_htc.txt",
+      "mold_material_file": "wcb.txt",
+      "mold_pad_amounts": [0.125],
+      "mold_pad_type": "ratio",
+      "time_step_mode": "bisection"
+    },
+    "Undercuts": {}
+  }
+}
