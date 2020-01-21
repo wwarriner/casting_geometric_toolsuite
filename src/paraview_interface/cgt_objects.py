@@ -109,6 +109,16 @@ class Polygons(Visualization):
         super().__init__(view, base_name)
         self._polygons = None
 
+    def show(self):
+        assert self._polygons is not None
+        for p in self._polygons:
+            p.show()
+
+    def hide(self):
+        assert self._polygons is not None
+        for p in self._polygons:
+            p.hide()
+
     def load(self, files):
         assert self._polygons is None
         self._polygons = []
@@ -205,7 +215,11 @@ class InputFiles:
 
     def exists(self, postfix="", extension=""):
         path = self.build_path(postfix, extension)
-        return Path(path).is_file()
+        exists = Path(path).is_file()
+        if not exists:
+            paths = self.build_batch_paths(postfix, extension)
+            exists = len(paths) > 0
+        return exists
 
     def build_path(self, postfix="", extension=""):
         extension = self._fix_extension(extension)
@@ -214,17 +228,22 @@ class InputFiles:
         return PurePath(formatted)
 
     def build_batch_paths(self, postfix="", extension=""):
+        glob = self.build_path_glob(postfix, extension)
+        files = list(Path(self._input_folder).glob(str(glob)))
+
+        expr = r"^.*?([0-9]+).*?$"
+        r = re.compile(expr, re.IGNORECASE)
+        files = [f for f in files if self._is_valid_batch_file(r, f)]
+        files.sort()
+        return files
+
+    def build_path_glob(self, postfix="", extension=""):
         extension = self._fix_extension(extension)
         postfix = postfix + "_*"
         glob = self.build_path(postfix=postfix, extension=extension)
         glob = PurePath(glob.name)
         glob = str(glob).format(postfix=postfix, extension=extension)
-        files = list(Path(self._input_folder).glob(glob))
-
-        expr = r"^.*?([0-9]+).*?$"
-        r = re.compile(expr, re.IGNORECASE)
-        files = [f for f in files if self._is_valid_batch_file(r, f)]
-        return files
+        return PurePath(glob)
 
     def get_base_name(self):
         glob = "*.*"

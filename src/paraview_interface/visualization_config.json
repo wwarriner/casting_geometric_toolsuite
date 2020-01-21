@@ -38,12 +38,12 @@
     },
     "Feeders": {
       "alpha": 1,
-      "color": "Viridis",
+      "color": [0.75, 0.0, 0.0],
       "data": {
         "format": "stl",
         "type": "categorical"
       },
-      "visibility": "hide"
+      "visibility": "show"
     },
     "IsolatedSections": {
       "alpha": 1,
