@@ -48,6 +48,7 @@ classdef ThermalProfile < Process
             mustBeLessThanOrEqual(filter_thermal_modulus_range_ratio,1)...
             } = 0.05
         latent_heat_quality_target(1,1) double {mustBeReal,mustBeFinite} = 0.2
+        material_database_folder(1,1) string = ""
         melt_material_file(1,1) string = ""
         melt_mold_h_file(1,1) string = ""
         melt_feeding_effectivity(1,1) double {...
@@ -147,12 +148,13 @@ classdef ThermalProfile < Process
         function check_settings( obj )
             assert( isfinite( obj.ambient_h_w_per_m_sq_k ) );
             assert( isfinite( obj.ambient_temperature_c ) );
+            assert( isfolder( obj.material_database_folder ) );
             assert( obj.melt_material_file ~= "" );
             assert( obj.melt_mold_h_file ~= "" );
             assert( isfinite( obj.melt_initial_temperature_c ) );
             assert( obj.mold_material_file ~= "" );
             assert( ismember( obj.mold_pad_type, obj.MOLD_PAD_TYPE ) );
-            assert( ismember( obj.time_step_mode, obj.TIME_STEP_MODE ) ); 
+            assert( ismember( obj.time_step_mode, obj.TIME_STEP_MODE ) );
         end
         
         function update_dependencies( obj )
@@ -246,12 +248,20 @@ classdef ThermalProfile < Process
             ambient.id = obj.AMBIENT_ID;
             ambient.initial_temperature_c = obj.ambient_temperature_c;
             
-            melt = MeltMaterial( which( obj.melt_material_file ) );
+            melt_file = fullfile( ...
+                obj.material_database_folder, ...
+                obj.melt_material_file ...
+                );
+            melt = MeltMaterial( melt_file );
             melt.id = obj.MELT_ID;
             melt.initial_temperature_c = obj.melt_initial_temperature_c;
             melt.feeding_effectivity = obj.melt_feeding_effectivity;
             
-            mold = MoldMaterial( which( obj.mold_material_file ) );
+            mold_file = fullfile( ...
+                obj.material_database_folder, ...
+                obj.mold_material_file ...
+                );
+            mold = MoldMaterial( mold_file );
             mold.id = obj.MOLD_ID;
             mold.initial_temperature_c = obj.ambient_temperature_c;
             
@@ -259,11 +269,15 @@ classdef ThermalProfile < Process
             smp_in.add_ambient( ambient );
             smp_in.add_melt( melt );
             smp_in.add( mold );
-
+            
+            convection_file = fullfile( ...
+                obj.material_database_folder, ...
+                obj.melt_mold_h_file ...
+                );
             sip_in = SolidificationInterfaceProperties();
             sip_in.add_ambient( melt.id, HProperty( obj.ambient_h_w_per_m_sq_k ) );
             sip_in.add_ambient( mold.id, HProperty( obj.ambient_h_w_per_m_sq_k ) );
-            sip_in.add_from_file( melt.id, mold.id, which( obj.melt_mold_h_file ) );
+            sip_in.add_from_file( melt.id, mold.id, convection_file );
             
             obj.smp = smp_in;
             obj.sip = sip_in;
