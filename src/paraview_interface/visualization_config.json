@@ -6,97 +6,110 @@
       "data": {
         "format": "stl",
         "type": "single"
-      }
+      },
+      "visibility": "show"
     },
     "CavityThickSections": {
-      "alpha": 1.0,
+      "alpha": 1,
       "color": "Viridis",
       "data": {
         "format": "vtk",
         "type": "categorical"
-      }
+      },
+      "visibility": "hide"
     },
     "CavityThinSections": {
-      "alpha": 1.0,
+      "alpha": 1,
       "color": null,
       "data": {
         "format": "vtk",
         "type": "categorical"
-      }
+      },
+      "visibility": "hide"
     },
     "Cores": {
-      "alpha": 1.0,
+      "alpha": 1,
       "color": "Viridis",
       "data": {
         "format": "vtk",
         "type": "categorical"
-      }
+      },
+      "visibility": "hide"
     },
     "Feeders": {
-      "alpha": 1.0,
+      "alpha": 1,
       "color": "Viridis",
       "data": {
         "format": "stl",
         "type": "categorical"
-      }
+      },
+      "visibility": "hide"
+    },
+    "IsolatedSections": {
+      "alpha": 1,
+      "color": "Viridis",
+      "data": {
+        "format": "vtk",
+        "type": "categorical"
+      },
+      "visibility": "hide"
+    },
+    "line_Parting": {
+      "all_scalars": false,
+      "alpha": 1,
+      "color": [0, 0, 0],
+      "data": {
+        "format": "vtk",
+        "type": "categorical"
+      },
+      "visibility": "hide"
+    },
+    "Mesh": {
+      "alpha": 1,
+      "color": [0.63, 0.63, 0.63],
+      "data": {
+        "format": "vtk",
+        "type": "single"
+      },
+      "visibility": "hide"
+    },
+    "MoldThinSections": {
+      "alpha": 1,
+      "color": "Viridis",
+      "data": {
+        "format": "vtk",
+        "type": "categorical"
+      },
+      "visibility": "hide"
     },
     "scaled_GeometricProfile": {
-      "alpha": 1.0,
+      "alpha": 1,
       "color": "Viridis",
       "data": {
         "format": "vtk",
         "type": "continuous"
       },
-      "range": ["+eps", "max"]
-    },
-    "IsolatedSections": {
-      "alpha": 1.0,
-      "color": "Viridis",
-      "data": {
-        "format": "vtk",
-        "type": "categorical"
-      }
-    },
-    "Mesh": {
-      "alpha": 1.0,
-      "color": [0.63, 0.63, 0.63],
-      "data": {
-        "format": "vtk",
-        "type": "single"
-      }
-    },
-    "MoldThinSections": {
-      "alpha": 1.0,
-      "color": "Viridis",
-      "data": {
-        "format": "vtk",
-        "type": "categorical"
-      }
-    },
-    "line_Parting": {
-      "alpha": 1.0,
-      "color": "ffffff",
-      "data": {
-        "format": "vtk",
-        "type": "categorical"
-      }
+      "range": ["+eps", "max"],
+      "visibility": "hide"
     },
     "ThermalProfile": {
-      "alpha": 1.0,
+      "alpha": 1,
       "color": "Inferno",
       "data": {
         "format": "vtk",
         "type": "continuous"
       },
-      "range": ["+eps", "max"]
+      "range": ["+eps", "max"],
+      "visibility": "hide"
     },
     "Undercuts": {
-      "alpha": 1.0,
+      "alpha": 1,
       "color": "Viridis",
       "data": {
         "format": "vtk",
         "type": "categorical"
-      }
+      },
+      "visibility": "hide"
     }
   }
 }

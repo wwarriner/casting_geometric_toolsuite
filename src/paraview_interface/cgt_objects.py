@@ -7,7 +7,7 @@ from itertools import takewhile
 
 import paraview.simple as ps
 
-# TODO need to expose .show()/.hide() methods so we can choose
+
 class Visualization(ABC):
     def __init__(self, view, base_name):
         self._view = view
@@ -27,10 +27,10 @@ class Visualization(ABC):
     def change_color(self, color):
         try:
             if isinstance(color, (list, tuple)):
-                self._apply_solid_color(self._display, color)
+                self._apply_solid_color(color)
             elif isinstance(color, str):
                 color_map = self._get_color_map(color)
-                self._apply_color_map(self._data, color_map)
+                self._apply_color_map(color_map)
             else:
                 assert False
         except Exception as e:
@@ -41,6 +41,16 @@ class Visualization(ABC):
     def load(self, file):
         assert False
 
+    def show(self):
+        assert self._data is not None
+        assert self._view is not None
+        self._display = ps.Show(self._data, self._view)
+
+    def hide(self):
+        assert self._data is not None
+        assert self._view is not None
+        ps.Hide(self._data, self._view)
+
     def _rename(self, name):
         assert self._data is not None
         try:
@@ -49,10 +59,6 @@ class Visualization(ABC):
         except Exception as e:
             print("Could not rename to {}".format(name))
             print(e)
-
-    def _visualize(self):
-        assert self._data is not None
-        self._display = ps.Show(self._data, self._view)
 
     def _get_color_map(self, color):
         if color.casefold() == "viridis".casefold():
@@ -66,15 +72,18 @@ class Visualization(ABC):
             print("Using default colormap")
             return "Viridis (matplotlib)"
 
-    @staticmethod
-    def _apply_solid_color(display, color):
+    def _apply_solid_color(self, color):
+        assert self._display is not None
         assert len(color) == 3
-        display.AmbientColor = color
-        display.DiffuseColor = color
+        self._display.ColorArrayName = [None, ""]
+        self._display.AmbientColor = color
+        self._display.DiffuseColor = color
 
-    @staticmethod
-    def _apply_color_map(data, color_map):
-        name = data.PointData.GetArray(0).Name
+    def _apply_color_map(self, color_map):
+        assert self._display is not None
+        assert self._data is not None
+        name = self._data.PointData.GetArray(0).Name  # type: ignore
+        self._display.ColorArrayName = ["POINTS", name]
         color_lut = ps.GetColorTransferFunction(name)
         color_lut.ApplyPreset(color_map, True)
 
@@ -92,7 +101,7 @@ class Polygon(Visualization):
 
         self._data = data
         self._rename(name)
-        self._visualize()
+        self.show()
 
 
 class Polygons(Visualization):
@@ -129,12 +138,13 @@ class Volume(Visualization):
 
     def load(self, path):
         vtk = ps.LegacyVTKReader(FileNames=[str(path)])
+        ps.RenameSource(" ", vtk)
         name = self._get_postfix(path)
         data = self._threshold_vtk(vtk, name)
 
         self._data = data
         self._rename(name)
-        self._visualize()
+        self.show()
 
     def apply_range(self, in_range):
         assert self._data is not None
@@ -172,6 +182,9 @@ class Volume(Visualization):
             else:
                 out_range[1] = out_range[0]
         self._data.ThresholdRange = out_range
+
+    def apply_all_scalars(self, all_scalars):
+        self._data.AllScalars = all_scalars
 
     def _threshold_vtk(self, vtk, name):
         threshold = ps.Threshold(Input=vtk)
@@ -272,6 +285,8 @@ class Visuals:
     _ALPHA = "alpha"
     _COLOR = "color"
     _RANGE = "range"
+    _ALL_SCALARS = "all_scalars"
+    _VISIBILITY = "visibility"
 
     def __init__(self, view, config, input_files):
         self._strategies = self._build_strategies()
@@ -279,17 +294,18 @@ class Visuals:
             if not self._exists(process, config_item, input_files):
                 continue
             strategy = self._get_strategy(config_item)
-            strategy(view, process, config_item, input_files)
+            visualization = strategy(view, process, config_item, input_files)
+            self._update_visibility(config_item, visualization)
 
     def _load_single_stl(self, view, process, config, input_files):
         base_name = input_files.get_base_name()
         path = self._get_path(process, config, input_files)
-        self._create_polygon(view, base_name, path, config)
+        return self._create_polygon(view, base_name, path, config)
 
     def _load_categorical_stl(self, view, process, config, input_files):
         base_name = input_files.get_base_name()
         paths = self._get_paths(process, config, input_files)
-        self._create_polygons(view, base_name, paths, config)
+        return self._create_polygons(view, base_name, paths, config)
 
     def _load_continuous_stl(self, view, process, config, input_files):
         raise NotImplementedError
@@ -297,29 +313,31 @@ class Visuals:
     def _load_single_vtk(self, view, process, config, input_files):
         base_name = input_files.get_base_name()
         path = self._get_path(process, config, input_files)
-        self._create_volume(view, base_name, path, config, [1, 1])
+        return self._create_volume(view, base_name, path, config, [1, 1])
 
     def _load_categorical_vtk(self, view, process, config, input_files):
         base_name = input_files.get_base_name()
         path = self._get_path(process, config, input_files)
-        self._create_volume(view, base_name, path, config, [1, "max"])
+        return self._create_volume(view, base_name, path, config, [1, "max"])
 
     def _load_continuous_vtk(self, view, process, config, input_files):
         base_name = input_files.get_base_name()
         path = self._get_path(process, config, input_files)
-        self._create_volume(view, base_name, path, config, ["min", "max"])
+        return self._create_volume(view, base_name, path, config, ["min", "max"])
 
     def _create_polygon(self, view, base_name, path, config):
         p = Polygon(view, base_name)
         p.load(path)
         self._update_alpha(config, p)
         self._update_color(config, p)
+        return p
 
     def _create_polygons(self, view, base_name, paths, config):
         p = Polygons(view, base_name)
         p.load(paths)
         self._update_alpha(config, p)
         self._update_color(config, p)
+        return p
 
     def _create_volume(self, view, base_name, path, config, default_range):
         v = Volume(view, base_name)
@@ -327,6 +345,8 @@ class Visuals:
         self._update_alpha(config, v)
         self._update_color(config, v)
         self._update_range(config, v, default_range)
+        self._update_all_scalars(config, v)
+        return v
 
     def _get_strategy(self, config):
         return self._strategies[self._get_format(config)][self._get_type(config)]
@@ -384,3 +404,17 @@ class Visuals:
             r = config[self._RANGE]
         if r is not None:
             visualization.apply_range(r)
+
+    def _update_all_scalars(self, config, visualization):
+        if self._ALL_SCALARS in config:
+            visualization.apply_all_scalars(config[self._ALL_SCALARS])
+
+    def _update_visibility(self, config, visualization):
+        if self._VISIBILITY in config:
+            v = config[self._VISIBILITY]
+            if v.casefold() == "hide".casefold():
+                visualization.hide()
+            elif v.casefold() == "show".casefold():
+                visualization.show()
+            else:
+                visualization.hide()
