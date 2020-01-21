@@ -45,9 +45,10 @@ cli_res_folder = fullfile( root_folder, "examples", "cli", "res" );
 copyfile( cli_res_folder, target_res_folder );
 % TODO add python interface
 
-zip_file = fullfile( target_folder, app_name + ".zip" );
-zip( zip_file, target_folder );
-
 clear_folder( cache_folder );
+rmdir( cache_folder );
+
+zip_file = fullfile( target_folder, app_name + ".zip" );
+zip( zip_file, "*", target_folder );
 
 end
