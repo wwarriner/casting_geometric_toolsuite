@@ -133,9 +133,13 @@ classdef ThermalProfile < Process
         end
     end
     
-    methods ( Access = public, Static )
+    methods ( Static )
         function name = NAME()
             name = string( mfilename( 'class' ) );
+        end
+        
+        function check_errors_early()
+            check_suitesparse();
         end
     end
     
@@ -202,8 +206,12 @@ classdef ThermalProfile < Process
             obj.printf( "  Computing statistics...\n" );
             [ obj.minimum_modulus, obj.maximum_modulus ] = ...
                 obj.modulus_analysis( obj.values_interior );
-            obj.modulus_ratio = ...
-                1 - ( obj.minimum_modulus / obj.maximum_modulus );
+            if obj.maximum_modulus ~= 0
+                obj.modulus_ratio = ...
+                    1 - ( obj.minimum_modulus / obj.maximum_modulus );
+            else
+                obj.modulus_ratio = 0;
+            end
         end
         
         function prepare_filtered_profile_query( obj )
@@ -255,7 +263,7 @@ classdef ThermalProfile < Process
             sip_in = SolidificationInterfaceProperties();
             sip_in.add_ambient( melt.id, HProperty( obj.ambient_h_w_per_m_sq_k ) );
             sip_in.add_ambient( mold.id, HProperty( obj.ambient_h_w_per_m_sq_k ) );
-            sip_in.read( melt.id, mold.id, which( obj.melt_mold_h_file ) );
+            sip_in.add_from_file( melt.id, mold.id, which( obj.melt_mold_h_file ) );
             
             obj.smp = smp_in;
             obj.sip = sip_in;
@@ -299,7 +307,12 @@ classdef ThermalProfile < Process
         end
         
         function threshold = compute_filter_amount( obj, modulus )
-            min_m = min( modulus( modulus > 0 ), [], 'all' );
+            mod = modulus( modulus > 0 );
+            if isempty( mod )
+                min_m = 0;
+            else
+                min_m = min( mod, [], 'all' );
+            end
             max_m = max( modulus, [], 'all' );
             range = max_m - min_m;
             threshold = obj.filter_thermal_modulus_range_ratio .* range;

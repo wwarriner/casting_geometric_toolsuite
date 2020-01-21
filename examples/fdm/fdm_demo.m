@@ -26,7 +26,7 @@ smp.add( mold_m );
 sip = SolidificationInterfaceProperties();
 sip.add_ambient( melt_m.id, HProperty( 10 ) );
 sip.add_ambient( mold_m.id, HProperty( 10 ) );
-sip.read( melt_m.id, mold_m.id, which( 'al_sand_htc.txt' ) );
+sip.add_from_file( melt_m.id, mold_m.id, which( 'al_sand_htc.txt' ) );
 
 %% GEOMETRY
 
