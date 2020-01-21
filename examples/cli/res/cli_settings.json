@@ -48,6 +48,7 @@
       "ambient_temperature_c": 25,
       "filter_thermal_modulus_range_ratio": 0.05,
       "latent_heat_quality_target": 0.2,
+      "material_database_folder": "res/material_database/",
       "melt_feeding_effectivity": 0.5,
       "melt_initial_temperature_c": 700,
       "melt_material_file": "a356.txt",
