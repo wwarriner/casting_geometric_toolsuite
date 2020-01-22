@@ -5,13 +5,22 @@ classdef (Sealed) ProcessManager < Cancelable & Notifier & Printer & handle
         overwrite_output(1,1) logical = false
     end
     
+    properties ( Dependent )
+        name(1,1) string
+    end
+    
+    properties ( SetAccess = private )
+        write_folder(1,1) string
+    end
+    
     methods ( Access = public )
         function obj = ProcessManager( settings, results )
             if nargin < 2
                 results = Results( settings );
             end
             
-            settings.manager.apply( obj );
+            silent = true;
+            settings.manager.apply( obj, silent );
             assert( ~isempty( obj.user_needs ) );
             
             obj.settings = settings;
@@ -19,16 +28,15 @@ classdef (Sealed) ProcessManager < Cancelable & Notifier & Printer & handle
         end
         
         function output_files = prepare_output_files( obj )
-            input_file = obj.settings.processes.Casting.input_file;
-            [ input_folder, name, ~ ] = fileparts( input_file );
+            input_folder = fileparts( obj.settings.processes.Casting.input_file );
             output_folder = obj.settings.manager.output_folder;
             assert( ...
                 ~strcmpi( input_folder, output_folder ) || ...
                 ( isempty( input_folder ) && isempty( output_folder ) ) ...
                 );
-            write_folder = fullfile( output_folder, name );
+            obj.write_folder = fullfile( output_folder, obj.name );
             output_files = OutputFiles( ...
-                write_folder, name, obj.overwrite_output ...
+                obj.write_folder, obj.name, obj.overwrite_output ...
                 );
         end
         
@@ -69,6 +77,14 @@ classdef (Sealed) ProcessManager < Cancelable & Notifier & Printer & handle
         
         function v = get( obj, process_key )
             v = obj.retrieve_process( process_key );
+        end
+    end
+    
+    methods
+        function value = get.name( obj )
+            input_file = obj.settings.processes.Casting.input_file;
+            [ ~, name_out, ~ ] = fileparts( input_file );
+            value = name_out;
         end
     end
     
