@@ -1,5 +1,7 @@
 function out = cli( settings_json_file )
 
+% TODO allow user to choose processing, paraview, or both
+
 out = 0;
 
 try
@@ -46,4 +48,3 @@ catch e
 end
 
 end
-

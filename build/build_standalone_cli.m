@@ -1,5 +1,8 @@
 function build_standalone_cli()
 
+% TODO pull out testing stuff into separate folder to keep settings files separate
+% TODO paraview doesn't understand relative folders passed via env vars, have to convert to absolute file path before passing.
+
 path_restorer = fix_path(); %#ok<NASGU>
 
 build_folder = fileparts( mfilename( "fullpath" ) );

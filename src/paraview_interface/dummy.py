@@ -63,6 +63,12 @@ if name is None:
 sys.path.append(interface_folder)
 import cgt_objects
 
+config = None
+config_file = PurePath(args.interface_folder) / "visualization_config.json"
+with open(config_file) as f:
+    config = json.load(f)
+assert config is not None
+
 #### disable automatic camera reset on 'Show'
 ps._DisableFirstRenderCameraReset()
 
@@ -70,12 +76,6 @@ ps._DisableFirstRenderCameraReset()
 view = ps.GetActiveViewOrCreate("RenderView")
 view.CameraParallelProjection = True
 # view.ViewSize = [960, 720]
-
-config = None
-config_file = PurePath(args.script_folder) / "visualization_config.json"
-with open(config_file) as f:
-    config = json.load(f)
-assert config is not None
 
 input_files = cgt_objects.InputFiles(PurePath(args.input_folder))
 visuals = cgt_objects.Visuals(view, config, input_files)
