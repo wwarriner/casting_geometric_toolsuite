@@ -34,5 +34,16 @@ catch e
     return;
 end
 
+try
+    p = Paraview( settings );
+    p.casting_name = pm.name;
+    p.input_folder = pm.write_folder;
+    p.open();
+catch e
+    out = 5;
+    disp( getReport( e, "extended" ) );
+    return;
+end
+
 end
 
