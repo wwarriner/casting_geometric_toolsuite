@@ -43,7 +43,10 @@ copyfile( res_folder, target_res_folder );
 
 cli_res_folder = fullfile( root_folder, "examples", "cli", "res" );
 copyfile( cli_res_folder, target_res_folder );
-% TODO add python interface
+
+paraview_interface_glob = fullfile( root_folder, "src", "paraview_interface", "*.py" );
+target_interface_folder = fullfile( target_res_folder, "interface" );
+copyfile( paraview_interface_glob, target_interface_folder );
 
 clear_folder( cache_folder );
 rmdir( cache_folder );
