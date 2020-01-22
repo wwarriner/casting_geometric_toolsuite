@@ -13,6 +13,15 @@
       "IsolatedSections"
     ]
   },
+  "paraview": {
+    "conda": {
+      "install_folder": "",
+      "environment_name": "cgt_cli_paraview",
+      "environment_file": "res/environment.yml"
+    },
+    "interface_folder": "res/interface",
+    "interface_script": "dummy.py"
+  },
   "processes": {
     "Casting": {
       "input_file": "sample_geometries/bearing_block.stl"
