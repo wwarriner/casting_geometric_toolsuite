@@ -95,17 +95,17 @@ classdef Paraview
         end
         
         function cmd = activate_conda( obj )
-            cmd = find_conda_activate( obj );
+            cmd = obj.find_conda_activate();
             [ ~, name, ~ ] = fileparts( cmd );
             assert( strcmp( name, "activate" ) );
         end
         
         function path = find_conda_activate( obj )
             path = obj.build_from_settings();
-            if isempty( path )
-                path = obj.build_from_fallback( obj );
+            if path == ""
+                path = obj.build_from_fallback();
             end
-            if isempty( path ) || ~isfile( path )
+            if path == "" || ~isfile( path )
                 error( "Unable to locate Anaconda3." + newline );
             end
             path = strrep( path, "\", "/" );
@@ -132,7 +132,7 @@ classdef Paraview
             catch e
                 % do nothing
             end
-            if ~isfile( path )
+            if path == "" || ~isfile( path )
                 try
                     path = obj.build_from_env( "PROGRAMDATA" );
                 catch e
@@ -143,7 +143,7 @@ classdef Paraview
         
         function path = build_from_env( obj, env )
             path = obj.build_conda_activate_path( ...
-                str( getenv( env ) ), ...
+                string( getenv( env ) ), ...
                 obj.build_full_suffix() ...
                 );
         end
@@ -155,7 +155,7 @@ classdef Paraview
     
     methods ( Access = private, Static )
         function suffix = build_full_suffix()
-            sub_suffix = build_sub_suffix();
+            sub_suffix = Paraview.build_sub_suffix();
             suffix = fullfile( "Continuum", "anaconda3", sub_suffix );
         end
         
