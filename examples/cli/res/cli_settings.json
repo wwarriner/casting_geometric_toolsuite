@@ -17,9 +17,9 @@
     "conda": {
       "install_folder": "",
       "environment_name": "cgt_cli_paraview",
-      "environment_file": "res/environment.yml"
+      "environment_file": "../res/environment.yml"
     },
-    "interface_folder": "res/interface",
+    "interface_folder": "./src/paraview_interface",
     "interface_script": "dummy.py"
   },
   "processes": {
