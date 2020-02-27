@@ -20,7 +20,7 @@ classdef DynamicPropertyTree < dynamicprops & matlab.mixin.CustomDisplay
             for i = 1 : child_count
                 key = fields( i );
                 value = obj.(key);
-                if isobject( value )
+                if isobject( value ) && ~isstring( value )
                     value = value.struct();
                 end
                 s.(key) = value;

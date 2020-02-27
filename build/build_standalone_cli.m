@@ -49,9 +49,9 @@ copyfile( cli_res_folder, target_res_folder );
 % modify settings
 settings = SettingsFile( fullfile( target_res_folder, "cli_settings.json" ) );
 settings.paraview.conda.environment_file = "res/environment.yml";
-settings.paraview.conda.interface_folder = "res/interface";
+settings.paraview.interface_folder = "res/interface";
 settings.processes.Casting.input_file = "";
-settings.output_folder = "";
+settings.manager.output_folder = "";
 
 paraview_interface_glob = fullfile( root_folder, "src", "paraview_interface", "*.py" );
 target_interface_folder = fullfile( target_res_folder, "interface" );
