@@ -14,7 +14,8 @@ classdef Paraview
             obj.environment_file = settings.paraview.conda.environment_file;
             obj.environment_name = settings.paraview.conda.environment_name;
             obj.install_folder = settings.paraview.conda.install_folder;
-            obj.interface_folder = settings.paraview.interface_folder;
+            % GetFullPath required, ParaView doesn't understand relative paths
+            obj.interface_folder = GetFullPath( settings.paraview.interface_folder );
             obj.script_file = settings.paraview.interface_script;
         end
         
