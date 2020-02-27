@@ -13,7 +13,7 @@ classdef (Sealed) ProcessManager < Cancelable & Notifier & Printer & handle
         write_folder(1,1) string
     end
     
-    methods ( Access = public )
+    methods
         function obj = ProcessManager( settings, results )
             if nargin < 2
                 results = Results( settings );
@@ -27,16 +27,20 @@ classdef (Sealed) ProcessManager < Cancelable & Notifier & Printer & handle
             obj.results = results;
         end
         
+        function value = get.write_folder( obj )
+            output_folder = obj.settings.manager.output_folder;
+            value = fullfile( output_folder, obj.name );
+        end
+        
         function output_files = prepare_output_files( obj )
             input_folder = fileparts( obj.settings.processes.Casting.input_file );
-            output_folder = obj.settings.manager.output_folder;
+            output_folder = obj.write_folder;
             assert( ...
                 ~strcmpi( input_folder, output_folder ) || ...
                 ( isempty( input_folder ) && isempty( output_folder ) ) ...
                 );
-            obj.write_folder = fullfile( output_folder, obj.name );
             output_files = OutputFiles( ...
-                obj.write_folder, obj.name, obj.overwrite_output ...
+                output_folder, obj.name, obj.overwrite_output ...
                 );
         end
         
