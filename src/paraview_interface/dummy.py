@@ -10,7 +10,8 @@ from pathlib import PurePath, Path
 def get_from_environment(arg):
     try:
         var = os.environ[arg]
-        return var.replace('"', "")
+        var = var.replace('"', "")
+        return var.strip()
     except:
         return None
 
