@@ -1,5 +1,4 @@
-classdef Paraview
-    
+classdef Paraview < handle
     properties ( Access = public )
         casting_name(1,1) string = "UNKNOWN_NAME"
         input_folder(1,1) string
@@ -43,7 +42,7 @@ classdef Paraview
     end
     
     methods
-        function obj = set.casting_name( obj, value )
+        function set.casting_name( obj, value )
             obj.casting_name = value;
         end
     end
@@ -172,5 +171,4 @@ classdef Paraview
             end
         end
     end
-    
 end
