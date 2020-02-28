@@ -37,22 +37,16 @@ classdef Paraview < handle
             end
             opened_ok = obj.open_paraview();
             if ~opened_ok
-                fprintf( "Unable to open paraview, reinstalling environment." + newline );
+                fprintf( "Unable to start paraview." + newline );
                 obj.install_environment();
                 opened_ok = obj.open_paraview();
             end
             if ~opened_ok
                 error( ...
-                    "Unexpected error opening paraview after fresh install." + newline ...
+                    "Unexpected error starting paraview after fresh install." + newline ...
                     + "Please contact the software creator for support." + newline ...
                     );
             end
-        end
-    end
-    
-    methods
-        function set.casting_name( obj, value )
-            obj.casting_name = value;
         end
     end
     
@@ -74,14 +68,16 @@ classdef Paraview < handle
                 + obj.activate_environment() + " && " ...
                 + "START /WAIT paraview --script=%s";
             cmd = sprintf( cmd, obj.build_script_path() );
+            fprintf( "Starting ParaView..." + newline );
             status = system( cmd, "-echo" );
             if status ~= 0
-                error( "Unexpected error starting conda." );
+                error( "Unexpected error with ParaView." );
             end
             opened = ~status;
         end
         
         function installed = check_installed( obj )
+            fprintf( "Checking conda installation..." + newline );
             cmd = obj.activate_conda() + " && " ...
                 + obj.activate_environment();
             cmd = sprintf( cmd, obj.environment_name );
@@ -89,7 +85,7 @@ classdef Paraview < handle
         end
         
         function install_environment( obj )
-            fprintf( "Installing environment..." + newline );
+            fprintf( "Installing conda environment..." + newline );
             cmd = obj.activate_conda() + " && " ...
                 + "conda env create --name %s --file ""%s"" --force";
             cmd = sprintf( cmd, obj.environment_name, obj.environment_file );
@@ -128,14 +124,12 @@ classdef Paraview < handle
                 activate_suffix = fullfile( "Scripts", "activate" );
                 path = obj.build_conda_activate_path( path, activate_suffix );
             catch e
-                fprintf( "Unable to read conda install folder from settings." + newline );
+                fprintf( "Unable to find conda at provided location." + newline );
                 return;
             end
         end
         
         function path = build_from_fallback( obj )
-            fprintf( "Attempting to locate conda at typical install locations." + newline );
-            
             path = "";
             try
                 path = obj.build_from_env( "LOCALAPPDATA" );
