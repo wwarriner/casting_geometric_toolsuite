@@ -1,4 +1,11 @@
-function File = GetFullPath(File, Style)
+function File = GetFullPath(File, Sep, Style)
+% Modified by William Warriner 2020
+% - Added optional separator before style. I trust that style is rarely used.
+%   The final output has "filesep" replaced by input Sep.
+%   Change motivated by certain interactions with external programs that require
+%   POSIX-like file separators in a Windows environment.
+% - Also now allows string arrays as input. Output will be string if input was.
+%
 % GetFullPath - Get absolute canonical path of a file or folder
 % Absolute path names are safer than relative paths, when e.g. a GUI or TIMER
 % callback changes the current directory. Only canonical paths without "." and
@@ -6,11 +13,12 @@ function File = GetFullPath(File, Style)
 % Long path names (>259 characters) require a magic initial key "\\?\" to be
 % handled by Windows API functions, e.g. for Matlab's FOPEN, DIR and EXIST.
 %
-% FullName = GetFullPath(Name, Style)
+% FullName = GetFullPath(File, Sep, Style)
 % INPUT:
-%   Name:  String or cell string, absolute or relative name of a file or
-%          folder. The path need not exist. Unicode strings, UNC paths and long
-%          names are supported.
+%   File:  String, char array, or cell string, absolute or relative name of a
+%          file or folder. The path need not exist. Unicode strings, UNC paths
+%          and long names are supported.
+%   Sep:   Replaces file separators with provided separator.
 %   Style: Style of the output as string, optional, default: 'auto'.
 %          'auto': Add '\\?\' or '\\?\UNC\' for long names on demand.
 %          'lean': Magic string is not added.
@@ -98,17 +106,30 @@ function File = GetFullPath(File, Style)
 
 % Magic prefix for long Windows names:
 if nargin < 2
-   Style = 'auto';
+    Sep = filesep;
+end
+
+if nargin < 3
+    Style = 'auto';
+end
+
+was_string = false;
+if isstring(File)
+    was_string = true;
+    File = cellstr(File);
 end
 
 % Handle cell strings:
 % NOTE: It is faster to create a function @cell\GetFullPath.m under Linux, but
 % under Windows this would shadow the fast C-Mex.
 if isa(File, 'cell')
-   for iC = 1:numel(File)
-      File{iC} = GetFullPath(File{iC}, Style);
-   end
-   return;
+    for iC = 1:numel(File)
+        File{iC} = GetFullPath(File{iC}, Sep, Style);
+    end
+    if was_string
+        File = string(File);
+    end
+    return;
 end
 
 % Check this once only:
@@ -326,6 +347,10 @@ if isWIN
          File = ['\\?\', File];
       end
    end
+end
+
+File = strrep(File, filesep, Sep);
+
 end
 
 % return;
