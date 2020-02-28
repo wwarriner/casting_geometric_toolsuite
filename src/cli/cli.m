@@ -1,44 +1,37 @@
-function out = cli( varargin )
-
-out = 0;
+function cli( varargin )
 
 [ parameters, parse_out ] = parse_inputs( varargin{:} );
 if isempty( parameters )
-    out = parse_out;
-    return;
+    error( string( parse_out ) );
 end
 
 try
     settings = Settings( parameters.settings_file );
 catch e
-    out = 1;
     disp( getReport( e, "extended" ) );
-    return;
+    error( "1" );
 end
 
 try
     pm = ProcessManager( settings );
 catch e
-    out = 2;
     disp( getReport( e, "extended" ) );
-    return;
+    error( "2" );
 end
 
 if parameters.analyze
     try
         pm.run();
     catch e
-        out = 3;
         disp( getReport( e, "extended" ) );
-        return;
+        error( "3" );
     end
     
     try
         pm.write_all();
     catch e
-        out = 4;
         disp( getReport( e, "extended" ) );
-        return;
+        error( "4" );
     end
 end
 
@@ -49,9 +42,8 @@ if parameters.view
         p.input_folder = pm.write_folder;
         p.open();
     catch e
-        out = 5;
         disp( getReport( e, "extended" ) );
-        return;
+        error( "5" );
     end
 end
 
@@ -85,9 +77,9 @@ else
 end
 
 % PARSE OPTIONAL FLAGS
-% MUST BE MODE, CONTAINS ANY COMBINATION OF -a and -v
+% MUST BE MODE, CONTAINS ANY COMBINATION OF -a and -p
 if nargin < 2
-    mode = "-av";
+    mode = "-ap";
 else
     mode = string( varargin( 2 : end ) );
 end
@@ -96,7 +88,7 @@ mode = strjoin( mode, "" );
 mode = char( mode );
 mode = unique( mode );
 mode = sort( mode );
-VALID_TOKENS = 'av';
+VALID_TOKENS = 'ap';
 tokens = intersect( mode, VALID_TOKENS );
 if mode(1) ~= '-' || numel(mode) <= 1 || isempty( tokens )
     fprintf( 1, "Could not understand mode flags." + newline );
@@ -111,7 +103,7 @@ if contains( mode, "a" )
 end
 
 view = false;
-if contains( mode, "v" )
+if contains( mode, "p" )
     view = true;
 end
 
