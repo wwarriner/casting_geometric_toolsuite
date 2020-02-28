@@ -4,7 +4,7 @@ classdef Paraview < handle
         input_folder(1,1) string
     end
     
-    methods ( Access = public )
+    methods
         function obj = Paraview( settings )
             if nargin == 0
                 return
@@ -13,9 +13,18 @@ classdef Paraview < handle
             obj.environment_file = settings.paraview.conda.environment_file;
             obj.environment_name = settings.paraview.conda.environment_name;
             obj.install_folder = settings.paraview.conda.install_folder;
-            % GetFullPath required, ParaView doesn't understand relative paths
-            obj.interface_folder = GetFullPath( settings.paraview.interface_folder );
+            % have to normalize file separators and make absolute for ParaView
+            obj.interface_folder = GetFullPath( settings.paraview.interface_folder, "/" );
             obj.script_file = settings.paraview.interface_script;
+        end
+        
+        function set.input_folder( obj, value )
+            % have to normalize file separators and make absolute for ParaView
+            obj.input_folder = GetFullPath( value, "/" );
+        end
+
+        function set.casting_name( obj, value )
+            obj.casting_name = value;
         end
         
         function open( obj )
@@ -60,9 +69,10 @@ classdef Paraview < handle
             setenv( "INTERFACE_FOLDER", obj.interface_folder );
             setenv( "INPUT_FOLDER", obj.input_folder );
             setenv( "NAME", obj.casting_name );
-            cmd = obj.activate_conda() + " && " ...
+            cmd = ...
+                obj.activate_conda() + " && " ...
                 + obj.activate_environment() + " && " ...
-                + "START paraview --script=%s";
+                + "START /WAIT paraview --script=%s";
             cmd = sprintf( cmd, obj.build_script_path() );
             status = system( cmd, "-echo" );
             if status ~= 0
@@ -149,7 +159,8 @@ classdef Paraview < handle
         end
         
         function path = build_script_path( obj )
-            path = fullfile( obj.interface_folder, obj.script_file );
+            % have to normalize file separators and make absolute for ParaView
+            path = GetFullPath( fullfile( obj.interface_folder, obj.script_file ), "/" );
         end
     end
     
