@@ -1,5 +1,16 @@
 function status = build_standalone_cli()
 
+USELESS_WARNINGS = [ ...
+    "MATLAB:RMDIR:RemovedFromPath" ...
+    "MATLAB:zip:archiveName" ...
+    ];
+cleaners = cell(1, numel(USELESS_WARNINGS));
+for i = 1 : numel(USELESS_WARNINGS)
+    w = USELESS_WARNINGS(i);
+    warning("off", w);
+    cleaners{i} = onCleanup(@()warning("on", w));
+end
+
 % TODO pull out testing stuff into separate folder to keep settings files separate
 % TODO paraview doesn't understand relative folders passed via env vars, have to convert to absolute file path before passing.
 
@@ -88,6 +99,7 @@ start_cmd = sprintf( "START /WAIT %s ""%s"" ""-ap"" && ", target_file, settings_
 exit_cmd = sprintf( "EXIT /B %%ERRORLEVEL%%" + newline );
 cmd = cd_cmd + start_cmd + exit_cmd;
 status = system( cmd, "-echo" );
+rmdir( fullfile( target_interface_folder, "__pycache__" ), "s" ); % cleanup
 if status > 0
     error( "Test failed." );
 end
