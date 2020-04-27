@@ -1,0 +1,254 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "$id": "cgt.input.schema.json",
+  "title": "Input",
+  "description": "Input for Casting Geometric Toolsuite",
+  "type": "object",
+  "properties": {
+    "manager": {
+      "description": "Properties for the Process Manager object.",
+      "type": "object",
+      "properties": {
+        "output_folder": {
+          "description": "Folder to place output files.",
+          "type": "string"
+        },
+        "user_needs": {
+          "description": "List of processes whose results are required by the user.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      },
+      "required": ["output_folder", "user_needs"],
+      "additionalProperties": false
+    },
+    "processes": {
+      "description": "Properties for the process computation objects.",
+      "type": "object",
+      "properties": {
+        "Casting": {
+          "description": "Properties for Casting object.",
+          "type": "object",
+          "properties": {
+            "input_file": {
+              "description": "Path to input file.",
+              "type": "string"
+            }
+          },
+          "required": ["input_file"],
+          "additionalProperties": false
+        },
+        "CavityThickSections": {
+          "description": "Properties for CavityThickSections object.",
+          "type": "object",
+          "properties": {
+            "strategy": {
+              "description": "Strategy to use when determining cavity thick sections.",
+              "type": "string",
+              "enum": ["lognormal", "strict", "median"]
+            },
+            "quantile": {
+              "description": "Threshold quantile to use determining cavity thick sections.",
+              "type": "number",
+              "minimum": 0.0,
+              "maximum": 1.0
+            },
+            "sweep_coefficient": {
+              "description": "Coefficient to use when determining dilation distance sweep.",
+              "type": "number",
+              "exclusiveMinimum": 0.0
+            },
+            "threshold_casting_length": {
+              "description": "Starting threshold to use for casting length. System dependent.",
+              "type": "number",
+              "exclusiveMinimum": 0.0
+            }
+          },
+          "required": ["threshold_casting_length"],
+          "additionalProperties": false
+        },
+        "CavityThinSections": {
+          "description": "Properties for CavityThinSections object.",
+          "type": "object",
+          "properties": {
+            "sweep_coefficient": {
+              "description": "Coefficient to use when determining dilation distance sweep.",
+              "type": "number",
+              "exclusiveMinimum": 0.0
+            },
+            "threshold_casting_length": {
+              "description": "Starting threshold to use for casting length. System dependent.",
+              "type": "number",
+              "exclusiveMinimum": 0.0
+            }
+          },
+          "required": ["threshold_casting_length"],
+          "additionalProperties": false
+        },
+        "Cores": {
+          "description": "Properties for Cores object.",
+          "type": "object",
+          "properties": {
+            "expansion_ratio": {
+              "description": "Ratio by which to expand cores as multiple of largest Casting bounding box dimension",
+              "type": "number",
+              "exclusiveMinimum": 0.0
+            }
+          },
+          "additionalProperties": false
+        },
+        "Feeders": {
+          "description": "Properties for Feeders object.",
+          "type": "object",
+          "additionalProperties": false
+        },
+        "GeometricProfile": {
+          "description": "Properties for GeometricProfile object.",
+          "type": "object",
+          "additionalProperties": false
+        },
+        "IsolatedSections": {
+          "description": "Properties for IsolatedSections object.",
+          "type": "object",
+          "properties": {
+            "use_thermal_profile": {
+              "description": "Whether to use a thermal profile when determining downstream processes such as Feeders.",
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false
+        },
+        "Mesh": {
+          "description": "Properties for Mesh object.",
+          "type": "object",
+          "properties": {
+            "desired_element_count": {
+              "description": "Number of elements to aim for when meshing Casting object.",
+              "type": "number",
+              "minimum": 1.0
+            }
+          },
+          "required": ["desired_element_count"],
+          "additionalProperties": false
+        },
+        "MoldThinSections": {
+          "description": "Properties for MoldThinSections object.",
+          "type": "object",
+          "properties": {
+            "sweep_coefficient": {
+              "description": "Coefficient to use when determining dilation distance sweep.",
+              "type": "number",
+              "exclusiveMinimum": 0.0
+            },
+            "threshold_casting_length": {
+              "description": "Starting threshold to use for casting length. System dependent.",
+              "type": "number",
+              "exclusiveMinimum": 0.0
+            }
+          },
+          "required": ["threshold_casting_length"],
+          "additionalProperties": false
+        },
+        "Parting": {
+          "description": "Properties for Parting object.",
+          "type": "object",
+          "additionalProperties": false
+        },
+        "ThermalProfile": {
+          "description": "Properties for ThermalProfile object.",
+          "type": "object",
+          "properties": {
+            "ambient_h_w_per_m_sq_k": {
+              "description": "Ambient convection coefficient in Watts per square meter per Kelvin.",
+              "type": "number",
+              "exclusiveMinimum": 0.0
+            },
+            "ambient_temperature_c": {
+              "description": "Ambient temperature in celsius.",
+              "type": "number",
+              "minimum": 0.0,
+              "maximum": 2000.0
+            },
+            "filter_thermal_modulus_range_ratio": {
+              "description": "Ratio for filtering thermal modulus for downstream processes such as Feeders.",
+              "type": "number",
+              "exclusiveMinimum": 0.0
+            },
+            "latent_heat_quality_target": {
+              "description": "Target quality value when using bisection time-stepping. Larger value means faster processing, lower accuracy.",
+              "type": "number",
+              "exclusiveMinimum": 0.0
+            },
+            "melt_feeding_effectivity": {
+              "description": "Determines liquid fraction below which melt flow does not occur.",
+              "type": "number",
+              "minimum": 0.0,
+              "maximum": 1.0
+            },
+            "melt_initial_temperature_c": {
+              "description": "Initial melt temperature in celsius.",
+              "type": "number",
+              "minimum": 0.0,
+              "maximum": 2000.0
+            },
+            "melt_material_file": {
+              "description": "Filename of melt material information file located in material_database folder.",
+              "type": "string"
+            },
+            "melt_mold_h_file": {
+              "description": "Filename of melt-mold convection coefficient information file located in material_database folder.",
+              "type": "string"
+            },
+            "mold_material_file": {
+              "description": "Filename of mold material information file located in material_database folder.",
+              "type": "string"
+            },
+            "mold_pad_amounts": {
+              "description": "Amounts by which to pad Mesh object when using ThermalProfile. Either array scalar (one for all axes), or array triple (one for each axis)",
+              "type": "array",
+              "oneOf": [
+                {
+                  "items": {
+                    "type": "number",
+                    "minimum": 0.0
+                  },
+                  "minItems": 1,
+                  "maxItems": 1
+                },
+                {
+                  "items": {
+                    "type": "number",
+                    "minimum": 0.0
+                  },
+                  "minItems": 3,
+                  "maxItems": 3
+                }
+              ]
+            },
+            "mold_pad_type": {
+              "description": "Method by which to pad Mesh object when using ThermalProfile.",
+              "type": "string",
+              "enum": ["ratio", "length", "count"]
+            },
+            "time_step_mode": {
+              "description": "Method by which to generate time steps when using ThermalProfile.",
+              "type": "string",
+              "enum": ["bisection"]
+            }
+          },
+          "additionalProperties": false
+        },
+        "Undercuts": {
+          "description": "Properties for Undercuts object.",
+          "type": "object",
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

@@ -1,7 +1,7 @@
 {
   "manager": {
-    "output_folder": "",
-    "overwrite_output": false,
+    "output_folder": "output",
+    "overwrite_output": true,
     "user_needs": [
       "Casting",
       "Feeders",
@@ -13,9 +13,18 @@
       "IsolatedSections"
     ]
   },
+  "paraview": {
+    "conda": {
+      "install_folder": "",
+      "environment_name": "cgt_cli_paraview",
+      "environment_file": "../res/environment.yml"
+    },
+    "interface_folder": "./src/paraview_interface",
+    "interface_script": "dummy.py"
+  },
   "processes": {
     "Casting": {
-      "input_file": ""
+      "input_file": "sample_geometries/bearing_block.stl"
     },
     "CavityThickSections": {
       "strategy": "lognormal",
@@ -36,7 +45,7 @@
       "use_thermal_profile": false
     },
     "Mesh": {
-      "desired_element_count": 1e7
+      "desired_element_count": 1e6
     },
     "MoldThinSections": {
       "sweep_coefficient": 2.0,

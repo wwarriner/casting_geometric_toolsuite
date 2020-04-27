@@ -22,7 +22,10 @@ classdef Settings < DynamicPropertyTree
             obj.build( s, string( mfilename( 'class' ) ) );
         end
         
-        function apply( obj, other_obj )
+        function apply( obj, other_obj, silent )
+            if nargin < 3
+                silent = false;
+            end
             fields = string( fieldnames( other_obj ) );
             count = numel( fields );
             for i = 1 : count
@@ -32,7 +35,9 @@ classdef Settings < DynamicPropertyTree
                     continue;
                 end
                 if ~isprop( obj, key )
-                    fprintf( 2, obj.missing_msg( key ) );
+                    if ~silent
+                        fprintf( 2, obj.missing_msg( key ) );
+                    end
                     continue;
                 end
                 other_obj.(key) = obj.(key);
