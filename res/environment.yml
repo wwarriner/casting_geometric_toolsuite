@@ -1,0 +1,6 @@
+name: paraview
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - paraview=5.7.1

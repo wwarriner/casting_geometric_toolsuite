@@ -10,7 +10,8 @@ from pathlib import PurePath, Path
 def get_from_environment(arg):
     try:
         var = os.environ[arg]
-        return var.replace('"', "")
+        var = var.replace('"', "")
+        return var.strip()
     except:
         return None
 
@@ -18,10 +19,10 @@ def get_from_environment(arg):
 parser = argparse.ArgumentParser()
 parser.add_argument(
     "-S",
-    "--script_folder",
+    "--interface_folder",
     type=str,
-    help="Folder location of scripts.",
-    default=get_from_environment("script_folder"),
+    help="Folder location of python interface.",
+    default=get_from_environment("interface_folder"),
 )
 parser.add_argument(
     "-I",
@@ -39,12 +40,12 @@ parser.add_argument(
 )
 args = parser.parse_args()
 
-ERR_BAD_SCRIPT_FOLDER = 2
-script_folder = args.script_folder
-if script_folder is None or not Path(script_folder).is_dir():
+ERR_BAD_INTERFACE_FOLDER = 2
+interface_folder = args.interface_folder
+if interface_folder is None or not Path(interface_folder).is_dir():
     print("No valid script folder supplied using -S option!")
-    print("{:s}".format(str(script_folder)))
-    sys.exit(ERR_BAD_SCRIPT_FOLDER)
+    print("{:s}".format(str(interface_folder)))
+    sys.exit(ERR_BAD_INTERFACE_FOLDER)
 
 ERR_BAD_INPUT_FOLDER = 3
 input_folder = args.input_folder
@@ -60,8 +61,14 @@ if name is None:
     print("{:s}".format(str(name)))
     sys.exit(ERR_BAD_NAME)
 
-sys.path.append(script_folder)
+sys.path.append(interface_folder)
 import cgt_objects
+
+config = None
+config_file = PurePath(args.interface_folder) / "visualization_config.json"
+with open(config_file) as f:
+    config = json.load(f)
+assert config is not None
 
 #### disable automatic camera reset on 'Show'
 ps._DisableFirstRenderCameraReset()
@@ -70,12 +77,6 @@ ps._DisableFirstRenderCameraReset()
 view = ps.GetActiveViewOrCreate("RenderView")
 view.CameraParallelProjection = True
 # view.ViewSize = [960, 720]
-
-config = None
-config_file = PurePath(args.script_folder) / "visualization_config.json"
-with open(config_file) as f:
-    config = json.load(f)
-assert config is not None
 
 input_files = cgt_objects.InputFiles(PurePath(args.input_folder))
 visuals = cgt_objects.Visuals(view, config, input_files)
