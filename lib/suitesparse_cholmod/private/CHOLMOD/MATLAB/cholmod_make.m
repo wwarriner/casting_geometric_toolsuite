@@ -79,10 +79,33 @@ end
 
 if (pc)
     if (verLessThan ('matlab', '7.5'))
-        lapack = 'libmwlapack.lib' ;
+        lapack = {'libmwlapack.lib'};
     else
-        lapack = 'libmwlapack.lib libmwblas.lib' ;
+        lapack = {'libmwlapack.lib' 'libmwblas.lib'};
     end
+    
+    mex_res = strsplit(lower(evalc('mex(''-setup'', ''cpp'')')), newline);
+    mex_res = mex_res{1};
+    
+    if contains(mex_res, 'mingw')
+        if ~is64
+            error('unable to locate lapack for mingw');
+        end
+        lib_folder = fullfile(matlabroot, 'extern', 'lib', 'win64', 'mingw64');
+        lapack = cellfun(@(x)fullfile(lib_folder, x), lapack, 'uniformoutput', false);
+        lapack = strcat('"', lapack);
+        lapack = strcat(lapack, '"');
+        
+        s1 = ' -Ddlarfg_=dlarfg -Ddlarf_=dlarf -Dzlarfg_=zlarfg -Dzlarf_=zlarf -Ddlarft_=dlarft -Ddlarfb_=dlarfb -Ddlarft_=dlarft -Ddlarfb_=dlarfb -Ddlarft_=dlarft ';
+        s2 = ' -Ddlarfb_=dlarfb -Ddlarft_=dlarft -Ddlarfb_=dlarfb -Dzlarft_=zlarft -Dzlarfb_=zlarfb -Dzlarft_=zlarft -Dzlarfb_=zlarfb -Dzlarft_=zlarft -Dzlarfb_=zlarfb ';
+        s3 = ' -Dzlarft_=zlarft -Dzlarfb_=zlarfb -Ddnrm2_=dnrm2 -Ddznrm2_=dznrm2 -Ddsyrk_=dsyrk -Ddgemm_=dgemm -Ddpotrf_=dpotrf -Ddtrsm_=dtrsm -Dzherk_=zherk ';
+        s4 = ' -Dzgemm_=zgemm -Dzpotrf_=zpotrf -Dztrsm_=ztrsm -Dzherk_=zherk -Dzgemm_=zgemm -Dzpotrf_=zpotrf -Dztrsm_=ztrsm -Ddtrsv_=dtrsv -Ddgemv_=dgemv ';
+        s5 = ' -Ddtrsm_=dtrsm -Ddgemm_=dgemm -Dztrsv_=ztrsv -Dzgemv_=zgemv -Dztrsm_=ztrsm -Dzgemm_=zgemm -Ddgemv_=dgemv -Ddtrsv_=dtrsv -Ddtrsm_=dtrsm ';
+        s6 = ' -Dzgemv_=zgemv -Dztrsv_=ztrsv -Dztrsm_=ztrsm -Ddgemm_=dgemm -Dzgemm_=zgemm ';
+        flags = [s1 s2 s3 s4 s5 s6 flags];
+    end
+    lapack = strjoin(lapack, ' ');
+    lapack = strrep(lapack, '\', '/');
 else
     if (verLessThan ('matlab', '7.5'))
         lapack = '-lmwlapack' ;
