@@ -28,7 +28,13 @@ classdef Paraview < handle
         end
         
         function open( obj )
-            if ~obj.check_installed()
+            if ~obj.check_conda()
+                error( ...
+                    "Conda is not installed." + newline ...
+                    + "Please install from: https://www.anaconda.com/products/individual" + newline ...
+                    );
+            end
+            if ~obj.check_environment()
                 fprintf( ...
                     "Unable to locate existing environment." + newline ...
                     + "If this is your first time using this software, this is expected." + newline ...
@@ -47,6 +53,12 @@ classdef Paraview < handle
                     + "Please contact the software creator for support." + newline ...
                     );
             end
+        end
+        
+        function installed = check_conda( obj )
+            fprintf( "Checking conda installation..." + newline );
+            cmd = obj.activate_conda();
+            installed = ~system( cmd );
         end
     end
     
@@ -76,14 +88,6 @@ classdef Paraview < handle
             opened = ~status;
         end
         
-        function installed = check_installed( obj )
-            fprintf( "Checking conda installation..." + newline );
-            cmd = obj.activate_conda() + " && " ...
-                + obj.activate_environment();
-            cmd = sprintf( cmd, obj.environment_name );
-            installed = ~system( cmd );
-        end
-        
         function install_environment( obj )
             fprintf( "Installing conda environment..." + newline );
             cmd = obj.activate_conda() + " && " ...
@@ -93,6 +97,14 @@ classdef Paraview < handle
             if status ~= 0
                 error( "Unexpected error installing environment." );
             end
+        end
+        
+        function installed = check_environment( obj )
+            fprintf( "Checking environment..." + newline );
+            cmd = obj.activate_conda() + " && " ...
+                + obj.activate_environment();
+            cmd = sprintf( cmd, obj.environment_name );
+            installed = ~system( cmd );
         end
         
         function cmd = activate_environment( obj )
