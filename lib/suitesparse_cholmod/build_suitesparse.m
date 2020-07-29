@@ -1,14 +1,21 @@
-function build_suitesparse()
+function build_suitesparse( target_folder )
 
-SuiteSparse_install( false );
-
-here_folder = fileparts( mfilename( 'fullpath' ) );
-target_folder = fullfile( here_folder, 'out' );
-if isfolder( target_folder )
-    rmdir( target_folder, 's' )
+if nargin < 1
+    here_folder = fileparts( mfilename( 'fullpath' ) );
+    target_folder = fullfile( here_folder, 'out' );
 end
 mkdir( target_folder )
+install();
 bundle_files( target_folder );
+
+end
+
+
+function install()
+
+path = pwd;
+restorer = onCleanup( @()cd( path ) );
+SuiteSparse_install( false );
 
 end
 

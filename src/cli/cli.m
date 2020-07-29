@@ -1,22 +1,25 @@
-function cli( varargin )
+function out = cli( varargin )
 
 [ parameters, parse_out ] = parse_inputs( varargin{:} );
-if isempty( parameters )
-    error( string( parse_out ) );
+out = parse_out;
+if isempty( parameters ) && parse_out > 0
+    return;
 end
 
 try
     settings = Settings( parameters.settings_file );
 catch e
     disp( getReport( e, "extended" ) );
-    error( "1" );
+    out = 1;
+    return;
 end
 
 try
     pm = ProcessManager( settings );
 catch e
     disp( getReport( e, "extended" ) );
-    error( "2" );
+    out = 2;
+    return;
 end
 
 if parameters.analyze
@@ -24,14 +27,16 @@ if parameters.analyze
         pm.run();
     catch e
         disp( getReport( e, "extended" ) );
-        error( "3" );
+        out = 3;
+        return;
     end
     
     try
         pm.write_all();
     catch e
         disp( getReport( e, "extended" ) );
-        error( "4" );
+        out = 4;
+        return;
     end
 end
 
@@ -43,9 +48,12 @@ if parameters.view
         p.open();
     catch e
         disp( getReport( e, "extended" ) );
-        error( "5" );
+        out = 5;
+        return;
     end
 end
+
+out = 0;
 
 end
 
@@ -121,10 +129,10 @@ function show_help()
         + newline ...
         + "Additional arguments are optional, and indicate operating mode." + newline ...
         + " -a performs analysis" + newline ...
-        + " -v starts ParaView" + newline ...
-        + "These may be combined as -av." + newline ...
+        + " -p starts ParaView" + newline ...
+        + "These may be combined as -ap." + newline ...
         + "If no optional arguments are supplied, the program behaves as though -av were supplied." + newline ...
-        + "-v only works if there are valid output files at the output location provided in the" + newline ...
+        + "-p only works if there are valid output files at the output location provided in the" + newline ...
         + "config file for the provided input." + newline ...
         + newline;
     fprintf( 1, help_text )
