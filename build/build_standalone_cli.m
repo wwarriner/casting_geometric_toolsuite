@@ -1,5 +1,10 @@
 function status = build_standalone_cli()
 
+now = datestr( datetime(), "YYYYmmDD_HHMMSS" );
+log_file = sprintf( "cgt_cli_build_%s.log", now );
+diary( log_file );
+diary_closer = onCleanup( @()diary( "off" ) );
+
 USELESS_WARNINGS = [ ...
     "MATLAB:RMDIR:RemovedFromPath" ...
     "MATLAB:zip:archiveName" ...
@@ -122,7 +127,9 @@ fprintf( "Done!" + newline );
 % TEST TARGET
 fprintf( "Testing executable..." + newline );
 try
+    cmd = "NA";
     status = -1;
+    cmdout = "NA";
     
     copied_settings_file = fullfile( target_res_folder, "test_settings.json" );
     copyfile( out_settings_file, copied_settings_file );
@@ -130,7 +137,7 @@ try
     copied_settings = SettingsFile( copied_settings_file );
     
     p = Paraview( copied_settings );
-    installed = p.check_conda();
+    installed = p.check_conda_installation();
     if ~installed
         status = 255;
         error( "Test failed: conda not installed." );
@@ -148,7 +155,7 @@ try
     target_file = GetFullPath( fullfile( target_folder, app_target ), "/" );
     settings_file = GetFullPath( copied_settings_file, "/" );
     start_cmd = sprintf( ...
-        "START /WAIT %s ""%s"" ""-ap"" && ", target_file, settings_file );
+        "%s ""%s"" ""-ap"" && ", target_file, settings_file );
     exit_cmd = sprintf( "EXIT /B %%ERRORLEVEL%%" + newline );
     cmd = cd_cmd + start_cmd + exit_cmd;
     [status, cmdout] = system( cmd, "-echo" );
@@ -172,7 +179,7 @@ try
     app_archive = app_name + ".zip";
     zip_file = fullfile( target_folder, app_archive );
     zip( zip_file, "*", target_folder );
-catch
+catch e
     disp( getReport( e ) );
     error( "Failed to build deployable archive" );
 end
