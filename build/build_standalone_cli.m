@@ -25,20 +25,20 @@ end
 fprintf( "Preparing for build..." );
 try
     path_restorer = fix_path(); %#ok<NASGU>
-
+    
     build_folder = fileparts( mfilename( "fullpath" ) );
     root_folder = fullfile( build_folder, ".." );
     addpath( root_folder );
     extend_search_path();
-
+    
     target_folder = get_target_folder( "cli" );
     assert( target_folder ~= build_folder );
     assert( target_folder ~= root_folder );
     prepare_folder( target_folder )
-
+    
     res_folder = fullfile( root_folder, "res" );
     target_res_folder = fullfile( target_folder, "res" );
-
+    
     % PREPARE CACHE
     cache_folder = fullfile( target_folder, "cache" );
     assert( cache_folder ~= build_folder );
@@ -85,7 +85,7 @@ try
         "-o", app_name, ...
         "-a", suitesparse_target, ...
         app_file ...
-    );
+        );
     app_target = app_name + ".exe";
     copyfile( fullfile( cache_folder, app_target ), target_folder );
 catch e
@@ -105,13 +105,13 @@ try
     copyfile( cli_res_folder, target_res_folder );
     
     % MODIFY FILE POINTERS IN SETTINGS FILE
-    out_settings_file = fullfile( target_res_folder, "cli_settings.json" );
+    out_settings_file = fullfile( target_res_folder, "steel_sand_casting_cli_settings.json" );
     settings = SettingsFile( out_settings_file );
     settings.paraview.conda.environment_file = "res/environment.yml";
     settings.paraview.interface_folder = "res/interface";
     settings.processes.Casting.input_file = "";
     settings.manager.output_folder = "";
-
+    
     % PARAVIEW INTERFACE
     target_interface_folder = fullfile( target_res_folder, "interface" );
     paraview_interface_glob = fullfile( root_folder, "src", "paraview_interface", "*.py" );
@@ -150,6 +150,8 @@ try
     input_file = GetFullPath( fullfile( ...
         root_folder, "sample_geometries", "bearing_block.stl" ), "/" );
     copied_settings.processes.Casting.input_file = input_file;
+    
+    copied_settings.processes.Mesh.desired_element_count = 1e5;
     
     cd_cmd = sprintf( "CD ""%s"" && ", GetFullPath( target_folder, "/" ) );
     target_file = GetFullPath( fullfile( target_folder, app_target ), "/" );
