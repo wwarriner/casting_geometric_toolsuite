@@ -36,6 +36,9 @@ try
     assert( target_folder ~= root_folder );
     prepare_folder( target_folder )
     
+    doc_folder = fullfile( root_folder, "doc" );
+    target_doc_folder = fullfile( target_folder, "doc" );
+    
     res_folder = fullfile( root_folder, "res" );
     target_res_folder = fullfile( target_folder, "res" );
     
@@ -91,6 +94,16 @@ try
 catch e
     disp( getReport( e ) );
     error( "Failed to build executable" );
+end
+fprintf( "Done!" + newline );
+
+% COPY DOCS
+fprintf( "Copying docs..." );
+try
+    copyfile( doc_folder, target_doc_folder );
+catch e
+    disp( getReport( e ) );
+    error( "Failed to copy resources" );
 end
 fprintf( "Done!" + newline );
 
@@ -172,6 +185,13 @@ catch e
     disp( cmdout );
     disp( getReport( e ) );
     error( "Failed target self-test" );
+end
+% DELETE LOG
+files = get_files_with_extension( get_contents( target_folder ), ".log" );
+for i = 1 : height( files )
+    file = files{ i, "name" };
+    file = fullfile( target_folder, file );
+    delete( file{1} );
 end
 fprintf( "Done!" + newline );
 
