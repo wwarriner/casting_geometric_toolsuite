@@ -2,7 +2,7 @@ function out = cli( varargin )
 
 [ parameters, parse_out ] = parse_inputs( varargin{:} );
 out = parse_out;
-if isempty( parameters ) && parse_out > 0
+if isempty( parameters )
     return;
 end
 
