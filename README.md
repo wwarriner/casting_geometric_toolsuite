@@ -1,6 +1,8 @@
 # Casting Geometric Toolsuite
 A suite of tools for geometric analysis of metal castings, based on the work of William Warriner (paper references tbd). The code is licensed under the MIT license, with the exception of some of the external libraries, which have their own licenses. Please see below.
 
+The general concept is the integration of various image processing algorithms and a solidification FDM solver to identify points of interest in casting solid models. Many tools exist to generate what we call solidification fields, i.e. how long it takes each point to solidify, or what temperature they are at any given point in time. What does not exist, until now, is a way to identify the points that have the greatest impact on cost. This software seeks to assist engineers by annotating where they should focus their attention to produce more robust casting designs.
+
 # Usage
 The code was written in version `R2018a` and is not guaranteed to work for any previous version.
 
